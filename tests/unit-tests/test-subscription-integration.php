@@ -317,7 +317,7 @@ class TestSubscriptionIntegration extends WP_UnitTestCase {
 				'http://site1',
 				'user_with_sub_on_1',
 				'net-1',
-				500,
+				500, // Expected ID of the subscription.
 			],
 			[
 				'http://site1',
