@@ -112,7 +112,7 @@ class Admin {
 
 	/**
 	 * Adds the admin page
-	 * 
+	 *
 	 * @return void
 	 */
 	public static function add_admin_menu() {
