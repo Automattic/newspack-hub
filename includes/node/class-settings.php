@@ -75,10 +75,15 @@ class Settings {
 
 	/**
 	 * Adds the submenu page
+	 * 
+	 * Note: replaced when Newspack Plugin is active with Information Architecture.  See Newspack Plugin > Network_Wizard.
 	 *
 	 * @return void
 	 */
 	public static function add_menu() {
+
+		// @todo: how to test this if case for Newspack Plugin is active with Information Architecture?
+
 		if ( \Newspack_Network\Site_Role::is_node() || self::is_updating_from_url() || self::is_processing_connection_form() ) {
 			Admin::add_submenu_page( __( 'Node Settings', 'newspack-network' ), self::PAGE_SLUG, [ __CLASS__, 'render' ] );
 		}

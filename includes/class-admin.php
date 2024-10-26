@@ -112,8 +112,6 @@ class Admin {
 
 	/**
 	 * Adds the admin page
-	 *
-	 * Note: with Newspack Plugin active and Information Architecture UI released (2024), this callback is replaced.
 	 * 
 	 * @return void
 	 */
