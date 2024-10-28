@@ -1,3 +1,15 @@
+# [2.3.0](https://github.com/Automattic/newspack-network/compare/v2.2.1...v2.3.0) (2024-10-28)
+
+
+### Bug Fixes
+
+* remove recursive import `use` ([b03bb52](https://github.com/Automattic/newspack-network/commit/b03bb52f702f873f465f8b0d62d935301933689d))
+
+
+### Features
+
+* handle email change on propagated users ([#133](https://github.com/Automattic/newspack-network/issues/133)) ([2efa226](https://github.com/Automattic/newspack-network/commit/2efa2266dee3bb22d4b01ce8fbe0f0393e37cf2f))
+
 ## [2.2.1](https://github.com/Automattic/newspack-network/compare/v2.2.0...v2.2.1) (2024-10-10)
 
 
