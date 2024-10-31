@@ -61,19 +61,32 @@ class Subscriptions_Integration {
 		$user_network_subs = self::get_user_network_active_subscriptions( $user_id );
 
 		$network_active_subscription = self::user_has_active_subscription_in_network( $user_id, $plan_network_id );
-		if ( $network_active_subscription ) {
-			$user_membership->add_note(
-				sprintf(
-					/* translators: %1$s is the site URL where the user has an active subscription. %2$d is that subscription ID. */
-					__( 'Membership is not cancelled, because there is an active subscription in %1$s linked to a membership plan with the same network id. (Subscription #%2$d)', 'newspack-plugin' ),
-					$network_active_subscription['site'],
-					$network_active_subscription['subscription']['id']
-				)
-			);
+
+		if ( ! $network_active_subscription ) {
+			return $cancel_or_expire;
+		}
+
+		$prevent_cancellation_note_meta_key = 'prevent_cancellation_note_added_timestamp';
+
+		$last_note_added_timestamp = get_post_meta( $user_membership->get_id(), $prevent_cancellation_note_meta_key, true );
+
+		if ( $last_note_added_timestamp && ( time() - (int) $last_note_added_timestamp ) < 60 ) {
+			// Prevent adding the same note multiple times.
 			return false;
 		}
 
-		return $cancel_or_expire;
+		update_post_meta( $user_membership->get_id(), $prevent_cancellation_note_meta_key, time() );
+
+		$user_membership->add_note(
+			sprintf(
+				/* translators: %1$s is the site URL where the user has an active subscription. %2$d is that subscription ID. */
+				__( 'Membership is not cancelled, because there is an active subscription in %1$s linked to a membership plan with the same network id. (Subscription #%2$d)', 'newspack-plugin' ),
+				$network_active_subscription['site'],
+				$network_active_subscription['subscription']['id']
+			)
+		);
+
+		return false;
 	}
 
 	/**
