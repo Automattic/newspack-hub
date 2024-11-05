@@ -75,8 +75,6 @@ class Settings {
 
 	/**
 	 * Adds the submenu page
-	 * 
-	 * Note: replaced when Newspack Plugin is active with Information Architecture.  See Newspack Plugin > Network_Wizard.
 	 *
 	 * @return void
 	 */
