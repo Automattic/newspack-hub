@@ -80,6 +80,9 @@ class Subscriptions {
 			'show_in_menu'     => Network_Admin::PAGE_SLUG,
 			'can_export'       => false,
 			'capability_type'  => 'post',
+			'capabilities'     => [
+				'create_posts' => false, // Removes "add new".
+			],
 			'show_in_rest'     => false,
 			'delete_with_user' => false,
 		);
