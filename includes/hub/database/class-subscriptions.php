@@ -81,7 +81,7 @@ class Subscriptions {
 			'can_export'       => false,
 			'capability_type'  => 'post',
 			'capabilities'     => [
-				'create_posts' => false, // Removes "add new".
+				'create_posts' => 'not_a_real_capability', // Set to a fake capability to remove "add new" button.
 			],
 			'show_in_rest'     => false,
 			'delete_with_user' => false,
