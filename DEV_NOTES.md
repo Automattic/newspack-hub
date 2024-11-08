@@ -25,6 +25,8 @@ In this same page you can see if the pulling is coming fine. If there's an error
 
 Every communication between Nodes and Hub is visible and if something goes wrong an error is surfaced. There should not be one-off requests that fail silently.
 
+The Event Log is also a big part of the efforts to make the events traceable. Having a central table with the history of everything that happened in all network makes it easier to follow what's happening.
+
 ## Scalability - this plugins should work fine with dozens (or hundreds) of sites in the Network
 
 The sync workflow is built in a way that it should work just fine even if there are hundreds of sites in the network.
