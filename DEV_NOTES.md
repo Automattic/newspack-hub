@@ -43,7 +43,7 @@ One of the reasons to rely on Newspack's Data Events API is because it is design
 
 Same thing applies to how Webhooks are handled and how Pull requests are triggered by WP Cron. Everything happens in dedicated, async requests, and there should not be an action in this plugin that influences site's speed and performance.
 
-## Events are non-cumulative - it should be harmless to process the same event over and over again
+## Events' processing is idempotent - it should be harmless to process the same event over and over again
 
 By definition you should be able to run the same event multiple times and they will not end up creating multiple instances of the same thing.
 
