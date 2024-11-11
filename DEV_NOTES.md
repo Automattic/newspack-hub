@@ -41,7 +41,7 @@ The only piece that can become a bottleneck for very large networks is the Event
 
 One of the reasons to rely on Newspack's Data Events API is because it is designed to work asynchronously, in the background, and never keep any user hanging waiting for Data events to be triggered or processed.
 
-Same thing applies to how Webhooks are handled and how Pull requests are triggered by WP Cron. Everything happens in dedicated, async requests, and there should not be an action in this plugin that interfere with the site's speed and performance.
+Same thing applies to how Webhooks are handled and how Pull requests are triggered by WP Cron. Everything happens in dedicated, async requests, and there should not be an action in this plugin that influences site's speed and performance.
 
 ## Events are non-cumulative - it should be harmless to process the same event over and over again
 
