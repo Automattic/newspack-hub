@@ -11,7 +11,7 @@ This plugin takes some measures to build a more reliable and scalable sync workf
 
 When a Node pushes an event to the Hub, it uses Newspack's Webhook strategy. This strategy includes a retry system that will try to send the event again if the first attempt fails. It will try it several times.
 
-On the other end of the sync, Nodes pull event from the Hub on a regular basis and only update their internal count after an event is successfully processed. This means that if a pull request fails, the next one will pick up from where the last one left.
+On the other end of the sync, Nodes pull events from the Hub on a regular basis and only update their internal count after an event is successfully processed. This means that if a pull request fails, the next one will pick up from where the last one left.
 
 ## Traceability - we need to be able to inspect the sync process and errors should be visible
 
