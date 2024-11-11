@@ -37,7 +37,7 @@ The Nodes send each event in a small payload to the Hub, one at a time, so it sh
 
 The only piece that can become a bottleneck for very large networks is the Event Log. That's why this is built in a custom DB table that does not interfere with the site and that can accomodate millions of records if needed. But when the time comes, we might need to implement a strategy to clean up and archive old events in a separate table.
 
-## Performance - Even though we are dealing with a lot of data, the plugin should not interfere with the site's speed or hang the user at any point
+## Performance - Even though we are dealing with a lot of data, the plugin should not slow the site down
 
 One of the reasons to rely on Newspack's Data Events API is because it is designed to work asynchronously, in the background, and never keep any user hanging waiting for Data events to be triggered or processed.
 
