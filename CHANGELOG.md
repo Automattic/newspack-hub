@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/Automattic/newspack-network/compare/v2.3.0...v2.3.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* merge pull request [#147](https://github.com/Automattic/newspack-network/issues/147) from Automattic/trunk ([7d0a118](https://github.com/Automattic/newspack-network/commit/7d0a118023ac87345c4fe3df360339cc55245ea1))
+
 # [2.3.0](https://github.com/Automattic/newspack-network/compare/v2.2.1...v2.3.0) (2024-10-28)
 
 
