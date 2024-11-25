@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/Automattic/newspack-network/compare/v2.3.1...v2.3.2) (2024-11-25)
+
+
+### Bug Fixes
+
+* submenu highlights ([#146](https://github.com/Automattic/newspack-network/issues/146)) ([387d178](https://github.com/Automattic/newspack-network/commit/387d1783a5ae9216c0e4cffb95dfed7020da9116))
+
 ## [2.3.1](https://github.com/Automattic/newspack-network/compare/v2.3.0...v2.3.1) (2024-11-11)
 
 
