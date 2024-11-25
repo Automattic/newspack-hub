@@ -1,4 +1,53 @@
 
+# Premises
+
+These are some of the premises this plugin was built on. They serve as guidelines for implementing new features and support for new events.
+
+Syncing data over the network is tricky, because if something goes wrong during one particular request, you miss a sync event and you can have data loss.
+
+This plugin takes some measures to build a more reliable and scalable sync workflow.
+
+## Redundancy - never trust a request is going to be successful
+
+When a Node pushes an event to the Hub, it uses Newspack's Webhook strategy. This strategy includes a retry system that will try to send the event again if the first attempt fails. It will try it several times.
+
+On the other end of the sync, Nodes pull events from the Hub on a regular basis and only update their internal count after an event is successfully processed. This means that if a pull request fails, the next one will pick up from where the last one left.
+
+## Traceability - we need to be able to inspect the sync process and errors should be visible
+
+When things go wrong with sync, we need to be able to see it and find where things got off track to fix them.
+
+By using webhooks to send events to the Hub, each attempt to send data is stored in the Hub. You can see the list of queued webhooks in Newspack Network > Node Settings.
+
+If webhooks fail, you will see the errors in this page. If all the retries expire, the failed webhooks will remain there until you fix the connection and then you can manually send them.
+
+In this same page you can see if the pulling is coming fine. If there's an error in the pulling process, you will also see an error here.
+
+Every communication between Nodes and Hub is visible and if something goes wrong an error is surfaced. There should be no requests that fail silently.
+
+The Event Log is also a big part of the efforts to make the events traceable. Having a central table with the history of everything that happened across the whole network makes it easier to follow what's happening.
+
+## Scalability - this plugins should work fine with dozens (or hundreds) of sites in the Network
+
+The sync workflow is built in a way that it should work just fine even if there are hundreds of sites in the network.
+
+The sync for each Node happens in its own pace, and it doesn't matter if there are many sites in the network. That's why Nodes pull event from the Hub, and it's not the Hub who is looping through the Nodes and pushing them information.
+
+The Nodes send each event in a small payload to the Hub, one at a time, so it should not be a problem for the Hub to handle them.
+
+The only piece that can become a bottleneck for very large networks is the Event Log. That's why this is built in a custom DB table that does not interfere with the site and that can accomodate millions of records if needed. But when the time comes, we might need to implement a strategy to clean up and archive old events in a separate table.
+
+## Performance - Even though we are dealing with a lot of data, the plugin should not slow the site down
+
+One of the reasons to rely on Newspack's Data Events API is because it is designed to work asynchronously, in the background, and never keep any user hanging waiting for Data events to be triggered or processed.
+
+Same thing applies to how Webhooks are handled and how Pull requests are triggered by WP Cron. Everything happens in dedicated, async requests, and there should not be an action in this plugin that influences site's speed and performance.
+
+## Events' processing is idempotent - it should be harmless to process the same event over and over again
+
+By definition you should be able to run the same event multiple times and they will not end up creating multiple instances of the same thing.
+
+If, for any reason, we had to put a site to pull all the events from the Event Log back from the start, at the end of the process the site would be in the same state.
 
 # Data flow
 
@@ -119,6 +168,11 @@ Available CLI commands are (add `--help` flag to learn more about each command):
 * `--status='killed'` to process requests of a different status. Default is `'pending'`
 * `--dry-run` enabled. Will run through process without deleting.
 * `--yes` enabled. Will bypass confirmations.
+
+
+### `wp newspack-network sync-all`
+* Will pull all events from the Hub
+* `--yes` Run the command without confirmations
 
 ## Troubleshooting
 

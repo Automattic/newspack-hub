@@ -32,6 +32,7 @@ class Nodes {
 		add_action( 'newspack_network_node_saved', [ __CLASS__, 'sync_nodes' ] );
 		add_action( 'newspack_network_node_trashed', [ __CLASS__, 'sync_nodes' ] );
 		add_action( 'newspack_network_node_untrashed', [ __CLASS__, 'sync_nodes' ] );
+		add_filter( 'submenu_file', [ __CLASS__, 'submenu_file' ] );
 	}
 
 	/**
@@ -337,5 +338,25 @@ class Nodes {
 		}
 
 		do_action( 'newspack_network_nodes_synced', $nodes_data );
+	}
+
+	/**
+	 * Highlight the correct submenu item.
+	 *
+	 * @param string $submenu_file The current submenu file.
+	 * 
+	 * @return string
+	 */
+	public static function submenu_file( $submenu_file ) {
+		global $pagenow;
+
+		// Highlight "Nodes" submenu on Add New Node screen.
+		if ( $submenu_file === Network_Admin::PAGE_SLUG 
+			&& $pagenow === 'post-new.php' 
+			&& self::POST_TYPE_SLUG === filter_input( INPUT_GET, 'post_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) ) {
+			return 'edit.php?post_type=newspack_hub_nodes';
+		}
+		
+		return $submenu_file;
 	}
 }
