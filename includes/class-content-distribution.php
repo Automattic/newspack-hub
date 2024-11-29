@@ -121,7 +121,7 @@ class Content_Distribution {
 	 * Whether the post is distributed. Optionally provide a $site_url to check if
 	 * the post is distributed to that site.
 	 *
-	 * @param WP_Post|int $post    The post object or ID.
+	 * @param WP_Post|int $post     The post object or ID.
 	 * @param int|null    $site_url Optional site ID.
 	 *
 	 * @return bool
