@@ -83,11 +83,11 @@ class Content_Distribution {
 	 * Set the distribution configuration for a given post.
 	 *
 	 * @param int   $post_id  The post ID.
-	 * @param int[] $site_ids Array of site IDs to distribute the post to.
+	 * @param int[] $site_urls Array of site URLs to distribute the post to.
 	 *
 	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
-	public static function set_post_distribution( $post_id, $site_ids = [] ) {
+	public static function set_post_distribution( $post_id, $site_urls = [] ) {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
@@ -96,11 +96,12 @@ class Content_Distribution {
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
+		// Set post hash to link the post across the network.
 		if ( empty( $config['post_hash'] ) ) {
 			$config['post_hash'] = wp_generate_password( 32, false );
 		}
-		$config['enabled']  = empty( $site_ids ) ? false : true;
-		$config['site_ids'] = $site_ids;
+		$config['enabled']   = empty( $site_urls ) ? false : true;
+		$config['site_urls'] = $site_urls;
 		update_post_meta( $post_id, self::DISTRIBUTED_POST_META, $config );
 	}
 
@@ -117,15 +118,15 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Whether the post is distributed. Optionally provide a $site_id to check if
+	 * Whether the post is distributed. Optionally provide a $site_url to check if
 	 * the post is distributed to that site.
 	 *
 	 * @param WP_Post|int $post    The post object or ID.
-	 * @param int|null    $site_id Optional site ID.
+	 * @param int|null    $site_url Optional site ID.
 	 *
 	 * @return bool
 	 */
-	protected static function is_post_distributed( $post, $site_id = null ) {
+	protected static function is_post_distributed( $post, $site_url = null ) {
 		$post = get_post( $post );
 		if ( ! $post ) {
 			return false;
@@ -137,12 +138,12 @@ class Content_Distribution {
 		}
 
 		$config = self::get_post_config( $post );
-		if ( ! $config['enabled'] || empty( $config['site_ids'] ) ) {
+		if ( ! $config['enabled'] || empty( $config['site_urls'] ) ) {
 			return false;
 		}
 
-		if ( ! empty( $site_id ) ) {
-			return in_array( $site_id, $config['site_ids'], true );
+		if ( ! empty( $site_url ) ) {
+			return in_array( $site_url, $config['site_urls'], true );
 		}
 
 		return true;
@@ -164,7 +165,7 @@ class Content_Distribution {
 			$config,
 			[
 				'enabled'   => false,
-				'site_ids'  => [],
+				'site_urls'  => [],
 				'post_hash' => '',
 			]
 		);
@@ -259,15 +260,21 @@ class Content_Distribution {
 		$config    = $post_payload['config'];
 		$post_data = $post_payload['post_data'];
 
-		if ( ! $config['enabled'] || empty( $config['post_hash'] ) || empty( $config['site_ids'] ) ) {
+		// Post payload is not for a distributed post.
+		if ( ! $config['enabled'] || empty( $config['post_hash'] ) || empty( $config['site_urls'] ) ) {
 			return;
 		}
 
-		// @TODO Only insert if the site matches a site ID in the config.
+		// Only insert the post if the site URL is in the list of site URLs.
+		$site_url = get_bloginfo( 'url' );
+		if ( ! in_array( $site_url, $config['site_urls'], true ) ) {
+			return;
+		}
 
 		$post_hash = $config['post_hash'];
 		$post_type = $post_data['post_type'];
 
+		// Get the existing linked post.
 		$linked_post = self::get_linked_post( $post_type, $post_hash );
 
 		$postarr = [
