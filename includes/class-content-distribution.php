@@ -254,7 +254,7 @@ class Content_Distribution {
 	 *
 	 * @param array $post_payload The post payload.
 	 *
-	 * @return void
+	 * @return int|WP_Error The linked post ID or WP_Error on failure.
 	 */
 	public static function insert_linked_post( $post_payload ) {
 		$config    = $post_payload['config'];
@@ -262,13 +262,13 @@ class Content_Distribution {
 
 		// Post payload is not for a distributed post.
 		if ( ! $config['enabled'] || empty( $config['post_hash'] ) || empty( $config['site_urls'] ) ) {
-			return;
+			return new WP_Error( 'invalid_post_payload', __( 'Invalid post payload.', 'newspack-network' ) );
 		}
 
 		// Only insert the post if the site URL is in the list of site URLs.
 		$site_url = get_bloginfo( 'url' );
 		if ( ! in_array( $site_url, $config['site_urls'], true ) ) {
-			return;
+			return new WP_Error( 'invalid_site', __( 'Post is not configured to be distributed to this site.', 'newspack-network' ) );
 		}
 
 		$post_hash = $config['post_hash'];
@@ -299,11 +299,18 @@ class Content_Distribution {
 
 		$post_id = wp_insert_post( $postarr, true );
 
-		if ( ! $post_id || is_wp_error( $post_id ) ) {
+		if ( is_wp_error( $post_id ) ) {
 			return $post_id;
+		}
+
+		// The wp_insert_post() function might return `0` on failure.
+		if ( ! $post_id ) {
+			return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
 		}
 
 		update_post_meta( $post_id, self::POST_PAYLOAD_META, $post_payload );
 		update_post_meta( $post_id, self::POST_HASH_META, $post_hash );
+
+		return $post_id;
 	}
 }
