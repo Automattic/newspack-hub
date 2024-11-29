@@ -82,7 +82,7 @@ class Content_Distribution {
 	/**
 	 * Set the distribution configuration for a given post.
 	 *
-	 * @param int   $post_id  The post ID.
+	 * @param int   $post_id   The post ID.
 	 * @param int[] $site_urls Array of site URLs to distribute the post to.
 	 *
 	 * @return void|WP_Error Void on success, WP_Error on failure.
@@ -165,7 +165,7 @@ class Content_Distribution {
 			$config,
 			[
 				'enabled'   => false,
-				'site_urls'  => [],
+				'site_urls' => [],
 				'post_hash' => '',
 			]
 		);
