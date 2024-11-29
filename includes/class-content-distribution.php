@@ -16,7 +16,21 @@ use WP_Error;
  */
 class Content_Distribution {
 
-	const POST_META = 'newspack_network_distributed';
+	/**
+	 * The post meta key for the distributed post configuration.
+	 */
+	const DISTRIBUTED_POST_META = 'newspack_network_distributed';
+
+	/**
+	 * Post meta key for the linked post containing the distributed post hash.
+	 */
+	const POST_HASH_META = 'newspack_network_post_hash';
+
+
+	/**
+	 * Post meta key for the linked post containing the distributed post full payload.
+	 */
+	const POST_PAYLOAD_META = 'newspack_network_post_payload';
 
 	/**
 	 * Initialize this class and register hooks
@@ -71,16 +85,23 @@ class Content_Distribution {
 	 * @param int   $post_id  The post ID.
 	 * @param int[] $site_ids Array of site IDs to distribute the post to.
 	 *
-	 * @return void
+	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
 	public static function set_post_distribution( $post_id, $site_ids = [] ) {
-		$config = get_post_meta( $post_id, self::POST_META, true );
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
+		}
+		$config = get_post_meta( $post_id, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
+		if ( empty( $config['post_hash'] ) ) {
+			$config['post_hash'] = wp_generate_password( 32, false );
+		}
 		$config['enabled']  = empty( $site_ids ) ? false : true;
 		$config['site_ids'] = $site_ids;
-		update_post_meta( $post_id, self::POST_META, $config );
+		update_post_meta( $post_id, self::DISTRIBUTED_POST_META, $config );
 	}
 
 	/**
@@ -96,7 +117,8 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Whether the post is distributed.
+	 * Whether the post is distributed. Optionally provide a $site_id to check if
+	 * the post is distributed to that site.
 	 *
 	 * @param WP_Post|int $post    The post object or ID.
 	 * @param int|null    $site_id Optional site ID.
@@ -134,15 +156,16 @@ class Content_Distribution {
 	 * @return array The distribution configuration.
 	 */
 	protected static function get_post_config( $post ) {
-		$config = get_post_meta( $post->ID, self::POST_META, true );
+		$config = get_post_meta( $post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
 		$config = wp_parse_args(
 			$config,
 			[
-				'enabled'  => false,
-				'site_ids' => [],
+				'enabled'   => false,
+				'site_ids'  => [],
+				'post_hash' => '',
 			]
 		);
 		return $config;
@@ -166,24 +189,26 @@ class Content_Distribution {
 			'post_id'   => $post->ID,
 			'config'    => $config,
 			'post_data' => [
-				'title'     => html_entity_decode( get_the_title( $post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'slug'      => $post->post_name,
-				'post_type' => $post->post_type,
-				'content'   => self::get_post_content( $post ),
-				'excerpt'   => $post->post_excerpt,
+				'title'       => html_entity_decode( get_the_title( $post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'date'        => $post->post_date,
+				'slug'        => $post->post_name,
+				'post_type'   => $post->post_type,
+				'raw_content' => $post->post_content,
+				'content'     => self::get_processed_post_content( $post ),
+				'excerpt'     => $post->post_excerpt,
 				// @ TODO: Add meta, featured image and taxonomies.
 			],
 		];
 	}
 
 	/**
-	 * Get the post content for distribution.
+	 * Get the processed post content for distribution.
 	 *
 	 * @param WP_Post $post The post object.
 	 *
 	 * @return string The post content.
 	 */
-	protected static function get_post_content( $post ) {
+	protected static function get_processed_post_content( $post ) {
 		global $wp_embed;
 		/**
 		 * Remove autoembed filter so that actual URL will be pushed and not the generated markup.
@@ -193,5 +218,85 @@ class Content_Distribution {
 		$post_content = apply_filters( 'the_content', $post->post_content );
 		add_filter( 'the_content', [ $wp_embed, 'autoembed' ], 8 );
 		return $post_content;
+	}
+
+	/**
+	 * Get a linked post given the distributed post hash.
+	 *
+	 * @param string $post_type The post type.
+	 * @param string $post_hash The distributed post hash.
+	 *
+	 * @return WP_Post|null The linked post or null if not found.
+	 */
+	protected static function get_linked_post( $post_type, $post_hash ) {
+		$posts = get_posts(
+			[
+				'post_type'      => $post_type,
+				'post_status'    => [ 'publish', 'pending', 'draft', 'auto-draft', 'future', 'private', 'inherit', 'trash' ],
+				'posts_per_page' => 1,
+				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					[
+						'key'   => self::POST_HASH_META,
+						'value' => $post_hash,
+					],
+				],
+			]
+		);
+		if ( empty( $posts ) ) {
+			return null;
+		}
+		return $posts[0];
+	}
+
+	/**
+	 * Insert a linked post given a distributed post payload.
+	 *
+	 * @param array $post_payload The post payload.
+	 *
+	 * @return void
+	 */
+	public static function insert_linked_post( $post_payload ) {
+		$config    = $post_payload['config'];
+		$post_data = $post_payload['post_data'];
+
+		if ( ! $config['enabled'] || empty( $config['post_hash'] ) || empty( $config['site_ids'] ) ) {
+			return;
+		}
+
+		// @TODO Only insert if the site matches a site ID in the config.
+
+		$post_hash = $config['post_hash'];
+		$post_type = $post_data['post_type'];
+
+		$linked_post = self::get_linked_post( $post_type, $post_hash );
+
+		$postarr = [
+			'ID'           => $linked_post ? $linked_post->ID : 0,
+			'post_date'    => $post_payload['post_data']['date'],
+			'post_title'   => $post_payload['post_data']['title'],
+			'post_name'    => $post_payload['post_data']['slug'],
+			'post_content' => use_block_editor_for_post_type( $post_type ) ?
+				$post_payload['post_data']['raw_content'] :
+				$post_payload['post_data']['content'],
+			'post_excerpt' => $post_payload['post_data']['excerpt'],
+			'post_type'    => $post_type,
+		];
+
+		// New post, set post status.
+		if ( ! $linked_post ) {
+			$post_data['post_status'] = 'draft';
+		}
+
+		// @TODO Do not insert if the post has been unlinked. The post meta should
+		// still get updated so the content can be replaced once re-linked.
+
+		$post_id = wp_insert_post( $postarr, true );
+
+		if ( ! $post_id || is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		update_post_meta( $post_id, self::POST_PAYLOAD_META, $post_payload );
+		update_post_meta( $post_id, self::POST_HASH_META, $post_hash );
 	}
 }
