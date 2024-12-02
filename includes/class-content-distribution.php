@@ -22,9 +22,9 @@ class Content_Distribution {
 	const DISTRIBUTED_POST_META = 'newspack_network_distributed';
 
 	/**
-	 * Post meta key for the linked post containing the distributed post hash.
+	 * Post meta key for the linked post containing the distributed post id.
 	 */
-	const POST_HASH_META = 'newspack_network_post_hash';
+	const NETWORK_POST_ID_META = 'newspack_network_post_id';
 
 	/**
 	 * Post meta key for the linked post containing the distributed post full payload.
@@ -147,9 +147,9 @@ class Content_Distribution {
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
-		// Set post hash to link the post across the network.
-		if ( empty( $config['post_hash'] ) ) {
-			$config['post_hash'] = wp_generate_password( 32, false );
+		// Set post network ID.
+		if ( empty( $config['network_post_id'] ) ) {
+			$config['network_post_id'] = md5( $post_id . get_bloginfo( 'url' ) );
 		}
 		$config['enabled']   = empty( $site_urls ) ? false : true;
 		$config['site_urls'] = $site_urls;
@@ -217,9 +217,9 @@ class Content_Distribution {
 		$config = wp_parse_args(
 			$config,
 			[
-				'enabled'   => false,
-				'site_urls' => [],
-				'post_hash' => '',
+				'enabled'         => false,
+				'site_urls'       => [],
+				'network_post_id' => '',
 			]
 		);
 		return $config;
@@ -278,12 +278,12 @@ class Content_Distribution {
 	/**
 	 * Get a linked post given the distributed post hash.
 	 *
-	 * @param string $post_type The post type.
-	 * @param string $post_hash The distributed post hash.
+	 * @param string $post_type       The post type.
+	 * @param string $network_post_id The network post ID for the distributed post.
 	 *
 	 * @return WP_Post|null The linked post or null if not found.
 	 */
-	protected static function get_linked_post( $post_type, $post_hash ) {
+	protected static function get_linked_post( $post_type, $network_post_id ) {
 		$posts = get_posts(
 			[
 				'post_type'      => $post_type,
@@ -291,8 +291,8 @@ class Content_Distribution {
 				'posts_per_page' => 1,
 				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					[
-						'key'   => self::POST_HASH_META,
-						'value' => $post_hash,
+						'key'   => self::NETWORK_POST_ID_META,
+						'value' => $network_post_id,
 					],
 				],
 			]
@@ -354,7 +354,7 @@ class Content_Distribution {
 		$post_data = $post_payload['post_data'];
 
 		// Post payload is not for a distributed post.
-		if ( ! $config['enabled'] || empty( $config['post_hash'] ) || empty( $config['site_urls'] ) ) {
+		if ( ! $config['enabled'] || empty( $config['network_post_id'] ) || empty( $config['site_urls'] ) ) {
 			return new WP_Error( 'invalid_post_payload', __( 'Invalid post payload.', 'newspack-network' ) );
 		}
 
@@ -364,11 +364,11 @@ class Content_Distribution {
 			return new WP_Error( 'invalid_site', __( 'Post is not configured to be distributed to this site.', 'newspack-network' ) );
 		}
 
-		$post_hash = $config['post_hash'];
+		$network_post_id = $config['network_post_id'];
 		$post_type = $post_data['post_type'];
 
 		// Get the existing linked post.
-		$linked_post = self::get_linked_post( $post_type, $post_hash );
+		$linked_post = self::get_linked_post( $post_type, $network_post_id );
 
 		$postarr = [
 			'ID'           => $linked_post ? $linked_post->ID : 0,
@@ -408,7 +408,7 @@ class Content_Distribution {
 		}
 
 		update_post_meta( $post_id, self::POST_PAYLOAD_META, $post_payload );
-		update_post_meta( $post_id, self::POST_HASH_META, $post_hash );
+		update_post_meta( $post_id, self::NETWORK_POST_ID_META, $network_post_id );
 
 		/**
 		 * Fires after a linked post is inserted.

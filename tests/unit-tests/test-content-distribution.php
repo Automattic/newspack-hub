@@ -22,13 +22,13 @@ class TestContentDistribution extends WP_UnitTestCase {
 		$config = get_post_meta( $post->ID, Content_Distribution::DISTRIBUTED_POST_META, true );
 		$this->assertTrue( $config['enabled'] );
 		$this->assertSame( [ 'https://example.com' ], $config['site_urls'] );
-		$this->assertMatchesRegularExpression( '/^[a-zA-Z0-9]{32}$/', $config['post_hash'] );
+		$this->assertSame( 32, strlen( $config['network_post_id'] ) );
 	}
 
 	/**
-	 * Test set post distribution persists the post hash.
+	 * Test set post distribution persists the network post ID.
 	 */
-	public function test_set_post_distribution_persists_post_hash() {
+	public function test_set_post_distribution_persists_network_post_id() {
 		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$result = Content_Distribution::set_post_distribution( $post->ID, [ 'https://example.com' ] );
 		$config = get_post_meta( $post->ID, Content_Distribution::DISTRIBUTED_POST_META, true );
@@ -37,7 +37,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 		$result = Content_Distribution::set_post_distribution( $post->ID, [ 'https://example2.com' ] );
 		$new_config = get_post_meta( $post->ID, Content_Distribution::DISTRIBUTED_POST_META, true );
 
-		$this->assertSame( $config['post_hash'], $new_config['post_hash'] );
+		$this->assertSame( $config['network_post_id'], $new_config['network_post_id'] );
 	}
 
 	/**
@@ -93,9 +93,9 @@ class TestContentDistribution extends WP_UnitTestCase {
 			'site_url'  => 'https://hub.com',
 			'post_id'   => 1,
 			'config'    => [
-				'enabled'   => true,
-				'site_urls' => [ 'https://example.com' ],
-				'post_hash' => '1234567890abcdef1234567890abcdef',
+				'enabled'         => true,
+				'site_urls'       => [ 'https://example.com' ],
+				'network_post_id' => '1234567890abcdef1234567890abcdef',
 			],
 			'post_data' => [
 				'title'       => 'Title',
