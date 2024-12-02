@@ -56,7 +56,7 @@ class Content_Distribution {
 			return;
 		}
 		Data_Events::register_listener( 'wp_after_insert_post', 'network_post_updated', [ __CLASS__, 'handle_post_updated' ] );
-		Data_Events::register_listener( 'wp_after_insert_post', 'network_linked_post_inserted', [ __CLASS__, 'handle_linked_post_inserted' ] );
+		Data_Events::register_listener( 'newspack_network_linked_post_inserted', 'network_linked_post_inserted', [ __CLASS__, 'handle_linked_post_inserted' ] );
 	}
 
 	/**
