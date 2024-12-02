@@ -32,6 +32,11 @@ class Content_Distribution {
 	const POST_PAYLOAD_META = 'newspack_network_post_payload';
 
 	/**
+	 * Post meta key for the linked post to determine whether the post is unlinked.
+	 */
+	const POST_UNLINKED_META = 'newspack_network_post_unlinked';
+
+	/**
 	 * Initialize this class and register hooks
 	 *
 	 * @return void
@@ -73,12 +78,20 @@ class Content_Distribution {
 	 * Post update listener callback.
 	 *
 	 * @param WP_Post|int $post The post object or ID.
+	 *
+	 * @return array|null The post payload or null if the post is not distributed.
 	 */
 	public static function handle_post_updated( $post ) {
 		if ( ! self::is_post_distributed( $post ) ) {
 			return;
 		}
-		return self::get_post_payload( $post );
+
+		$payload = self::get_post_payload( $post );
+		if ( is_wp_error( $payload ) ) {
+			return;
+		}
+
+		return $payload;
 	}
 
 	/**
@@ -191,7 +204,7 @@ class Content_Distribution {
 	/**
 	 * Get the post payload for distribution.
 	 *
-	 * @param WP_Post|int $post The post object.
+	 * @param WP_Post|int $post The post object or ID.
 	 *
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
@@ -266,6 +279,44 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Set a post as unlinked.
+	 *
+	 * This will prevent the post from being updated when the distributed post is
+	 * updated.
+	 *
+	 * @param int  $post_id  The post ID.
+	 * @param bool $unlinked Whether the post is unlinked.
+	 *
+	 * @return void|WP_Error Void on success, WP_Error on failure.
+	 */
+	public static function set_post_unlinked( $post_id, $unlinked = true ) {
+		if ( ! $post_id ) {
+			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
+		}
+		if ( ! get_post( $post_id ) ) {
+			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
+		}
+		update_post_meta( $post_id, self::POST_UNLINKED_META, (bool) $unlinked );
+
+		// If the post is being re-linked, update content.
+		if ( ! $unlinked ) {
+			$post_payload = get_post_meta( $post_id, self::POST_PAYLOAD_META, true );
+			self::insert_linked_post( $post_payload );
+		}
+	}
+
+	/**
+	 * Whether a post is unlinked.
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return bool
+	 */
+	protected static function is_post_unlinked( $post_id ) {
+		return get_post_meta( $post_id, self::POST_UNLINKED_META, true );
+	}
+
+	/**
 	 * Insert a linked post given a distributed post payload.
 	 *
 	 * @param array $post_payload The post payload.
@@ -273,6 +324,10 @@ class Content_Distribution {
 	 * @return int|WP_Error The linked post ID or WP_Error on failure.
 	 */
 	public static function insert_linked_post( $post_payload ) {
+		if ( ! is_array( $post_payload ) || empty( $post_payload['post_id'] ) || empty( $post_payload['config'] ) || empty( $post_payload['post_data'] ) ) {
+			return new WP_Error( 'invalid_post_payload', __( 'Invalid post payload.', 'newspack-network' ) );
+		}
+
 		$config    = $post_payload['config'];
 		$post_data = $post_payload['post_data'];
 
@@ -310,10 +365,12 @@ class Content_Distribution {
 			$post_data['post_status'] = 'draft';
 		}
 
-		// @TODO Do not insert if the post has been unlinked. The post meta should
-		// still get updated so the content can be replaced once re-linked.
-
-		$post_id = wp_insert_post( $postarr, true );
+		// Insert the post if it doesn't exist or if it's linked.
+		if ( ! $linked_post || ! self::is_post_unlinked( $linked_post->ID ) ) {
+			$post_id = wp_insert_post( $postarr, true );
+		} else {
+			$post_id = $linked_post->ID;
+		}
 
 		if ( is_wp_error( $post_id ) ) {
 			return $post_id;
