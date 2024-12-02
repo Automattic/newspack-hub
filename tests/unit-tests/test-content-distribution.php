@@ -26,6 +26,23 @@ class TestContentDistribution extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test set post distribution persists the post hash.
+	 */
+	public function test_set_post_distribution_persists_post_hash() {
+		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
+		$result = Content_Distribution::set_post_distribution( $post->ID, [ 'https://example.com' ] );
+		$this->assertFalse( is_wp_error( $result ) );
+
+		$config = get_post_meta( $post->ID, Content_Distribution::DISTRIBUTED_POST_META, true );
+
+		// Update the post distribution.
+		$result = Content_Distribution::set_post_distribution( $post->ID, [ 'https://example2.com' ] );
+		$new_config = get_post_meta( $post->ID, Content_Distribution::DISTRIBUTED_POST_META, true );
+
+		$this->assertSame( $config['post_hash'], $new_config['post_hash'] );
+	}
+
+	/**
 	 * Test set post distribution with invalid post.
 	 */
 	public function test_set_post_distribution_with_invalid_post() {
