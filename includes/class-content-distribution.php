@@ -26,7 +26,6 @@ class Content_Distribution {
 	 */
 	const POST_HASH_META = 'newspack_network_post_hash';
 
-
 	/**
 	 * Post meta key for the linked post containing the distributed post full payload.
 	 */
@@ -39,6 +38,7 @@ class Content_Distribution {
 	 */
 	public static function init() {
 		add_action( 'init', [ __CLASS__, 'register_listeners' ] );
+		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
 	}
 
 	/**
@@ -51,6 +51,22 @@ class Content_Distribution {
 			return;
 		}
 		Data_Events::register_listener( 'wp_after_insert_post', 'network_post_updated', [ __CLASS__, 'handle_post_updated' ] );
+	}
+
+	/**
+	 * Filter the webhooks request priority so `network_post_updated` is
+	 * prioritized.
+	 *
+	 * @param int    $priority    The request priority.
+	 * @param string $action_name The action name.
+	 *
+	 * @return int The request priority.
+	 */
+	public static function webhooks_request_priority( $priority, $action_name ) {
+		if ( 'network_post_updated' === $action_name ) {
+			return 1;
+		}
+		return $priority;
 	}
 
 	/**
