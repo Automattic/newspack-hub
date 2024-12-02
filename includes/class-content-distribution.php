@@ -56,6 +56,7 @@ class Content_Distribution {
 			return;
 		}
 		Data_Events::register_listener( 'wp_after_insert_post', 'network_post_updated', [ __CLASS__, 'handle_post_updated' ] );
+		Data_Events::register_listener( 'wp_after_insert_post', 'network_linked_post_inserted', [ __CLASS__, 'handle_linked_post_inserted' ] );
 	}
 
 	/**
@@ -92,6 +93,27 @@ class Content_Distribution {
 		}
 
 		return $payload;
+	}
+
+	/**
+	 * Linked post inserted listener callback.
+	 *
+	 * @param int     $post_id      The linked post ID.
+	 * @param boolean $is_unlinked  Whether the post is unlinked.
+	 * @param array   $post_payload The post payload.
+	 */
+	public static function handle_linked_post_inserted( $post_id, $is_unlinked, $post_payload ) {
+		return [
+			'origin'      => [
+				'site_url' => $post_payload['site_url'],
+				'post_id'  => $post_payload['post_id'],
+			],
+			'destination' => [
+				'site_url'    => get_bloginfo( 'url' ),
+				'post_id'     => $post_id,
+				'is_unlinked' => $is_unlinked,
+			]
+		];
 	}
 
 	/**
@@ -216,6 +238,7 @@ class Content_Distribution {
 
 		$config = self::get_post_config( $post );
 		return [
+			'site_url'  => get_bloginfo( 'url' ),
 			'post_id'   => $post->ID,
 			'config'    => $config,
 			'post_data' => [
@@ -366,7 +389,11 @@ class Content_Distribution {
 		}
 
 		// Insert the post if it doesn't exist or if it's linked.
-		if ( ! $linked_post || ! self::is_post_unlinked( $linked_post->ID ) ) {
+		$is_unlinked = $linked_post ? self::is_post_unlinked( $linked_post->ID ) : false;
+		if ( ! $linked_post || ! $is_unlinked ) {
+			// Remove filters that may alter content updates.
+			remove_all_filters( 'content_save_pre' );
+
 			$post_id = wp_insert_post( $postarr, true );
 		} else {
 			$post_id = $linked_post->ID;
@@ -383,6 +410,15 @@ class Content_Distribution {
 
 		update_post_meta( $post_id, self::POST_PAYLOAD_META, $post_payload );
 		update_post_meta( $post_id, self::POST_HASH_META, $post_hash );
+
+		/**
+		 * Fires after a linked post is inserted.
+		 *
+		 * @param int     $post_id      The linked post ID.
+		 * @param boolean $is_unlinked  Whether the post is unlinked.
+		 * @param array   $post_payload The post payload.
+		 */
+		do_action( 'newspack_network_linked_post_inserted', $post_id, $is_unlinked, $post_payload );
 
 		return $post_id;
 	}

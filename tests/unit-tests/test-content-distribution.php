@@ -46,6 +46,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 
 		$config = get_post_meta( $post->ID, Content_Distribution::DISTRIBUTED_POST_META, true );
 
+		$this->assertSame( get_bloginfo( 'url' ), $post_payload['site_url'] );
 		$this->assertSame( $post->ID, $post_payload['post_id'] );
 		$this->assertEquals( $config, $post_payload['config'] );
 
@@ -74,6 +75,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 	 */
 	private function get_sample_post_payload() {
 		return [
+			'site_url'  => 'https://hub.com',
 			'post_id'   => 1,
 			'config'    => [
 				'enabled'   => true,
