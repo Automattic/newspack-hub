@@ -313,10 +313,7 @@ class Content_Distribution {
 	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
 	public static function set_post_unlinked( $post_id, $unlinked = true ) {
-		if ( ! $post_id ) {
-			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
-		}
-		if ( ! get_post( $post_id ) ) {
+		if ( ! $post_id || ! get_post( $post_id ) ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
 		}
 		update_post_meta( $post_id, self::POST_UNLINKED_META, (bool) $unlinked );
