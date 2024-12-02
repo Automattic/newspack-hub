@@ -22,7 +22,7 @@ class Content_Distribution {
 	const DISTRIBUTED_POST_META = 'newspack_network_distributed';
 
 	/**
-	 * Post meta key for the linked post containing the distributed post id.
+	 * Post meta key for the linked post containing a post ID unique accross the network.
 	 */
 	const NETWORK_POST_ID_META = 'newspack_network_post_id';
 
