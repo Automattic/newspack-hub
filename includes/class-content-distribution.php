@@ -112,7 +112,7 @@ class Content_Distribution {
 				'site_url'    => get_bloginfo( 'url' ),
 				'post_id'     => $post_id,
 				'is_unlinked' => $is_unlinked,
-			]
+			],
 		];
 	}
 
