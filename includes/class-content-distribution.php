@@ -160,12 +160,14 @@ class Content_Distribution {
 	 * Manually trigger post distribution.
 	 *
 	 * @param WP_Post|int $post The post object or ID.
+	 *
+	 * @return void
 	 */
 	public static function distribute_post( $post ) {
-		if ( ! self::is_post_distributed( $post ) ) {
-			return new WP_Error( 'post_not_distributed', __( 'The post is not distributed across the network.', 'newspack-network' ) );
+		$data = self::handle_post_updated( $post );
+		if ( $data ) {
+			Data_Events::dispatch( 'network_post_updated', $data );
 		}
-		Data_Events::dispatch( 'network_post_updated', self::get_post_payload( $post ) );
 	}
 
 	/**
