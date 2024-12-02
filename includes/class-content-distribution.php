@@ -385,7 +385,7 @@ class Content_Distribution {
 
 		// New post, set post status.
 		if ( ! $linked_post ) {
-			$post_data['post_status'] = 'draft';
+			$postarr['post_status'] = 'draft';
 		}
 
 		// Insert the post if it doesn't exist or if it's linked.
