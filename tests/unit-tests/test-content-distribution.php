@@ -179,7 +179,13 @@ class TestContentDistribution extends WP_UnitTestCase {
 		Content_Distribution::set_post_unlinked( $linked_post_id );
 
 		// Update linked post with custom content.
-		$this->factory->post->update_object( $linked_post_id, [ 'post_title' => 'Custom Title', 'post_content' => 'Custom Content' ] );
+		$this->factory->post->update_object(
+			$linked_post_id,
+			[
+				'post_title'   => 'Custom Title',
+				'post_content' => 'Custom Content',
+			]
+		);
 
 		// Modify the post payload to simulate an update.
 		$post_payload['post_data']['title'] = 'Updated Title';
@@ -212,7 +218,13 @@ class TestContentDistribution extends WP_UnitTestCase {
 		Content_Distribution::set_post_unlinked( $linked_post_id );
 
 		// Update linked post with custom content.
-		$this->factory->post->update_object( $linked_post_id, [ 'post_title' => 'Custom Title', 'post_content' => 'Custom Content' ] );
+		$this->factory->post->update_object(
+			$linked_post_id,
+			[
+				'post_title'   => 'Custom Title',
+				'post_content' => 'Custom Content',
+			]
+		);
 
 		// Relink the post.
 		Content_Distribution::set_post_unlinked( $linked_post_id, false );
