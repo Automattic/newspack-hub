@@ -308,7 +308,7 @@ class Content_Distribution {
 	 * updated.
 	 *
 	 * @param int  $post_id  The post ID.
-	 * @param bool $unlinked Whether the post is unlinked.
+	 * @param bool $unlinked Whether to set the post as unlinked. Default is true.
 	 *
 	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
@@ -388,7 +388,7 @@ class Content_Distribution {
 			$postarr['post_status'] = 'draft';
 		}
 
-		// Insert the post if it doesn't exist or if it's linked.
+		// Insert the post if it's linked or a new post.
 		$is_unlinked = $linked_post ? self::is_post_unlinked( $linked_post->ID ) : false;
 		if ( ! $linked_post || ! $is_unlinked ) {
 			// Remove filters that may alter content updates.
