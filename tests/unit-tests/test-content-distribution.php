@@ -66,7 +66,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 		$this->assertEquals( $config, $post_payload['config'] );
 
 		// Assert that 'post_data' only contains the expected keys.
-		$post_data_keys = [ 'title', 'date', 'slug', 'post_type', 'raw_content', 'content', 'excerpt' ];
+		$post_data_keys = [ 'title', 'date_gmt', 'modified_gmt', 'slug', 'post_type', 'raw_content', 'content', 'excerpt' ];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $post_payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $post_payload['post_data'] ), $post_data_keys ) );
 	}
@@ -98,13 +98,14 @@ class TestContentDistribution extends WP_UnitTestCase {
 				'network_post_id' => '1234567890abcdef1234567890abcdef',
 			],
 			'post_data' => [
-				'title'       => 'Title',
-				'date'        => '2021-01-01 00:00:00',
-				'slug'        => 'slug',
-				'post_type'   => 'post',
-				'raw_content' => 'Content',
-				'content'     => '<p>Content</p>',
-				'excerpt'     => 'Excerpt',
+				'title'        => 'Title',
+				'date_gmt'     => '2021-01-01 00:00:00',
+				'modified_gmt' => '2021-01-01 00:00:00',
+				'slug'         => 'slug',
+				'post_type'    => 'post',
+				'raw_content'  => 'Content',
+				'content'      => '<p>Content</p>',
+				'excerpt'      => 'Excerpt',
 			],
 		];
 	}
@@ -249,5 +250,30 @@ class TestContentDistribution extends WP_UnitTestCase {
 		// Assert that the post is linked and distributed content restored.
 		$this->assertSame( $post_payload['post_data']['title'], get_the_title( $linked_post_id ) );
 		$this->assertSame( $post_payload['post_data']['raw_content'], get_post_field( 'post_content', $linked_post_id ) );
+	}
+
+	/**
+	 * Test insert linked post with old modified date.
+	 */
+	public function test_insert_linked_post_with_old_modified_date() {
+		$post_payload = $this->get_sample_post_payload();
+
+		// Update blog URL to match the distributed post.
+		update_option( 'siteurl', 'https://example.com' );
+		update_option( 'home', 'https://example.com' );
+
+		// Insert the linked post for the first time.
+		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
+
+		// Modify the post payload to simulate an update with an old modified date.
+		$post_payload['post_data']['title'] = 'Old Title';
+		$post_payload['post_data']['modified_gmt'] = '2020-01-01 00:00:00';
+
+		// Insert the updated linked post.
+		$updated_linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
+
+		// Assert that the updated post has the updated title and content.
+		$linked_post = get_post( $updated_linked_post_id );
+		$this->assertSame( 'Title', $linked_post->post_title );
 	}
 }

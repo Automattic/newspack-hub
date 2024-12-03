@@ -244,13 +244,14 @@ class Content_Distribution {
 			'post_id'   => $post->ID,
 			'config'    => $config,
 			'post_data' => [
-				'title'       => html_entity_decode( get_the_title( $post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'date'        => $post->post_date,
-				'slug'        => $post->post_name,
-				'post_type'   => $post->post_type,
-				'raw_content' => $post->post_content,
-				'content'     => self::get_processed_post_content( $post ),
-				'excerpt'     => $post->post_excerpt,
+				'title'        => html_entity_decode( get_the_title( $post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'date_gmt'     => $post->post_date_gmt,
+				'modified_gmt' => $post->post_modified_gmt,
+				'slug'         => $post->post_name,
+				'post_type'    => $post->post_type,
+				'raw_content'  => $post->post_content,
+				'content'      => self::get_processed_post_content( $post ),
+				'excerpt'      => $post->post_excerpt,
 				// @ TODO: Add meta, featured image and taxonomies.
 			],
 		];
@@ -370,16 +371,28 @@ class Content_Distribution {
 		// Get the existing linked post.
 		$linked_post = self::get_linked_post( $post_type, $network_post_id );
 
+		/**
+		 * Post updates may not come in order, so we need to check if the linked
+		 * post payload is newer than the distributed post. If it is, we don't
+		 * update the linked post.
+		 */
+		if ( $linked_post ) {
+			$linked_post_payload = get_post_meta( $linked_post->ID, self::POST_PAYLOAD_META, true );
+			if ( $linked_post_payload && $linked_post_payload['post_data']['modified_gmt'] > $post_data['modified_gmt'] ) {
+				return $linked_post->ID;
+			}
+		}
+
 		$postarr = [
-			'ID'           => $linked_post ? $linked_post->ID : 0,
-			'post_date'    => $post_payload['post_data']['date'],
-			'post_title'   => $post_payload['post_data']['title'],
-			'post_name'    => $post_payload['post_data']['slug'],
-			'post_content' => use_block_editor_for_post_type( $post_type ) ?
+			'ID'            => $linked_post ? $linked_post->ID : 0,
+			'post_date_gmt' => $post_payload['post_data']['date_gmt'],
+			'post_title'    => $post_payload['post_data']['title'],
+			'post_name'     => $post_payload['post_data']['slug'],
+			'post_content'  => use_block_editor_for_post_type( $post_type ) ?
 				$post_payload['post_data']['raw_content'] :
 				$post_payload['post_data']['content'],
-			'post_excerpt' => $post_payload['post_data']['excerpt'],
-			'post_type'    => $post_type,
+			'post_excerpt'  => $post_payload['post_data']['excerpt'],
+			'post_type'     => $post_type,
 		];
 
 		// New post, set post status.
