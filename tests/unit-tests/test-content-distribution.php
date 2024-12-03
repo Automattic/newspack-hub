@@ -270,10 +270,14 @@ class TestContentDistribution extends WP_UnitTestCase {
 		$post_payload['post_data']['modified_gmt'] = '2020-01-01 00:00:00';
 
 		// Insert the updated linked post.
-		$updated_linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
+		$error = Content_Distribution::insert_linked_post( $post_payload );
 
-		// Assert that the updated post has the updated title and content.
-		$linked_post = get_post( $updated_linked_post_id );
+		// Assert that the insertion returned an error.
+		$this->assertTrue( is_wp_error( $error ) );
+		$this->assertSame( 'old_modified_date', $error->get_error_code() );
+
+		// Assert that the linked post kept the most recent title.
+		$linked_post = get_post( $linked_post_id );
 		$this->assertSame( 'Title', $linked_post->post_title );
 	}
 }

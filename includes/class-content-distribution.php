@@ -379,7 +379,7 @@ class Content_Distribution {
 		if ( $linked_post ) {
 			$linked_post_payload = get_post_meta( $linked_post->ID, self::POST_PAYLOAD_META, true );
 			if ( $linked_post_payload && $linked_post_payload['post_data']['modified_gmt'] > $post_data['modified_gmt'] ) {
-				return $linked_post->ID;
+				return new WP_Error( 'old_modified_date', __( 'Linked post content is newer than the post payload.', 'newspack-network' ) );
 			}
 		}
 
