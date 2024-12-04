@@ -363,36 +363,18 @@ class Content_Distribution {
 			wp_delete_attachment( $current_thumbnail_id, true );
 		}
 
-		$upload_dir = wp_upload_dir();
-		$filename   = basename( $thumbnail_url );
-		$filename   = wp_unique_filename( $upload_dir['path'], $filename );
-		$file_path  = $upload_dir['path'] . '/' . $filename;
+		if ( ! function_exists( 'media_sideload_image' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
 
-		$response = wp_safe_remote_get( $thumbnail_url );
-		if ( is_wp_error( $response ) ) {
+		$attachment_id = media_sideload_image( $thumbnail_url, $post_id, '', 'id' );
+		if ( is_wp_error( $attachment_id ) ) {
 			return;
 		}
 
-		$body = wp_remote_retrieve_body( $response );
-		if ( ! $body ) {
-			return;
-		}
-
-		$fp = fopen( $file_path, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
-		fwrite( $fp, $body ); //phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_fwrite
-		fclose( $fp );
-
-		$wp_filetype = wp_check_filetype( $filename, null );
-		$attachment  = [
-			'post_mime_type' => $wp_filetype['type'],
-			'post_title'     => sanitize_file_name( $filename ),
-			'post_content'   => '',
-			'post_status'    => 'inherit',
-		];
-		$attach_id   = wp_insert_attachment( $attachment, $file_path, $post_id );
-		$attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
-		wp_update_attachment_metadata( $attach_id, $attach_data );
-		set_post_thumbnail( $post_id, $attach_id );
+		set_post_thumbnail( $post_id, $attachment_id );
 	}
 
 	/**
