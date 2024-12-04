@@ -244,14 +244,15 @@ class Content_Distribution {
 			'post_id'   => $post->ID,
 			'config'    => $config,
 			'post_data' => [
-				'title'       => html_entity_decode( get_the_title( $post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'date'        => $post->post_date,
-				'slug'        => $post->post_name,
-				'post_type'   => $post->post_type,
-				'raw_content' => $post->post_content,
-				'content'     => self::get_processed_post_content( $post ),
-				'excerpt'     => $post->post_excerpt,
-				// @ TODO: Add meta, featured image and taxonomies.
+				'title'         => html_entity_decode( get_the_title( $post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'date'          => $post->post_date,
+				'slug'          => $post->post_name,
+				'post_type'     => $post->post_type,
+				'raw_content'   => $post->post_content,
+				'content'       => self::get_processed_post_content( $post ),
+				'excerpt'       => $post->post_excerpt,
+				'thumbnail_url' => get_the_post_thumbnail_url( $post->ID, 'full' ),
+				// @ TODO: Add meta and taxonomies.
 			],
 		];
 	}
@@ -339,6 +340,62 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Upload the thumbnail for a linked post.
+	 *
+	 * @param int    $post_id       The linked post ID.
+	 * @param string $thumbnail_url The thumbnail URL.
+	 */
+	protected static function upload_thumbnail( $post_id, $thumbnail_url ) {
+		$post_payload         = get_post_meta( $post_id, self::POST_PAYLOAD_META, true );
+		$current_thumbnail_id = get_post_thumbnail_id( $post_id );
+
+		// Bail if the post has a thumbnail and the thumbnail URL is the same.
+		if (
+			$current_thumbnail_id &&
+			$post_payload &&
+			$post_payload['post_data']['thumbnail_url'] === $thumbnail_url
+		) {
+			return;
+		}
+
+		// Delete existing thumbnail attachment.
+		if ( $current_thumbnail_id ) {
+			wp_delete_attachment( $current_thumbnail_id, true );
+		}
+
+		$upload_dir = wp_upload_dir();
+		$filename   = basename( $thumbnail_url );
+		$filename   = wp_unique_filename( $upload_dir['path'], $filename );
+		$file_path  = $upload_dir['path'] . '/' . $filename;
+
+		$response = wp_safe_remote_get( $thumbnail_url );
+		if ( is_wp_error( $response ) ) {
+			return;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		if ( ! $body ) {
+			return;
+		}
+
+		$fp = fopen( $file_path, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		fwrite( $fp, $body ); //phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_fwrite
+		fclose( $fp );
+
+		$wp_filetype = wp_check_filetype( $filename, null );
+		$attachment  = [
+			'post_mime_type' => $wp_filetype['type'],
+			'post_title'     => sanitize_file_name( $filename ),
+			'post_content'   => '',
+			'post_status'    => 'inherit',
+		];
+		$attach_id   = wp_insert_attachment( $attachment, $file_path, $post_id );
+		$attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
+		wp_update_attachment_metadata( $attach_id, $attach_data );
+		set_post_thumbnail( $post_id, $attach_id );
+	}
+
+	/**
 	 * Insert a linked post given a distributed post payload.
 	 *
 	 * @param array $post_payload The post payload.
@@ -405,6 +462,19 @@ class Content_Distribution {
 		// The wp_insert_post() function might return `0` on failure.
 		if ( ! $post_id ) {
 			return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
+		}
+
+		// Handle payload thumbnail.
+		$thumbnail_url = $post_payload['post_data']['thumbnail_url'];
+		if ( $thumbnail_url ) {
+			self::upload_thumbnail( $post_id, $thumbnail_url );
+		} elseif ( $linked_post ) {
+			// Delete thumbnail for existing post if it's not set in the payload.
+			$current_thumbnail_id = get_post_thumbnail_id( $post_id );
+			if ( $current_thumbnail_id ) {
+				delete_post_thumbnail( $post_id );
+				wp_delete_attachment( $current_thumbnail_id, true );
+			}
 		}
 
 		update_post_meta( $post_id, self::POST_PAYLOAD_META, $post_payload );
