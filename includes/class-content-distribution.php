@@ -248,12 +248,69 @@ class Content_Distribution {
 				'date'        => $post->post_date,
 				'slug'        => $post->post_name,
 				'post_type'   => $post->post_type,
-				'raw_content' => $post->post_content,
+				'raw_content' => self::get_post_content( $post ),
 				'content'     => self::get_processed_post_content( $post ),
 				'excerpt'     => $post->post_excerpt,
 				// @ TODO: Add meta, featured image and taxonomies.
 			],
 		];
+	}
+
+	/**
+	 * Parse blocks for distribution.
+	 *
+	 * @param string|array $blocks Serialized or parsed blocks.
+	 * @param WP_Post      $post   The post object.
+	 *
+	 * @return array The parsed block.
+	 */
+	protected static function parse_blocks( $blocks, $post ) {
+		if ( is_string( $blocks ) ) {
+			$blocks = parse_blocks( $blocks );
+		}
+		foreach ( $blocks as $block ) {
+
+			// Remove image ID from Image blocks.
+			if ( 'core/image' === $block['blockName'] ) {
+				unset( $block['attrs']['id'] );
+			}
+
+			/**
+			 * Filters a post block for distribution.
+			 *
+			 * @param array   $block The block.
+			 * @param WP_Post $post  The post object.
+			 */
+			$block = apply_filters( 'newspack_network_distribution_post_block', $block, $post );
+
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = self::parse_blocks( $block['innerBlocks'], $post );
+			}
+		}
+		return $blocks;
+	}
+
+	/**
+	 * Get the post content for distribution.
+	 *
+	 * @param WP_Post $post The post object.
+	 *
+	 * @return string The raw post content.
+	 */
+	protected static function get_post_content( $post ) {
+		/**
+		 * Filters the post content for distribution.
+		 *
+		 * @param string  $post_content The post content.
+		 * @param WP_Post $post         The post object.
+		 */
+		return apply_filters(
+			'newspack_network_distribution_post_content',
+			serialize_blocks(
+				self::parse_blocks( $post->post_content, $post )
+			),
+			$post
+		);
 	}
 
 	/**
@@ -272,6 +329,15 @@ class Content_Distribution {
 		// Filter documented in WordPress core.
 		$post_content = apply_filters( 'the_content', $post->post_content );
 		add_filter( 'the_content', [ $wp_embed, 'autoembed' ], 8 );
+
+		/**
+		 * Filters the processed post content for distribution.
+		 *
+		 * @param string  $post_content The post content.
+		 * @param WP_Post $post         The post object.
+		 */
+		$post_content = apply_filters( 'newspack_network_distribution_processed_post_content', $post_content, $post );
+
 		return $post_content;
 	}
 
