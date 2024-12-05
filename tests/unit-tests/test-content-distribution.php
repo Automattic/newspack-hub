@@ -131,7 +131,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 				'raw_content'   => 'Content',
 				'content'       => '<p>Content</p>',
 				'excerpt'       => 'Excerpt',
-				'thumbnail_url' => false,
+				'thumbnail_url' => 'https://picsum.photos/id/1/300/300.jpg',
 			],
 		];
 	}
@@ -142,9 +142,14 @@ class TestContentDistribution extends WP_UnitTestCase {
 	public function test_insert_linked_post() {
 		$post_payload = $this->get_sample_post_payload();
 
-		// Insert the linked post.
 		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
+
+		$this->assertFalse( is_wp_error( $linked_post_id ) );
 		$this->assertGreaterThan( 0, $linked_post_id );
+		$this->assertSame( $post_payload['post_data']['date'], get_the_date( 'Y-m-d H:i:s', $linked_post_id ) );
+		$this->assertSame( $post_payload['post_data']['title'], get_the_title( $linked_post_id ) );
+		$this->assertSame( $post_payload['post_data']['raw_content'], get_post_field( 'post_content', $linked_post_id ) );
+		$this->assertNotEmpty( get_post_thumbnail_id( $linked_post_id ) );
 	}
 
 	/**
@@ -262,32 +267,10 @@ class TestContentDistribution extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test insert linked post thumbnail.
-	 */
-	public function test_insert_linked_post_thumbnail() {
-		$post_payload = $this->get_sample_post_payload();
-
-		// Set a thumbnail URL.
-		$post_payload['post_data']['thumbnail_url'] = 'https://picsum.photos/id/1/300/300.jpg';
-
-		// Insert the linked post.
-		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
-
-		// Assert that post thumbnail is not false.
-		$thumbnail_id = get_post_thumbnail_id( $linked_post_id );
-		$this->assertNotEmpty( $thumbnail_id );
-	}
-
-	/**
 	 * Test update linked post thumbnail.
 	 */
 	public function test_update_linked_post_thumbnail() {
 		$post_payload = $this->get_sample_post_payload();
-
-		// Set a thumbnail URL.
-		$post_payload['post_data']['thumbnail_url'] = 'https://picsum.photos/id/1/300/300.jpg';
-
-		// Insert the linked post.
 		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
 
 		$thumbnail_id = get_post_thumbnail_id( $linked_post_id );
@@ -310,11 +293,6 @@ class TestContentDistribution extends WP_UnitTestCase {
 	 */
 	public function test_remove_linked_post_thumbnail() {
 		$post_payload = $this->get_sample_post_payload();
-
-		// Set a thumbnail URL.
-		$post_payload['post_data']['thumbnail_url'] = 'https://picsum.photos/id/1/300/300.jpg';
-
-		// Insert the linked post.
 		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
 
 		// Remove the thumbnail.
