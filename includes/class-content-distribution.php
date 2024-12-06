@@ -9,7 +9,6 @@ namespace Newspack_Network;
 
 use Newspack\Data_Events;
 use WP_Post;
-use WP_Term;
 use WP_Error;
 
 /**
@@ -278,7 +277,7 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Get post taxonomy terms.
+	 * Get post taxonomy terms for distribution.
 	 *
 	 * @param WP_Post $post The post object.
 	 *
@@ -392,7 +391,7 @@ class Content_Distribution {
 					if ( is_wp_error( $term ) ) {
 						continue;
 					}
-					$term = get_term_by( 'id', $term['term_id'], $taxonomy );
+					$term = get_term_by( 'id', $term['term_id'], $taxonomy, ARRAY_A );
 				}
 				$term_ids[] = $term['term_id'];
 			}

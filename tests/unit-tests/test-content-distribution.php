@@ -66,7 +66,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 		$this->assertEquals( $config, $post_payload['config'] );
 
 		// Assert that 'post_data' only contains the expected keys.
-		$post_data_keys = [ 'title', 'date', 'slug', 'post_type', 'raw_content', 'content', 'excerpt' ];
+		$post_data_keys = [ 'title', 'date', 'slug', 'post_type', 'raw_content', 'content', 'excerpt', 'taxonomy' ];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $post_payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $post_payload['post_data'] ), $post_data_keys ) );
 	}
@@ -105,6 +105,28 @@ class TestContentDistribution extends WP_UnitTestCase {
 				'raw_content' => 'Content',
 				'content'     => '<p>Content</p>',
 				'excerpt'     => 'Excerpt',
+				'taxonomy'    => [
+					'category' => [
+						[
+							'name' => 'Category 1',
+							'slug' => 'category-1',
+						],
+						[
+							'name' => 'Category 2',
+							'slug' => 'category-2',
+						],
+					],
+					'post_tag' => [
+						[
+							'name' => 'Tag 1',
+							'slug' => 'tag-1',
+						],
+						[
+							'name' => 'Tag 2',
+							'slug' => 'tag-2',
+						],
+					],
+				],
 			],
 		];
 	}
@@ -122,6 +144,11 @@ class TestContentDistribution extends WP_UnitTestCase {
 		// Insert the linked post.
 		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
 		$this->assertGreaterThan( 0, $linked_post_id );
+
+		// Assert taxonomy terms.
+		$terms = wp_get_post_terms( $linked_post_id, [ 'category', 'post_tag' ] );
+		$this->assertSame( [ 'Category 1', 'Category 2', 'Tag 1', 'Tag 2' ], wp_list_pluck( $terms, 'name' ) );
+		$this->assertSame( [ 'category-1', 'category-2', 'tag-1', 'tag-2' ], wp_list_pluck( $terms, 'slug' ) );
 	}
 
 	/**
