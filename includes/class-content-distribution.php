@@ -9,6 +9,7 @@ namespace Newspack_Network;
 
 use Newspack\Data_Events;
 use WP_Post;
+use WP_Term;
 use WP_Error;
 
 /**
@@ -239,6 +240,7 @@ class Content_Distribution {
 		}
 
 		$config = self::get_post_config( $post );
+
 		return [
 			'site_url'  => get_bloginfo( 'url' ),
 			'post_id'   => $post->ID,
@@ -251,7 +253,7 @@ class Content_Distribution {
 				'raw_content' => $post->post_content,
 				'content'     => self::get_processed_post_content( $post ),
 				'excerpt'     => $post->post_excerpt,
-				// @ TODO: Add meta, featured image and taxonomies.
+				'taxonomy'    => self::get_post_taxonomy_terms( $post ),
 			],
 		];
 	}
@@ -273,6 +275,37 @@ class Content_Distribution {
 		$post_content = apply_filters( 'the_content', $post->post_content );
 		add_filter( 'the_content', [ $wp_embed, 'autoembed' ], 8 );
 		return $post_content;
+	}
+
+	/**
+	 * Get post taxonomy terms.
+	 *
+	 * @param WP_Post $post The post object.
+	 *
+	 * @return array The taxonomy term data.
+	 */
+	protected static function get_post_taxonomy_terms( $post ) {
+		$taxonomies = get_object_taxonomies( $post->post_type, 'objects' );
+		$data       = [];
+		foreach ( $taxonomies as $taxonomy ) {
+			if ( ! $taxonomy->public ) {
+				continue;
+			}
+			$terms = get_the_terms( $post->ID, $taxonomy->name );
+			if ( ! $terms ) {
+				continue;
+			}
+			$data[ $taxonomy->name ] = array_map(
+				function( $term ) {
+					return [
+						'name' => $term->name,
+						'slug' => $term->slug,
+					];
+				},
+				$terms
+			);
+		}
+		return $data;
 	}
 
 	/**
@@ -336,6 +369,35 @@ class Content_Distribution {
 	 */
 	protected static function is_post_unlinked( $post_id ) {
 		return get_post_meta( $post_id, self::POST_UNLINKED_META, true );
+	}
+
+	/**
+	 * Update the taxonomy terms for a linked post.
+	 *
+	 * @param int   $post_id The post ID.
+	 * @param array $data    The taxonomy term data.
+	 *
+	 * @return void
+	 */
+	protected static function update_taxonomy_terms( $post_id, $data ) {
+		foreach ( $data as $taxonomy => $terms ) {
+			if ( ! taxonomy_exists( $taxonomy ) ) {
+				continue;
+			}
+			$term_ids = [];
+			foreach ( $terms as $term_data ) {
+				$term = get_term_by( 'slug', $term_data['slug'], $taxonomy, ARRAY_A );
+				if ( ! $term ) {
+					$term = wp_insert_term( $term_data['name'], $taxonomy, [ 'slug' => $term_data['slug'] ] );
+					if ( is_wp_error( $term ) ) {
+						continue;
+					}
+					$term = get_term_by( 'id', $term['term_id'], $taxonomy );
+				}
+				$term_ids[] = $term['term_id'];
+			}
+			wp_set_object_terms( $post_id, $term_ids, $taxonomy );
+		}
 	}
 
 	/**
@@ -406,6 +468,8 @@ class Content_Distribution {
 		if ( ! $post_id ) {
 			return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
 		}
+
+		self::update_taxonomy_terms( $post_id, $post_payload['post_data']['taxonomy'] );
 
 		update_post_meta( $post_id, self::POST_PAYLOAD_META, $post_payload );
 		update_post_meta( $post_id, self::NETWORK_POST_ID_META, $network_post_id );
