@@ -7,6 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
+use Newspack_Network\Debugger;
 use Newspack_Network\Content_Distribution;
 use WP_Post;
 use WP_Error;
@@ -31,6 +32,11 @@ class Linked_Post {
 	 * Post meta key to determine whether the post is unlinked.
 	 */
 	const UNLINKED_META = 'newspack_network_post_unlinked';
+
+	/**
+	 * Post meta key for linked attachments.
+	 */
+	const ATTACHMENT_META = 'newspack_network_linked_attachment';
 
 	/**
 	 * The post ID.
@@ -224,11 +230,6 @@ class Linked_Post {
 			return;
 		}
 
-		// Delete existing thumbnail attachment.
-		if ( $current_thumbnail_id ) {
-			wp_delete_attachment( $current_thumbnail_id, true );
-		}
-
 		if ( ! function_exists( 'media_sideload_image' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/media.php';
 			require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -237,8 +238,11 @@ class Linked_Post {
 
 		$attachment_id = media_sideload_image( $thumbnail_url, $this->ID, '', 'id' );
 		if ( is_wp_error( $attachment_id ) ) {
+			Debugger::log( 'Failed to upload featured image for post ' . $this->ID . ' with message: ' . $attachment_id->get_error_message() );
 			return;
 		}
+
+		update_post_meta( $attachment_id, self::ATTACHMENT_META, true );
 
 		set_post_thumbnail( $this->ID, $attachment_id );
 	}
@@ -368,7 +372,6 @@ class Linked_Post {
 				$current_thumbnail_id = get_post_thumbnail_id( $this->ID );
 				if ( $current_thumbnail_id ) {
 					delete_post_thumbnail( $this->ID );
-					wp_delete_attachment( $current_thumbnail_id, true );
 				}
 			}
 
