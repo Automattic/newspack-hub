@@ -78,7 +78,7 @@ class Linked_Post {
 		$this->payload         = $payload;
 		$this->network_post_id = $payload['config']['network_post_id'];
 
-		$post = $this->get_linked_post();
+		$post = $this->query_linked_post();
 		if ( $post ) {
 			$this->ID      = $post->ID;
 			$this->post    = $post;
@@ -136,7 +136,7 @@ class Linked_Post {
 	 *
 	 * @return WP_Post|null The linked post or null if not found.
 	 */
-	protected function get_linked_post() {
+	protected function query_linked_post() {
 		$posts = get_posts(
 			[
 				'post_type'      => Content_Distribution::get_distributed_post_types(),
@@ -154,6 +154,15 @@ class Linked_Post {
 			return null;
 		}
 		return $posts[0];
+	}
+
+	/**
+	 * Get the linked post.
+	 *
+	 * @return WP_Post|null The linked post or null if not found.
+	 */
+	public function get_post() {
+		return $this->post;
 	}
 
 	/**
@@ -287,7 +296,7 @@ class Linked_Post {
 	 *
 	 * This will create or update an existing post and the stored payload.
 	 *
-	 * @param array $payload The payload to insert the linked post with.
+	 * @param array $payload Optional payload to insert the post with.
 	 *
 	 * @return int|WP_Error The linked post ID or WP_Error on failure.
 	 */
