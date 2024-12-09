@@ -147,7 +147,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 
 		$this->assertFalse( is_wp_error( $linked_post_id ) );
 		$this->assertGreaterThan( 0, $linked_post_id );
-		$this->assertSame( $post_payload['post_data']['date'], get_the_date( 'Y-m-d H:i:s', $linked_post_id ) );
+		$this->assertSame( $post_payload['post_data']['date_gmt'], get_the_date( 'Y-m-d H:i:s', $linked_post_id ) );
 		$this->assertSame( $post_payload['post_data']['title'], get_the_title( $linked_post_id ) );
 		$this->assertSame( $post_payload['post_data']['raw_content'], get_post_field( 'post_content', $linked_post_id ) );
 		$this->assertNotEmpty( get_post_thumbnail_id( $linked_post_id ) );
@@ -312,10 +312,6 @@ class TestContentDistribution extends WP_UnitTestCase {
 	 */
 	public function test_insert_linked_post_with_old_modified_date() {
 		$post_payload = $this->get_sample_post_payload();
-
-		// Update blog URL to match the distributed post.
-		update_option( 'siteurl', 'https://example.com' );
-		update_option( 'home', 'https://example.com' );
 
 		// Insert the linked post for the first time.
 		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
