@@ -37,6 +37,11 @@ class Content_Distribution {
 	const POST_UNLINKED_META = 'newspack_network_post_unlinked';
 
 	/**
+	 * Post meta key for linked attachments.
+	 */
+	const ATTACHMENT_META = 'newspack_network_linked_attachment';
+
+	/**
 	 * Initialize this class and register hooks
 	 *
 	 * @return void
@@ -358,11 +363,6 @@ class Content_Distribution {
 			return;
 		}
 
-		// Delete existing thumbnail attachment.
-		if ( $current_thumbnail_id ) {
-			wp_delete_attachment( $current_thumbnail_id, true );
-		}
-
 		if ( ! function_exists( 'media_sideload_image' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/media.php';
 			require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -373,6 +373,8 @@ class Content_Distribution {
 		if ( is_wp_error( $attachment_id ) ) {
 			return;
 		}
+
+		update_post_meta( $attachment_id, self::ATTACHMENT_META, true );
 
 		set_post_thumbnail( $post_id, $attachment_id );
 	}
@@ -467,7 +469,6 @@ class Content_Distribution {
 			$current_thumbnail_id = get_post_thumbnail_id( $post_id );
 			if ( $current_thumbnail_id ) {
 				delete_post_thumbnail( $post_id );
-				wp_delete_attachment( $current_thumbnail_id, true );
 			}
 		}
 

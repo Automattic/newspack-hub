@@ -308,6 +308,17 @@ class TestContentDistribution extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test linked attachment meta.
+	 */
+	public function test_linked_attachment_meta() {
+		$post_payload = $this->get_sample_post_payload();
+		$linked_post_id = Content_Distribution::insert_linked_post( $post_payload );
+
+		$thumbnail_id = get_post_thumbnail_id( $linked_post_id );
+		$this->assertNotEmpty( get_post_meta( $thumbnail_id, Content_Distribution::ATTACHMENT_META, true ) );
+	}
+
+	/**
 	 * Test insert linked post with old modified date.
 	 */
 	public function test_insert_linked_post_with_old_modified_date() {
