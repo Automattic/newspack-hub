@@ -92,7 +92,7 @@ class TestContentDistribution extends WP_UnitTestCase {
 		$this->assertEquals( $config, $post_payload['config'] );
 
 		// Assert that 'post_data' only contains the expected keys.
-		$post_data_keys = [ 'title', 'date_gmt', 'modified_gmt', 'slug', 'post_type', 'raw_content', 'content', 'excerpt', 'thumbnail_url' ];
+		$post_data_keys = [ 'title', 'date_gmt', 'modified_gmt', 'slug', 'post_type', 'raw_content', 'content', 'excerpt', 'thumbnail_url', 'taxonomy' ];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $post_payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $post_payload['post_data'] ), $post_data_keys ) );
 	}
@@ -133,6 +133,28 @@ class TestContentDistribution extends WP_UnitTestCase {
 				'content'       => '<p>Content</p>',
 				'excerpt'       => 'Excerpt',
 				'thumbnail_url' => 'https://picsum.photos/id/1/300/300.jpg',
+				'taxonomy'      => [
+					'category' => [
+						[
+							'name' => 'Category 1',
+							'slug' => 'category-1',
+						],
+						[
+							'name' => 'Category 2',
+							'slug' => 'category-2',
+						],
+					],
+					'post_tag' => [
+						[
+							'name' => 'Tag 1',
+							'slug' => 'tag-1',
+						],
+						[
+							'name' => 'Tag 2',
+							'slug' => 'tag-2',
+						],
+					],
+				],
 			],
 		];
 	}
@@ -151,6 +173,11 @@ class TestContentDistribution extends WP_UnitTestCase {
 		$this->assertSame( $post_payload['post_data']['title'], get_the_title( $linked_post_id ) );
 		$this->assertSame( $post_payload['post_data']['raw_content'], get_post_field( 'post_content', $linked_post_id ) );
 		$this->assertNotEmpty( get_post_thumbnail_id( $linked_post_id ) );
+
+		// Assert taxonomy terms.
+		$terms = wp_get_post_terms( $linked_post_id, [ 'category', 'post_tag' ] );
+		$this->assertSame( [ 'Category 1', 'Category 2', 'Tag 1', 'Tag 2' ], wp_list_pluck( $terms, 'name' ) );
+		$this->assertSame( [ 'category-1', 'category-2', 'tag-1', 'tag-2' ], wp_list_pluck( $terms, 'slug' ) );
 	}
 
 	/**
