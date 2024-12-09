@@ -39,11 +39,15 @@ class Distributed_Post {
 	 * Constructor.
 	 *
 	 * @param WP_Post|int $post The post object or post ID.
+	 *
+	 * @throws \InvalidArgumentException If the post is invalid.
 	 */
 	public function __construct( $post ) {
-		if ( ! $post instanceof WP_Post ) {
-			$post = get_post( $post );
+		$post = get_post( $post );
+		if ( ! $post instanceof WP_Post || empty( $post->ID ) ) {
+			throw new \InvalidArgumentException( esc_html( __( 'Invalid post.', 'newspack-network' ) ) );
 		}
+
 		$this->ID   = $post->ID;
 		$this->post = $post;
 	}

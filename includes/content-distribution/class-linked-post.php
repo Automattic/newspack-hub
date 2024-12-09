@@ -65,14 +65,14 @@ class Linked_Post {
 	 *
 	 * @param array $payload The distributed post payload.
 	 *
-	 * @throws \Exception If the payload is invalid or the post is not configured
-	 *                    for distribution.
+	 * @throws \InvalidArgumentException If the payload is invalid or the post is
+	 *                                   not configured for distribution.
 	 */
 	public function __construct( $payload ) {
 		$error = self::get_payload_error( $payload );
 
 		if ( is_wp_error( $error ) ) {
-			throw new \Exception( esc_html( $error->get_error_message() ) );
+			throw new \InvalidArgumentException( esc_html( $error->get_error_message() ) );
 		}
 
 		$this->payload         = $payload;
