@@ -5,8 +5,6 @@
  * @package Newspack_Network
  */
 
-use Newspack_Network\Content_Distribution;
-use Newspack_Network\Content_Distribution\Distributed_Post;
 use Newspack_Network\Content_Distribution\Linked_Post;
 
 /**
@@ -31,7 +29,7 @@ class TestLinkedPost extends WP_UnitTestCase {
 	/**
 	 * A linked post.
 	 *
-	 * @var Content_Distribution\Linked_Post
+	 * @var Linked_Post
 	 */
 	protected $linked_post;
 
