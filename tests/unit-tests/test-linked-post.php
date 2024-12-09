@@ -11,7 +11,6 @@ use Newspack_Network\Content_Distribution\Linked_Post;
  * Test the Content Distribution class.
  */
 class TestLinkedPost extends WP_UnitTestCase {
-
 	/**
 	 * URL for node that distributes posts.
 	 *
