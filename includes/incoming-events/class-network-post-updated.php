@@ -36,7 +36,12 @@ class Network_Post_Updated extends Abstract_Incoming_Event {
 	 * Process post updated
 	 */
 	protected function process_post_updated() {
-		$post_payload = $this->get_data();
-		Content_Distribution::insert_linked_post( (array) $post_payload );
+		$payload = (array) $this->get_data();
+		$error   = Content_Distribution\Linked_Post::validate_payload( $payload );
+		if ( is_wp_error( $error ) ) {
+			return;
+		}
+		$linked_post = new Content_Distribution\Linked_Post( $payload );
+		$linked_post->insert();
 	}
 }

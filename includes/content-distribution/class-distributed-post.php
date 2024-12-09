@@ -1,0 +1,200 @@
+<?php
+/**
+ * Newspack Network Distributed Post.
+ *
+ * @package Newspack
+ */
+
+namespace Newspack_Network\Content_Distribution;
+
+use Newspack_Network\Content_Distribution;
+use WP_Post;
+use WP_Error;
+
+/**
+ * Distributed Post Class.
+ */
+class Distributed_Post {
+
+	/**
+	 * The post meta key for the distributed post configuration.
+	 */
+	const DISTRIBUTED_POST_META = 'newspack_network_distributed';
+
+	/**
+	 * The post ID.
+	 *
+	 * @var int
+	 */
+	public $ID = 0;
+
+	/**
+	 * The post object.
+	 *
+	 * @var WP_Post
+	 */
+	protected $post = null;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param WP_Post|int $post The post object or post ID.
+	 */
+	public function __construct( $post ) {
+		if ( ! $post instanceof WP_Post ) {
+			$post = get_post( $post );
+		}
+		$this->ID   = $post->ID;
+		$this->post = $post;
+	}
+
+	/**
+	 * Set the distribution configuration for a given post.
+	 *
+	 * @param int[] $site_urls Array of site URLs to distribute the post to.
+	 *
+	 * @return void|WP_Error Void on success, WP_Error on failure.
+	 */
+	public function set_config( $site_urls = [] ) {
+		if ( ! $this->ID ) {
+			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
+		}
+		$config = get_post_meta( $this->ID, self::DISTRIBUTED_POST_META, true );
+		if ( ! is_array( $config ) ) {
+			$config = [];
+		}
+		// Set post network ID.
+		if ( empty( $config['network_post_id'] ) ) {
+			$config['network_post_id'] = md5( $this->ID . get_bloginfo( 'url' ) );
+		}
+		$config['enabled']   = empty( $site_urls ) ? false : true;
+		$config['site_urls'] = $site_urls;
+		update_post_meta( $this->ID, self::DISTRIBUTED_POST_META, $config );
+	}
+
+	/**
+	 * Whether the post is distributed. Optionally provide a $site_url to check if
+	 * the post is distributed to that site.
+	 *
+	 * @param int|null $site_url Optional site ID.
+	 *
+	 * @return bool
+	 */
+	public function is_distributed( $site_url = null ) {
+		if ( ! $this->ID ) {
+			return false;
+		}
+		$distributed_post_types = Content_Distribution::get_distributed_post_types();
+		if ( ! in_array( $this->post->post_type, $distributed_post_types, true ) ) {
+			return false;
+		}
+
+		$config = $this->get_config();
+		if ( ! $config['enabled'] || empty( $config['site_urls'] ) ) {
+			return false;
+		}
+
+		if ( ! empty( $site_url ) ) {
+			return in_array( $site_url, $config['site_urls'], true );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get the distribution configuration for a given post.
+	 *
+	 * @return array The distribution configuration.
+	 */
+	public function get_config() {
+		$config = get_post_meta( $this->ID, self::DISTRIBUTED_POST_META, true );
+		if ( ! is_array( $config ) ) {
+			$config = [];
+		}
+		$config = wp_parse_args(
+			$config,
+			[
+				'enabled'         => false,
+				'site_urls'       => [],
+				'network_post_id' => '',
+			]
+		);
+		return $config;
+	}
+
+	/**
+	 * Get the post payload for distribution.
+	 *
+	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
+	 */
+	public function get_payload() {
+		if ( ! $this->ID ) {
+			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
+		}
+
+		$config = self::get_config();
+		return [
+			'site_url'  => get_bloginfo( 'url' ),
+			'post_id'   => $this->ID,
+			'config'    => $config,
+			'post_data' => [
+				'title'         => html_entity_decode( get_the_title( $this->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'date_gmt'      => $this->post->post_date_gmt,
+				'modified_gmt'  => $this->post->post_modified_gmt,
+				'slug'          => $this->post->post_name,
+				'post_type'     => $this->post->post_type,
+				'raw_content'   => $this->post->post_content,
+				'content'       => $this->get_processed_post_content(),
+				'excerpt'       => $this->post->post_excerpt,
+				'taxonomy'      => $this->get_post_taxonomy_terms(),
+				'thumbnail_url' => get_the_post_thumbnail_url( $this->ID, 'full' ),
+			],
+		];
+	}
+
+	/**
+	 * Get the processed post content for distribution.
+	 *
+	 * @return string The post content.
+	 */
+	protected function get_processed_post_content() {
+		global $wp_embed;
+		/**
+		 * Remove autoembed filter so that actual URL will be pushed and not the generated markup.
+		 */
+		remove_filter( 'the_content', [ $wp_embed, 'autoembed' ], 8 );
+		// Filter documented in WordPress core.
+		$post_content = apply_filters( 'the_content', $this->post->post_content );
+		add_filter( 'the_content', [ $wp_embed, 'autoembed' ], 8 );
+		return $post_content;
+	}
+
+	/**
+	 * Get post taxonomy terms for distribution.
+	 *
+	 * @return array The taxonomy term data.
+	 */
+	protected function get_post_taxonomy_terms() {
+		$taxonomies = get_object_taxonomies( $this->post->post_type, 'objects' );
+		$data       = [];
+		foreach ( $taxonomies as $taxonomy ) {
+			if ( ! $taxonomy->public ) {
+				continue;
+			}
+			$terms = get_the_terms( $this->ID, $taxonomy->name );
+			if ( ! $terms ) {
+				continue;
+			}
+			$data[ $taxonomy->name ] = array_map(
+				function( $term ) {
+					return [
+						'name' => $term->name,
+						'slug' => $term->slug,
+					];
+				},
+				$terms
+			);
+		}
+		return $data;
+	}
+}
