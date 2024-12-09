@@ -16,22 +16,6 @@ use WP_Error;
  * Main class for content distribution
  */
 class Content_Distribution {
-
-	/**
-	 * Post meta key for the linked post containing a post ID unique accross the network.
-	 */
-	const NETWORK_POST_ID_META = 'newspack_network_post_id';
-
-	/**
-	 * Post meta key for the linked post containing the distributed post full payload.
-	 */
-	const POST_PAYLOAD_META = 'newspack_network_post_payload';
-
-	/**
-	 * Post meta key for the linked post to determine whether the post is unlinked.
-	 */
-	const POST_UNLINKED_META = 'newspack_network_post_unlinked';
-
 	/**
 	 * Initialize this class and register hooks
 	 *
