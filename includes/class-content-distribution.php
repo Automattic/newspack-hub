@@ -239,7 +239,6 @@ class Content_Distribution {
 		}
 
 		$config = self::get_post_config( $post );
-
 		return [
 			'site_url'  => get_bloginfo( 'url' ),
 			'post_id'   => $post->ID,
