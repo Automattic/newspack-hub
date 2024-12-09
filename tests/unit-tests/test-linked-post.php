@@ -29,13 +29,6 @@ class TestLinkedPost extends WP_UnitTestCase {
 	protected $node_2 = 'https://node2.test';
 
 	/**
-	 * A distributed post.
-	 *
-	 * @var Content_Distribution\Distributed_Post
-	 */
-	protected $distributed_post;
-
-	/**
 	 * A linked post.
 	 *
 	 * @var Content_Distribution\Linked_Post

@@ -11,20 +11,12 @@ use Newspack_Network\Content_Distribution\Distributed_Post;
  * Test the Content Distribution class.
  */
 class TestDistributedPost extends WP_UnitTestCase {
-
-	/**
-	 * URL for node that distributes posts.
-	 *
-	 * @var string
-	 */
-	protected $node_1 = 'https://node1.test';
-
 	/**
 	 * URL for node that receives posts.
 	 *
 	 * @var string
 	 */
-	protected $node_2 = 'https://node2.test';
+	protected $node_url = 'https://node.test';
 
 	/**
 	 * A distributed post.
@@ -39,20 +31,16 @@ class TestDistributedPost extends WP_UnitTestCase {
 	public function set_up() {
 		parent::set_up();
 
-		// Set the site URL for the node that receives posts.
-		update_option( 'siteurl', $this->node_2 );
-		update_option( 'home', $this->node_2 );
-
 		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$this->distributed_post = new Distributed_Post( $post );
-		$this->distributed_post->set_config( [ $this->node_2 ] );
+		$this->distributed_post->set_config( [ $this->node_url ] );
 	}
 
 	/**
 	 * Test set post distribution configuration.
 	 */
 	public function test_set_config() {
-		$result = $this->distributed_post->set_config( [ $this->node_2 ] );
+		$result = $this->distributed_post->set_config( [ $this->node_url ] );
 		$this->assertFalse( is_wp_error( $result ) );
 	}
 
@@ -62,7 +50,7 @@ class TestDistributedPost extends WP_UnitTestCase {
 	public function test_get_config() {
 		$config = $this->distributed_post->get_config();
 		$this->assertTrue( $config['enabled'] );
-		$this->assertSame( [ $this->node_2 ], $config['site_urls'] );
+		$this->assertSame( [ $this->node_url ], $config['site_urls'] );
 		$this->assertSame( 32, strlen( $config['network_post_id'] ) );
 	}
 
@@ -70,11 +58,11 @@ class TestDistributedPost extends WP_UnitTestCase {
 	 * Test set post distribution persists the network post ID.
 	 */
 	public function test_set_config_persists_network_post_id() {
-		$result = $this->distributed_post->set_config( [ $this->node_2 ] );
+		$result = $this->distributed_post->set_config( [ $this->node_url ] );
 		$config = $this->distributed_post->get_config();
 
 		// Update the post distribution.
-		$result     = $this->distributed_post->set_config( [ 'https://example2.com' ] );
+		$result     = $this->distributed_post->set_config( [ 'https://other-node.test' ] );
 		$new_config = $this->distributed_post->get_config();
 
 		$this->assertSame( $config['network_post_id'], $new_config['network_post_id'] );
