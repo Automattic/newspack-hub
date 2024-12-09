@@ -371,6 +371,7 @@ class Content_Distribution {
 
 		$attachment_id = media_sideload_image( $thumbnail_url, $post_id, '', 'id' );
 		if ( is_wp_error( $attachment_id ) ) {
+			Debugger::log( 'Failed to upload featured image for post ' . $post_id . ' with message: ' . $attachment_id->get_error_message() );
 			return;
 		}
 
