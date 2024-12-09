@@ -50,6 +50,7 @@ class Initializer {
 		User_Manual_Sync::init();
 		Distributor_Customizations::init();
 		Esp_Metadata_Sync::init();
+		Content_Distribution::init();
 
 		Synchronize_All::init();
 		Data_Backfill::init();
