@@ -55,6 +55,18 @@ class TestDistributedPost extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test get config for non-distributed.
+	 */
+	public function test_get_config_for_non_distributed() {
+		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
+		$distributed_post = new Distributed_Post( $post );
+		$config           = $distributed_post->get_config();
+		$this->assertFalse( $config['enabled'] );
+		$this->assertEmpty( $config['site_urls'] );
+		$this->assertEmpty( $config['network_post_id'] );
+	}
+
+	/**
 	 * Test set post distribution persists the network post ID.
 	 */
 	public function test_set_config_persists_network_post_id() {

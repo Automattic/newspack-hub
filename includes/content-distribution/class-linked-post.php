@@ -16,7 +16,6 @@ use WP_Error;
  * Linked Post Class.
  */
 class Linked_Post {
-
 	/**
 	 * Post meta key containing the distributed post ID that is unique accross
 	 * the network.

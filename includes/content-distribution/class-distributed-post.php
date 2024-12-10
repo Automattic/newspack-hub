@@ -15,7 +15,6 @@ use WP_Error;
  * Distributed Post Class.
  */
 class Distributed_Post {
-
 	/**
 	 * The post meta key for the distributed post configuration.
 	 */
