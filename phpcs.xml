@@ -19,7 +19,7 @@
 	</rule>
 
 	<rule ref="PHPCompatibilityWP"/>
-	<config name="testVersion" value="7.2-"/>
+	<config name="testVersion" value="8.1"/>
 
 	<arg name="extensions" value="php"/>
 

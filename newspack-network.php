@@ -6,6 +6,7 @@
  * Author: Automattic
  * Author URI: https://newspack.com/
  * License: GPL3
+ * Requires PHP: 8.1
  * Text Domain: newspack-network
  * Domain Path: /languages/
  *
