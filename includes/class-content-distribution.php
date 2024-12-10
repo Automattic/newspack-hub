@@ -58,16 +58,18 @@ class Content_Distribution {
 	/**
 	 * Post update listener callback.
 	 *
-	 * @param WP_Post|int $post The post object or ID.
+	 * @param Distributed_Post|WP_Post|int $post The post object or ID.
 	 *
 	 * @return array|null The post payload or null if the post is not distributed.
 	 */
 	public static function handle_post_updated( $post ) {
-		$distributed_post = self::get_distributed_post( $post );
-		if ( ! $distributed_post ) {
+		if ( ! $post instanceof Distributed_Post ) {
+			$post = self::get_distributed_post( $post );
+		}
+		if ( ! $post->is_distributed() ) {
 			return;
 		}
-		return $distributed_post->get_payload();
+		return $post->get_payload();
 	}
 
 	/**
@@ -123,7 +125,7 @@ class Content_Distribution {
 	/**
 	 * Manually trigger post distribution.
 	 *
-	 * @param WP_Post|int $post The post object or ID.
+	 * @param WP_Post|Distributed_Post|int $post The post object or ID.
 	 *
 	 * @return void
 	 */
