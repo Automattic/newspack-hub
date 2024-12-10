@@ -10,7 +10,7 @@ use Newspack_Network\Content_Distribution\Incoming_Post;
 /**
  * Test the Incoming_Post class.
  */
-class TestLinkedPost extends WP_UnitTestCase {
+class TestIncomingPost extends WP_UnitTestCase {
 	/**
 	 * URL for node that distributes posts.
 	 *
@@ -75,6 +75,11 @@ class TestLinkedPost extends WP_UnitTestCase {
 							'slug' => 'tag-2',
 						],
 					],
+				],
+				'post_meta'     => [
+					'single'   => [ 'value' ],
+					'array'    => [ [ 'a' => 'b', 'c' => 'd' ] ], // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
+					'multiple' => [ 'value 1', 'value 2' ],
 				],
 			],
 		];
@@ -143,6 +148,11 @@ class TestLinkedPost extends WP_UnitTestCase {
 		$terms = wp_get_post_terms( $post_id, [ 'category', 'post_tag' ] );
 		$this->assertSame( [ 'Category 1', 'Category 2', 'Tag 1', 'Tag 2' ], wp_list_pluck( $terms, 'name' ) );
 		$this->assertSame( [ 'category-1', 'category-2', 'tag-1', 'tag-2' ], wp_list_pluck( $terms, 'slug' ) );
+
+		// Assert post meta.
+		$this->assertSame( 'value', get_post_meta( $post_id, 'single', true ) );
+		$this->assertSame( [ 'a' => 'b', 'c' => 'd' ], get_post_meta( $post_id, 'array', true ) );
+		$this->assertSame( [ 'value 1', 'value 2' ], get_post_meta( $post_id, 'multiple' ) );
 	}
 
 	/**
