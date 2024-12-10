@@ -8,7 +8,7 @@
 namespace Newspack_Network\Incoming_Events;
 
 use Newspack_Network\Debugger;
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution\Linked_Post;
 
 /**
  * Class to handle the network post update.
@@ -36,7 +36,12 @@ class Network_Post_Updated extends Abstract_Incoming_Event {
 	 * Process post updated
 	 */
 	protected function process_post_updated() {
-		$post_payload = $this->get_data();
-		Content_Distribution::insert_linked_post( (array) $post_payload );
+		$payload = (array) $this->get_data();
+		$error   = Linked_Post::get_payload_error( $payload );
+		if ( is_wp_error( $error ) ) {
+			return;
+		}
+		$linked_post = new Linked_Post( $payload );
+		$linked_post->insert();
 	}
 }
