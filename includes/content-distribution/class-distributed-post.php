@@ -79,7 +79,7 @@ class Distributed_Post {
 	 * Whether the post is distributed. Optionally provide a $site_url to check if
 	 * the post is distributed to that site.
 	 *
-	 * @param int|null $site_url Optional site ID.
+	 * @param string|null $site_url Optional site URL.
 	 *
 	 * @return bool
 	 */
