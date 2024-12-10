@@ -7,7 +7,7 @@
 
 namespace Newspack_Network;
 
-use Newspack_Network\Content_Distribution\Distributed_Post;
+use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack\Data_Events;
 use WP_Post;
 use WP_Error;
@@ -36,7 +36,7 @@ class Content_Distribution {
 			return;
 		}
 		Data_Events::register_listener( 'wp_after_insert_post', 'network_post_updated', [ __CLASS__, 'handle_post_updated' ] );
-		Data_Events::register_listener( 'newspack_network_linked_post_inserted', 'network_linked_post_inserted', [ __CLASS__, 'handle_linked_post_inserted' ] );
+		Data_Events::register_listener( 'newspack_network_incoming_post_inserted', 'network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ] );
 	}
 
 	/**
@@ -58,12 +58,12 @@ class Content_Distribution {
 	/**
 	 * Post update listener callback.
 	 *
-	 * @param Distributed_Post|WP_Post|int $post The post object or ID.
+	 * @param Outgoing_Post|WP_Post|int $post The post object or ID.
 	 *
 	 * @return array|null The post payload or null if the post is not distributed.
 	 */
 	public static function handle_post_updated( $post ) {
-		if ( ! $post instanceof Distributed_Post ) {
+		if ( ! $post instanceof Outgoing_Post ) {
 			$post = self::get_distributed_post( $post );
 		}
 		if ( $post ) {
@@ -72,13 +72,13 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Linked post inserted listener callback.
+	 * Incoming post inserted listener callback.
 	 *
-	 * @param int     $post_id      The linked post ID.
+	 * @param int     $post_id      The post ID.
 	 * @param boolean $is_linked    Whether the post is unlinked.
 	 * @param array   $post_payload The post payload.
 	 */
-	public static function handle_linked_post_inserted( $post_id, $is_linked, $post_payload ) {
+	public static function handle_incoming_post_inserted( $post_id, $is_linked, $post_payload ) {
 		return [
 			'origin'      => [
 				'site_url' => $post_payload['site_url'],
@@ -111,20 +111,20 @@ class Content_Distribution {
 	 *
 	 * @param WP_Post|int $post The post object or ID.
 	 *
-	 * @return Distributed_Post|null The distributed post or null if not found.
+	 * @return Outgoing_Post|null The distributed post or null if not found.
 	 */
 	public static function get_distributed_post( $post ) {
-		$distributed_post = new Distributed_Post( $post );
-		if ( ! $distributed_post->is_distributed() ) {
+		$outgoing_post = new Outgoing_Post( $post );
+		if ( ! $outgoing_post->is_distributed() ) {
 			return null;
 		}
-		return $distributed_post;
+		return $outgoing_post;
 	}
 
 	/**
 	 * Manually trigger post distribution.
 	 *
-	 * @param WP_Post|Distributed_Post|int $post The post object or ID.
+	 * @param WP_Post|Outgoing_Post|int $post The post object or ID.
 	 *
 	 * @return void
 	 */

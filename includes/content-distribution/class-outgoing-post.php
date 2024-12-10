@@ -1,6 +1,6 @@
 <?php
 /**
- * Newspack Network Distributed Post.
+ * Newspack Network Content Distribution: Outgoing Post.
  *
  * @package Newspack
  */
@@ -12,9 +12,9 @@ use WP_Post;
 use WP_Error;
 
 /**
- * Distributed Post Class.
+ * Outgoing Post Class.
  */
-class Distributed_Post {
+class Outgoing_Post {
 	/**
 	 * The post meta key for the distributed post configuration.
 	 */

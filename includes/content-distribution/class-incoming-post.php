@@ -1,6 +1,6 @@
 <?php
 /**
- * Newspack Network Linked Post.
+ * Newspack Network Content Distribution: Linked Post.
  *
  * @package Newspack
  */
@@ -13,17 +13,17 @@ use WP_Post;
 use WP_Error;
 
 /**
- * Linked Post Class.
+ * Incoming Post Class.
  */
-class Linked_Post {
+class Incoming_Post {
 	/**
-	 * Post meta key containing the distributed post ID that is unique accross
-	 * the network.
+	 * Post meta key containing the outgoing post ID that is unique accross the
+	 * network.
 	 */
 	const NETWORK_POST_ID_META = 'newspack_network_post_id';
 
 	/**
-	 * Post meta key containing the distributed post full payload.
+	 * Post meta key containing the outgoing post full payload.
 	 */
 	const PAYLOAD_META = 'newspack_network_post_payload';
 
@@ -59,7 +59,7 @@ class Linked_Post {
 	private $post = null;
 
 	/**
-	 * The distributed post payload.
+	 * The outgoing post payload.
 	 *
 	 * @var array
 	 */
@@ -68,12 +68,16 @@ class Linked_Post {
 	/**
 	 * Constructor.
 	 *
-	 * @param array $payload The distributed post payload.
+	 * @param int|array $payload The outgoing post payload or post ID.
 	 *
 	 * @throws \InvalidArgumentException If the payload is invalid or the post is
 	 *                                   not configured for distribution.
 	 */
 	public function __construct( $payload ) {
+		if ( is_numeric( $payload ) ) {
+			$payload = get_post_meta( $payload, self::PAYLOAD_META, true );
+		}
+
 		$error = self::get_payload_error( $payload );
 
 		if ( is_wp_error( $error ) ) {
@@ -83,7 +87,7 @@ class Linked_Post {
 		$this->payload         = $payload;
 		$this->network_post_id = $payload['config']['network_post_id'];
 
-		$post = $this->query_linked_post();
+		$post = $this->query_post();
 		if ( $post ) {
 			$this->ID      = $post->ID;
 			$this->post    = $post;
@@ -124,7 +128,7 @@ class Linked_Post {
 	}
 
 	/**
-	 * Get the stored payload for a linked post.
+	 * Get the stored payload for a post.
 	 *
 	 * @return array The stored payload.
 	 */
@@ -136,11 +140,11 @@ class Linked_Post {
 	}
 
 	/**
-	 * Find the linked post from the payload's network post ID.
+	 * Find the post from the payload's network post ID.
 	 *
-	 * @return WP_Post|null The linked post or null if not found.
+	 * @return WP_Post|null The post or null if not found.
 	 */
-	protected function query_linked_post() {
+	protected function query_post() {
 		$posts = get_posts(
 			[
 				'post_type'      => Content_Distribution::get_distributed_post_types(),
@@ -161,9 +165,9 @@ class Linked_Post {
 	}
 
 	/**
-	 * Get the linked post.
+	 * Get the post.
 	 *
-	 * @return WP_Post|null The linked post or null if not found.
+	 * @return WP_Post|null The post or null if not found.
 	 */
 	public function get_post() {
 		return $this->post;
@@ -294,7 +298,7 @@ class Linked_Post {
 	}
 
 	/**
-	 * Insert the linked post.
+	 * Insert the incoming post.
 	 *
 	 * This will create or update an existing post and the stored payload.
 	 *
