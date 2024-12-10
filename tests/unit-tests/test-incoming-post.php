@@ -146,6 +146,18 @@ class TestLinkedPost extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test instantiation with post ID.
+	 */
+	public function test_instantiation_with_post_id() {
+		$this->incoming_post->insert();
+
+		$incoming_post = new Incoming_Post( $this->incoming_post->ID );
+
+		$this->assertInstanceOf( Incoming_Post::class, $incoming_post );
+		$this->assertSame( $this->incoming_post->ID, $incoming_post->ID );
+	}
+
+	/**
 	 * Test insert existing linked post.
 	 */
 	public function test_insert_existing_post() {
