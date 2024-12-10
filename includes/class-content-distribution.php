@@ -143,6 +143,13 @@ class Content_Distribution {
 		if ( ! $post ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
 		}
+
+		$supported_post_types = self::get_distributed_post_types();
+		if ( ! in_array( $post->post_type, $supported_post_types ) ) {
+			/* translators: unsupported post type passed to the function */
+			return new WP_Error( 'invalid_post', sprintf( __( 'Invalid post type: %s' ), $post->post_type ), 'newspack-network' );
+		}
+
 		$config = get_post_meta( $post_id, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
