@@ -66,10 +66,9 @@ class Content_Distribution {
 		if ( ! $post instanceof Distributed_Post ) {
 			$post = self::get_distributed_post( $post );
 		}
-		if ( ! $post->is_distributed() ) {
-			return;
+		if ( $post ) {
+			return $post->get_payload();
 		}
-		return $post->get_payload();
 	}
 
 	/**
