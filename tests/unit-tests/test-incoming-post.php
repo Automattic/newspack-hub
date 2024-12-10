@@ -8,7 +8,7 @@
 use Newspack_Network\Content_Distribution\Incoming_Post;
 
 /**
- * Test the Content Distribution class.
+ * Test the Incoming_Post class.
  */
 class TestLinkedPost extends WP_UnitTestCase {
 	/**
