@@ -237,9 +237,11 @@ class Incoming_Post {
 			return;
 		}
 
-		foreach ( $data as $meta ) {
-			foreach ( $meta['value'] as $value ) {
-				add_post_meta( $this->ID, $meta['key'], $value );
+		foreach ( $data as $meta_key => $meta_value ) {
+			if ( ! in_array( $meta_key, $reserved_keys, true ) ) {
+				foreach ( $meta_value as $value ) {
+					add_post_meta( $this->ID, $meta_key, $value );
+				}
 			}
 		}
 	}

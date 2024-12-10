@@ -214,21 +214,19 @@ class Outgoing_Post {
 			ARRAY_FILTER_USE_BOTH
 		);
 
-		// Unserialize meta values.
-		$meta = array_map(
-			function( $value, $key ) {
-				return [
-					'key'   => $key,
-					'value' => array_map(
-						function( $v ) {
-							return maybe_unserialize( $v );
-						},
-						$value
-					),
-				];
+		// Unserialize meta values and reformat the array.
+		$meta = array_reduce(
+			array_keys( $meta ),
+			function( $carry, $key ) use ( $meta ) {
+				$carry[ $key ] = array_map(
+					function( $v ) {
+						return maybe_unserialize( $v );
+					},
+					$meta[ $key ]
+				);
+				return $carry;
 			},
-			$meta,
-			array_keys( $meta )
+			[]
 		);
 
 		/**
