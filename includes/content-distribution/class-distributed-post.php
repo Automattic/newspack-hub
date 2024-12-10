@@ -21,13 +21,6 @@ class Distributed_Post {
 	const DISTRIBUTED_POST_META = 'newspack_network_distributed';
 
 	/**
-	 * The post ID.
-	 *
-	 * @var int
-	 */
-	public $ID = 0;
-
-	/**
 	 * The post object.
 	 *
 	 * @var WP_Post
@@ -47,8 +40,16 @@ class Distributed_Post {
 			throw new \InvalidArgumentException( esc_html( __( 'Invalid post.', 'newspack-network' ) ) );
 		}
 
-		$this->ID   = $post->ID;
 		$this->post = $post;
+	}
+
+	/**
+	 * Get the post object.
+	 *
+	 * @return WP_Post The post object.
+	 */
+	public function get_post() {
+		return $this->post;
 	}
 
 	/**
@@ -59,20 +60,17 @@ class Distributed_Post {
 	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
 	public function set_config( $site_urls = [] ) {
-		if ( ! $this->ID ) {
-			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
-		}
-		$config = get_post_meta( $this->ID, self::DISTRIBUTED_POST_META, true );
+		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
 		// Set post network ID.
 		if ( empty( $config['network_post_id'] ) ) {
-			$config['network_post_id'] = md5( $this->ID . get_bloginfo( 'url' ) );
+			$config['network_post_id'] = md5( $this->post->ID . get_bloginfo( 'url' ) );
 		}
 		$config['enabled']   = empty( $site_urls ) ? false : true;
 		$config['site_urls'] = $site_urls;
-		update_post_meta( $this->ID, self::DISTRIBUTED_POST_META, $config );
+		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $config );
 	}
 
 	/**
@@ -84,9 +82,6 @@ class Distributed_Post {
 	 * @return bool
 	 */
 	public function is_distributed( $site_url = null ) {
-		if ( ! $this->ID ) {
-			return false;
-		}
 		$distributed_post_types = Content_Distribution::get_distributed_post_types();
 		if ( ! in_array( $this->post->post_type, $distributed_post_types, true ) ) {
 			return false;
@@ -110,7 +105,7 @@ class Distributed_Post {
 	 * @return array The distribution configuration.
 	 */
 	public function get_config() {
-		$config = get_post_meta( $this->ID, self::DISTRIBUTED_POST_META, true );
+		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
@@ -131,17 +126,17 @@ class Distributed_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload() {
-		if ( ! $this->ID ) {
+		if ( ! $this->post->ID ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
 		}
 
 		$config = self::get_config();
 		return [
 			'site_url'  => get_bloginfo( 'url' ),
-			'post_id'   => $this->ID,
+			'post_id'   => $this->post->ID,
 			'config'    => $config,
 			'post_data' => [
-				'title'         => html_entity_decode( get_the_title( $this->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'title'         => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
 				'date_gmt'      => $this->post->post_date_gmt,
 				'modified_gmt'  => $this->post->post_modified_gmt,
 				'slug'          => $this->post->post_name,
@@ -150,7 +145,7 @@ class Distributed_Post {
 				'content'       => $this->get_processed_post_content(),
 				'excerpt'       => $this->post->post_excerpt,
 				'taxonomy'      => $this->get_post_taxonomy_terms(),
-				'thumbnail_url' => get_the_post_thumbnail_url( $this->ID, 'full' ),
+				'thumbnail_url' => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
 			],
 		];
 	}
@@ -184,7 +179,7 @@ class Distributed_Post {
 			if ( ! $taxonomy->public ) {
 				continue;
 			}
-			$terms = get_the_terms( $this->ID, $taxonomy->name );
+			$terms = get_the_terms( $this->post->ID, $taxonomy->name );
 			if ( ! $terms ) {
 				continue;
 			}

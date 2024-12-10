@@ -106,7 +106,7 @@ class TestDistributedPost extends WP_UnitTestCase {
 		$config = $this->distributed_post->get_config();
 
 		$this->assertSame( get_bloginfo( 'url' ), $payload['site_url'] );
-		$this->assertSame( $this->distributed_post->ID, $payload['post_id'] );
+		$this->assertSame( $this->distributed_post->get_post()->ID, $payload['post_id'] );
 		$this->assertEquals( $config, $payload['config'] );
 
 		// Assert that 'post_data' only contains the expected keys.
