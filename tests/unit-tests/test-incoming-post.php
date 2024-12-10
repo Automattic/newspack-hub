@@ -151,7 +151,7 @@ class TestIncomingPost extends WP_UnitTestCase {
 
 		// Assert post meta.
 		$this->assertSame( 'value', get_post_meta( $post_id, 'single', true ) );
-		$this->assertSame( [ 'a' => 'b', 'c' => 'd' ], get_post_meta( $post_id, 'array', true ) );
+		$this->assertSame( [ 'a' => 'b', 'c' => 'd' ], get_post_meta( $post_id, 'array', true ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
 		$this->assertSame( [ 'value 1', 'value 2' ], get_post_meta( $post_id, 'multiple' ) );
 	}
 
