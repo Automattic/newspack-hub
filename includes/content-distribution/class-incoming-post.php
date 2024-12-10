@@ -216,6 +216,35 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Update the post meta for a linked post.
+	 *
+	 * @return void
+	 */
+	protected function update_post_meta() {
+		$data = $this->payload['post_data']['post_meta'];
+
+		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
+
+		// Clear existing post meta.
+		$post_meta = get_post_meta( $this->ID );
+		foreach ( $post_meta as $meta_key => $meta_value ) {
+			if ( ! in_array( $meta_key, $reserved_keys, true ) ) {
+				delete_post_meta( $this->ID, $meta_key );
+			}
+		}
+
+		if ( empty( $data ) ) {
+			return;
+		}
+
+		foreach ( $data as $meta ) {
+			foreach ( $meta['value'] as $value ) {
+				add_post_meta( $this->ID, $meta['key'], $value );
+			}
+		}
+	}
+
+	/**
 	 * Upload the thumbnail for a linked post.
 	 */
 	protected function upload_thumbnail() {
@@ -364,6 +393,9 @@ class Incoming_Post {
 			// Update the object.
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
+
+			// Handle post meta.
+			$this->update_post_meta();
 
 			// Handle thumbnail.
 			$thumbnail_url = $post_data['thumbnail_url'];

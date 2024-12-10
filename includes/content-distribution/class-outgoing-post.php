@@ -140,6 +140,7 @@ class Outgoing_Post {
 				'excerpt'       => $this->post->post_excerpt,
 				'taxonomy'      => $this->get_post_taxonomy_terms(),
 				'thumbnail_url' => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
+				'post_meta'     => $this->get_post_meta(),
 			],
 		];
 	}
@@ -188,5 +189,56 @@ class Outgoing_Post {
 			);
 		}
 		return $data;
+	}
+
+	/**
+	 * Get post meta for distribution.
+	 *
+	 * @return array The post meta data.
+	 */
+	protected function get_post_meta() {
+		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
+
+		$meta = get_post_meta( $this->post->ID );
+
+		if ( empty( $meta ) ) {
+			return [];
+		}
+
+		$meta = array_filter(
+			$meta,
+			function( $value, $key ) use ( $reserved_keys ) {
+				// Filter out reserved keys.
+				return ! in_array( $key, $reserved_keys, true );
+			},
+			ARRAY_FILTER_USE_BOTH
+		);
+
+		// Unserialize meta values.
+		$meta = array_map(
+			function( $value, $key ) {
+				return [
+					'key'   => $key,
+					'value' => array_map(
+						function( $v ) {
+							return maybe_unserialize( $v );
+						},
+						$value
+					),
+				];
+			},
+			$meta,
+			array_keys( $meta )
+		);
+
+		/**
+		 * Filters the post meta data for distribution.
+		 *
+		 * @param array   $meta The post meta data.
+		 * @param WP_Post $post The post object.
+		 */
+		$meta = apply_filters( 'newspack_network_distributed_post_meta', $meta, $this->post );
+
+		return $meta;
 	}
 }
