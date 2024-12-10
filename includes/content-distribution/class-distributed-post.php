@@ -126,10 +126,6 @@ class Distributed_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload() {
-		if ( ! $this->post->ID ) {
-			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
-		}
-
 		$config = self::get_config();
 		return [
 			'site_url'  => get_bloginfo( 'url' ),
