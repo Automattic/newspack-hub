@@ -107,8 +107,7 @@ class Linked_Post {
 			return new WP_Error( 'invalid_post', __( 'Invalid post payload.', 'newspack-network' ) );
 		}
 
-		$config    = $payload['config'];
-		$post_data = $payload['post_data'];
+		$config = $payload['config'];
 
 		if (
 			empty( $config['enabled'] ) ||
