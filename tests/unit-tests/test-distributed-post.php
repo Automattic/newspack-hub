@@ -49,7 +49,6 @@ class TestDistributedPost extends WP_UnitTestCase {
 	 */
 	public function test_get_config() {
 		$config = $this->distributed_post->get_config();
-		$this->assertTrue( $config['enabled'] );
 		$this->assertSame( [ $this->node_url ], $config['site_urls'] );
 		$this->assertSame( 32, strlen( $config['network_post_id'] ) );
 	}
@@ -61,7 +60,6 @@ class TestDistributedPost extends WP_UnitTestCase {
 		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$distributed_post = new Distributed_Post( $post );
 		$config           = $distributed_post->get_config();
-		$this->assertFalse( $config['enabled'] );
 		$this->assertEmpty( $config['site_urls'] );
 		$this->assertEmpty( $config['network_post_id'] );
 	}

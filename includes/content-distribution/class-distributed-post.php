@@ -68,7 +68,6 @@ class Distributed_Post {
 		if ( empty( $config['network_post_id'] ) ) {
 			$config['network_post_id'] = md5( $this->post->ID . get_bloginfo( 'url' ) );
 		}
-		$config['enabled']   = empty( $site_urls ) ? false : true;
 		$config['site_urls'] = $site_urls;
 		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $config );
 	}
@@ -88,7 +87,7 @@ class Distributed_Post {
 		}
 
 		$config = $this->get_config();
-		if ( ! $config['enabled'] || empty( $config['site_urls'] ) ) {
+		if ( empty( $config['site_urls'] ) ) {
 			return false;
 		}
 
@@ -112,7 +111,6 @@ class Distributed_Post {
 		$config = wp_parse_args(
 			$config,
 			[
-				'enabled'         => false,
 				'site_urls'       => [],
 				'network_post_id' => '',
 			]
