@@ -221,8 +221,6 @@ class Incoming_Post {
 	 * @return void
 	 */
 	protected function update_post_meta() {
-		$data = $this->payload['post_data']['post_meta'];
-
 		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
 
 		// Clear existing post meta.
@@ -232,6 +230,8 @@ class Incoming_Post {
 				delete_post_meta( $this->ID, $meta_key );
 			}
 		}
+
+		$data = $this->payload['post_data']['post_meta'];
 
 		if ( empty( $data ) ) {
 			return;
