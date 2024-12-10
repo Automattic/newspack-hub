@@ -385,13 +385,13 @@ class Incoming_Post {
 		update_post_meta( $this->ID, self::NETWORK_POST_ID_META, $this->network_post_id );
 
 		/**
-		 * Fires after a linked post is inserted.
+		 * Fires after an incoming post is inserted.
 		 *
-		 * @param int   $post_id   The linked post ID.
+		 * @param int   $post_id   The post ID.
 		 * @param bool  $is_linked Whether the post is linked.
 		 * @param array $payload   The post payload.
 		 */
-		do_action( 'newspack_network_linked_post_inserted', $this->ID, $this->is_linked(), $this->payload );
+		do_action( 'newspack_network_incoming_post_inserted', $this->ID, $this->is_linked(), $this->payload );
 
 		return $this->ID;
 	}
