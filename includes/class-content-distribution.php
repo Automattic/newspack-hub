@@ -64,16 +64,13 @@ class Content_Distribution {
 	 */
 	public static function handle_post_updated( $post ) {
 		if ( ! $post instanceof Outgoing_Post ) {
-			try {
-				$post = self::get_distributed_post( $post );
-			} catch ( \InvalidArgumentException $e ) {
-				return null;
-			}
+			$post = self::get_distributed_post( $post );
 		}
 
-		if ( $post instanceof Outgoing_Post ) {
+		if ( $post ) {
 			return $post->get_payload();
 		}
+
 		return null;
 	}
 
@@ -120,11 +117,16 @@ class Content_Distribution {
 	 * @return Outgoing_Post|null The distributed post or null if not found.
 	 */
 	public static function get_distributed_post( $post ) {
-		$outgoing_post = new Outgoing_Post( $post );
-		if ( ! $outgoing_post->is_distributed() ) {
-			return null;
+		try {
+			$outgoing_post = new Outgoing_Post( $post );
+			if ( $outgoing_post->is_distributed() ) {
+				return $outgoing_post;
+			}
+		} catch ( \InvalidArgumentException $e ) {
+			// Post type is not supported.
 		}
-		return $outgoing_post;
+
+		return null;
 	}
 
 	/**
