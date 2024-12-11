@@ -296,21 +296,21 @@ class Incoming_Post {
 	/**
 	 * Handle the distributed post deletion.
 	 *
-	 * If the post is linked, it'll be deleted. Otherwise, the payload will be
-	 * removed and the unlinked post is now standalone.
+	 * If the post is linked, it'll be trashed.
 	 *
-	 * For the unlinked post, we'll keep the network post ID and unlinked meta in
-	 * case the original post gets restored from a backup.
+	 * The distributed post payload will be removed so the unlinked post can be
+	 * treated as a regular standalone post.
+	 *
+	 * We'll keep the network post ID and unlinked meta in case the original post
+	 * gets restored from a backup.
 	 *
 	 * @return void
 	 */
 	public function delete() {
 		if ( $this->is_linked() ) {
-			// @TODO Determine whether we're deleting permanently or trashing the post.
-			wp_delete_post( $this->ID, true );
-		} else {
-			delete_post_meta( $this->ID, self::PAYLOAD_META );
+			wp_delete_post( $this->ID, false );
 		}
+		delete_post_meta( $this->ID, self::PAYLOAD_META );
 	}
 
 	/**
