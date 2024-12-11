@@ -8,6 +8,8 @@
 namespace Newspack_Network\Content_Distribution;
 
 use Newspack_Network\Content_Distribution;
+use Newspack_Network\Debugger;
+use Newspack_Network\Utils\Network;
 use WP_Post;
 use WP_Error;
 
@@ -65,6 +67,15 @@ class Outgoing_Post {
 	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
 	public function set_config( $site_urls = [] ) {
+		$urls_not_in_network = array_filter(
+			$site_urls,
+			fn( $site ) => ! Network::is_networked_url( $site )
+		);
+
+		if ( ! empty( $urls_not_in_network ) ) {
+			Debugger::log( sprintf( 'Non-networked URLs were passed to config on post ID %d: %s', $this->post->ID, implode( ', ', $urls_not_in_network ) ) );
+		}
+
 		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];

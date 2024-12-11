@@ -78,28 +78,22 @@ class Distribution {
 			WP_CLI::error( 'Post ID must be a number.' );
 		}
 
-
 		if ( 'all' === $assoc_args['sites'] ) {
 			$sites = Network::get_networked_urls();
 		} else {
-			$sites               = array_map(
+			$sites = array_map(
 				fn( $site ) => untrailingslashit( trim( $site ) ),
 				explode( ',', $assoc_args['sites'] )
 			);
-			$urls_not_in_network = array_filter(
-				$sites,
-				fn( $site ) => ! Network::is_networked_url( $site )
-			);
-			if ( ! empty( $urls_not_in_network ) ) {
-				WP_CLI::error( sprintf( 'Non-networked URLs were passed in --sites: %s', implode( ', ', $urls_not_in_network ) ) );
-			}
 		}
 
 		try {
 			$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
-			$outgoing_post->set_config( $sites );
+			$config = $outgoing_post->set_config( $sites );
+			$sites_distributed_to = $config['site_urls'] ?? [];
 			Content_Distribution::distribute_post( $outgoing_post );
-			WP_CLI::success( sprintf( 'Distributed post %d to sites: %s', $post_id, implode( ', ', $sites ) ) );
+			WP_CLI::success( sprintf( 'Distributed post %d to %d sites: %s', $post_id, count( $sites_distributed_to ), implode( ', ', $sites_distributed_to ) ) );
+
 		} catch ( \Exception $e ) {
 			WP_CLI::error( $e->getMessage() );
 		}

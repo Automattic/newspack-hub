@@ -123,7 +123,7 @@ class Content_Distribution {
 				return $outgoing_post;
 			}
 		} catch ( \InvalidArgumentException $e ) {
-			// Post type is not supported.
+			return null;
 		}
 
 		return null;
