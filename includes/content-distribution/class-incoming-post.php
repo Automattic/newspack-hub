@@ -307,6 +307,10 @@ class Incoming_Post {
 	 * @return void
 	 */
 	public function delete() {
+		// Bail if there's no post to delete.
+		if ( ! $this->ID ) {
+			return;
+		}
 		if ( $this->is_linked() ) {
 			wp_delete_post( $this->ID, false );
 		}
