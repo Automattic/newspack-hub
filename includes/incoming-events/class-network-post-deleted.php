@@ -40,6 +40,11 @@ class Network_Post_Deleted extends Abstract_Incoming_Event {
 
 		Debugger::log( 'Processing network_post_deleted ' . wp_json_encode( $payload['config'] ) );
 
+		$error = Incoming_Post::get_payload_error( $payload );
+		if ( is_wp_error( $error ) ) {
+			Debugger::log( 'Error processing network_post_deleted: ' . $error->get_error_message() );
+			return;
+		}
 		$incoming_post = new Incoming_Post( $payload );
 		$incoming_post->delete();
 	}
