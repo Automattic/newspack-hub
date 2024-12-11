@@ -110,6 +110,7 @@ class TestOutgoingPoist extends WP_UnitTestCase {
 		// Assert that 'post_data' only contains the expected keys.
 		$post_data_keys = [
 			'title',
+			'post_status',
 			'date_gmt',
 			'modified_gmt',
 			'slug',

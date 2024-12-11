@@ -336,13 +336,19 @@ class Incoming_Post {
 			'post_type'     => $post_type,
 		];
 
-		// New post, set post status.
+		// The default status for a new post is 'draft'.
 		if ( ! $this->ID ) {
 			$postarr['post_status'] = 'draft';
 		}
 
 		// Insert the post if it's linked or a new post.
 		if ( ! $this->ID || $this->is_linked() ) {
+
+			// If the post is moving to non-publish statuses, always update the status.
+			if ( in_array( $post_data['post_status'], [ 'draft', 'trash', 'pending', 'private' ] ) ) {
+				$postarr['post_status'] = $post_data['post_status'];
+			}
+
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 

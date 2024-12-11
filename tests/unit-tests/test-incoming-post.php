@@ -46,6 +46,7 @@ class TestLinkedPost extends WP_UnitTestCase {
 			],
 			'post_data' => [
 				'title'         => 'Title',
+				'post_status'   => 'publish',
 				'date_gmt'      => '2021-01-01 00:00:00',
 				'modified_gmt'  => '2021-01-01 00:00:00',
 				'slug'          => 'slug',
@@ -305,5 +306,37 @@ class TestLinkedPost extends WP_UnitTestCase {
 		// Assert that the thumbnail was removed.
 		$thumbnail_id = get_post_thumbnail_id( $post_id );
 		$this->assertEmpty( $thumbnail_id );
+	}
+
+	/**
+	 * Test status changes.
+	 */
+	public function test_status_changes() {
+		$post_id = $this->incoming_post->insert();
+
+		// Publish the linked post.
+		wp_update_post(
+			[
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			]
+		);
+
+		$payload = $this->get_sample_payload();
+
+		// Assert that the post status updates to draft.
+		$payload['post_data']['post_status'] = 'draft';
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+
+		// Assert that the post status does NOT update to publish.
+		$payload['post_data']['post_status'] = 'publish';
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+
+		// Assert that the post status updates to trash.
+		$payload['post_data']['post_status'] = 'trash';
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'trash', get_post_status( $post_id ) );
 	}
 }

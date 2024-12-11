@@ -36,6 +36,7 @@ class Content_Distribution {
 			return;
 		}
 		Data_Events::register_listener( 'wp_after_insert_post', 'network_post_updated', [ __CLASS__, 'handle_post_updated' ] );
+		Data_Events::register_listener( 'delete_post', 'network_post_deleted', [ __CLASS__, 'handle_post_deleted' ] );
 		Data_Events::register_listener( 'newspack_network_incoming_post_inserted', 'network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ] );
 	}
 
@@ -66,6 +67,20 @@ class Content_Distribution {
 		if ( ! $post instanceof Outgoing_Post ) {
 			$post = self::get_distributed_post( $post );
 		}
+		if ( $post ) {
+			return $post->get_payload();
+		}
+	}
+
+	/**
+	 * Post delete listener callback.
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return array The post payload.
+	 */
+	public static function handle_post_deleted( $post_id ) {
+		$post = self::get_distributed_post( $post );
 		if ( $post ) {
 			return $post->get_payload();
 		}
