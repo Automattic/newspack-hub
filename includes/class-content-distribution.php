@@ -41,8 +41,8 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Filter the webhooks request priority so `network_post_updated` is
-	 * prioritized.
+	 * Filter the webhooks request priority so `network_post_updated` and
+	 * `network_post_deleted` are prioritized.
 	 *
 	 * @param int    $priority    The request priority.
 	 * @param string $action_name The action name.
@@ -50,7 +50,7 @@ class Content_Distribution {
 	 * @return int The request priority.
 	 */
 	public static function webhooks_request_priority( $priority, $action_name ) {
-		if ( 'network_post_updated' === $action_name ) {
+		if ( in_array( $action_name, [ 'network_post_updated', 'network_post_deleted' ], true ) ) {
 			return 1;
 		}
 		return $priority;
