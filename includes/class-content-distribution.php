@@ -63,14 +63,15 @@ class Content_Distribution {
 	 * @return array|null The post payload or null if the post is not distributed.
 	 */
 	public static function handle_post_updated( $post ) {
-		$post = get_post( $post );
-		if ( ! $post->ID ) {
-			return null;
-		}
 		if ( ! $post instanceof Outgoing_Post ) {
-			$post = self::get_distributed_post( $post );
+			try {
+				$post = self::get_distributed_post( $post );
+			} catch ( \InvalidArgumentException $e ) {
+				return null;
+			}
 		}
-		if ( $post ) {
+
+		if ( $post instanceof Outgoing_Post ) {
 			return $post->get_payload();
 		}
 		return null;
