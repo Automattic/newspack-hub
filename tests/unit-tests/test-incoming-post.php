@@ -314,6 +314,9 @@ class TestLinkedPost extends WP_UnitTestCase {
 	public function test_status_changes() {
 		$post_id = $this->incoming_post->insert();
 
+		// Assert that the default post status is draft.
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+
 		// Publish the linked post.
 		wp_update_post(
 			[
