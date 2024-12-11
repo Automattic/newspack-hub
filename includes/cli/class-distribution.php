@@ -7,6 +7,8 @@
 
 namespace Newspack_Network;
 
+use Newspack_Network\Content_Distribution\Outgoing_Post;
+use Newspack_Network\Utils\Network;
 use WP_CLI;
 use WP_CLI\ExitException;
 
@@ -42,8 +44,7 @@ class Distribution {
 						'type'        => 'positional',
 						'name'        => 'post-id',
 						'description' => sprintf(
-							/* translators: supported post types for content distribution */
-							__( 'The ID of the post to distribute. Supported post types are: %s' ),
+							'The ID of the post to distribute. Supported post types are: %s',
 							implode(
 								', ',
 								Content_Distribution::get_distributed_post_types()
@@ -78,20 +79,25 @@ class Distribution {
 		}
 
 		if ( 'all' === $assoc_args['sites'] ) {
-			$sites = []; // TODO. Is waiting for #161 to be merged.
+			$sites = Network::get_networked_urls();
 		} else {
-			$sites = array_map(
+			$sites               = array_map(
 				fn( $site ) => untrailingslashit( trim( $site ) ),
 				explode( ',', $assoc_args['sites'] )
 			);
-			// TODO. Validate the sites when #161 is merged.
+			$urls_not_in_network = array_filter(
+				$sites,
+				fn( $site ) => ! Network::is_networked_url( $site )
+			);
+			if ( ! empty( $urls_not_in_network ) ) {
+				WP_CLI::error( sprintf( 'Non-networked URLs were passed in --sites: %s', implode( ', ', $urls_not_in_network ) ) );
+			}
 		}
 
-		$distribution = Content_Distribution::set_post_distribution( $post_id, $sites );
-		if ( is_wp_error( $distribution ) ) {
-			WP_CLI::error( sprintf( 'Failed to set post distribution. %s', $distribution->get_error_message() ) );
-		}
-		Content_Distribution::distribute_post( $post_id );
+		$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
+		$outgoing_post->set_config( $sites );
+
+		Content_Distribution::distribute_post( $outgoing_post );
 		WP_CLI::success( sprintf( 'Distributed post %d to sites: %s', $post_id, implode( ', ', $sites ) ) );
 	}
 }
