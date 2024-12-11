@@ -21,7 +21,7 @@ class Distribution {
 	 *
 	 * @return void
 	 */
-	public static function init() {
+	public static function init(): void {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			add_action( 'init', [ __CLASS__, 'register_commands' ] );
 		}
@@ -78,6 +78,7 @@ class Distribution {
 			WP_CLI::error( 'Post ID must be a number.' );
 		}
 
+
 		if ( 'all' === $assoc_args['sites'] ) {
 			$sites = Network::get_networked_urls();
 		} else {
@@ -94,10 +95,13 @@ class Distribution {
 			}
 		}
 
-		$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
-		$outgoing_post->set_config( $sites );
-
-		Content_Distribution::distribute_post( $outgoing_post );
-		WP_CLI::success( sprintf( 'Distributed post %d to sites: %s', $post_id, implode( ', ', $sites ) ) );
+		try {
+			$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
+			$outgoing_post->set_config( $sites );
+			Content_Distribution::distribute_post( $outgoing_post );
+			WP_CLI::success( sprintf( 'Distributed post %d to sites: %s', $post_id, implode( ', ', $sites ) ) );
+		} catch ( \Exception $e ) {
+			WP_CLI::error( $e->getMessage() );
+		}
 	}
 }

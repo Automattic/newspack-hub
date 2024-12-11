@@ -40,6 +40,12 @@ class Outgoing_Post {
 			throw new \InvalidArgumentException( esc_html( __( 'Invalid post.', 'newspack-network' ) ) );
 		}
 
+		if ( ! in_array( $post->post_type, Content_Distribution::get_distributed_post_types() ) ) {
+			/* translators: unsupported post type for content distribution */
+			throw new \InvalidArgumentException(  sprintf( __( 'Post type %s is not supported as a distributed outgoing post.', $post->post_type),
+				'newspack-network'  ) );
+		}
+
 		$this->post = $post;
 	}
 
