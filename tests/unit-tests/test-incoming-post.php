@@ -339,4 +339,34 @@ class TestLinkedPost extends WP_UnitTestCase {
 		$this->incoming_post->insert( $payload );
 		$this->assertSame( 'trash', get_post_status( $post_id ) );
 	}
+
+	/**
+	 * Test delete.
+	 */
+	public function test_delete() {
+		$post_id = $this->incoming_post->insert();
+
+		$this->assertNotEmpty( get_post( $post_id ) );
+
+		$this->incoming_post->delete();
+
+		$this->assertEmpty( get_post( $post_id ) );
+	}
+
+	/**
+	 * Test delete unlinked.
+	 */
+	public function test_delete_unlinked() {
+		$post_id = $this->incoming_post->insert();
+
+		$this->assertNotEmpty( get_post( $post_id ) );
+
+		$this->incoming_post->set_unlinked();
+
+		$this->incoming_post->delete();
+
+		$this->assertNotEmpty( get_post( $post_id ) );
+
+		$this->assertEmpty( get_post_meta( $post_id, Incoming_Post::PAYLOAD_META, true ) );
+	}
 }
