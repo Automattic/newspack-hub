@@ -113,11 +113,7 @@ class Incoming_Post {
 
 		$config = $payload['config'];
 
-		if (
-			empty( $config['enabled'] ) ||
-			empty( $config['network_post_id'] ) ||
-			empty( $config['site_urls'] )
-		) {
+		if ( empty( $config['network_post_id'] ) || empty( $config['site_urls'] ) ) {
 			return new WP_Error( 'not_distributed', __( 'Post is not configured for distribution.', 'newspack-network' ) );
 		}
 
