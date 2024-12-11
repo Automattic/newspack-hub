@@ -80,7 +80,7 @@ class Content_Distribution {
 	 * @return array The post payload.
 	 */
 	public static function handle_post_deleted( $post_id ) {
-		$post = self::get_distributed_post( $post );
+		$post = self::get_distributed_post( $post_id );
 		if ( $post ) {
 			return $post->get_payload();
 		}

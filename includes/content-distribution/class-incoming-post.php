@@ -294,6 +294,26 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Handle the distributed post deletion.
+	 *
+	 * If the post is linked, it'll be deleted. Otherwise, the payload will be
+	 * removed and the unlinked post is now standalone.
+	 *
+	 * For the unlinked post, we'll keep the network post ID and unlinked meta in
+	 * case the original post gets restored from a backup.
+	 *
+	 * @return void
+	 */
+	public function delete() {
+		if ( $this->is_linked() ) {
+			// @TODO Determine whether we're deleting permanently or trashing the post.
+			wp_delete_post( $this->ID, true );
+		} else {
+			delete_post_meta( $this->ID, self::PAYLOAD_META );
+		}
+	}
+
+	/**
 	 * Insert the incoming post.
 	 *
 	 * This will create or update an existing post and the stored payload.
