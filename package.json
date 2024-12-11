@@ -9,9 +9,10 @@
 	"scripts": {
 		"cm": "git-cz",
 		"semantic-release": "newspack-scripts release --files=newspack-network.php",
-		"start": "npm ci",
-		"build": "echo 'No build step necessary for Newspack Network.'",
-		"watch": "echo 'No build step necessary for Newspack Network.'",
+		"clean": "rm -rf dist",
+		"start": "npm ci --legacy-peer-deps && npm run watch",
+		"build": "npm run clean && newspack-scripts wp-scripts build",
+		"watch": "npm run clean && newspack-scripts wp-scripts start",
 		"test": "echo 'No JS unit tests in this repository.'",
 		"lint": "npm run lint:scss && npm run lint:js",
 		"lint:js": "echo 'No JS files in this repository.'",
