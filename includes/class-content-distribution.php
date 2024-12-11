@@ -77,13 +77,14 @@ class Content_Distribution {
 	 *
 	 * @param int $post_id The post ID.
 	 *
-	 * @return array The post payload.
+	 * @return array|null The post payload or null if the post is not distributed.
 	 */
 	public static function handle_post_deleted( $post_id ) {
 		$post = self::get_distributed_post( $post_id );
 		if ( $post ) {
 			return $post->get_payload();
 		}
+		return null;
 	}
 
 	/**
