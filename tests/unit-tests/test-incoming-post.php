@@ -139,9 +139,13 @@ class TestIncomingPost extends WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $post_id );
 
 		$payload = $this->get_sample_payload();
+
+		// Assert post data.
 		$this->assertSame( $payload['post_data']['date_gmt'], get_the_date( 'Y-m-d H:i:s', $post_id ) );
 		$this->assertSame( $payload['post_data']['title'], get_the_title( $post_id ) );
 		$this->assertSame( $payload['post_data']['raw_content'], get_post_field( 'post_content', $post_id ) );
+
+		// Assert featured image.
 		$this->assertNotEmpty( get_post_thumbnail_id( $post_id ) );
 
 		// Assert taxonomy terms.
@@ -315,5 +319,24 @@ class TestIncomingPost extends WP_UnitTestCase {
 		// Assert that the thumbnail was removed.
 		$thumbnail_id = get_post_thumbnail_id( $post_id );
 		$this->assertEmpty( $thumbnail_id );
+	}
+
+	/**
+	 * Test post meta sync.
+	 */
+	public function test_post_meta_sync() {
+		$post_id = $this->incoming_post->insert();
+
+		// Unlink the post.
+		$this->incoming_post->set_unlinked();
+
+		// Update the post meta.
+		update_post_meta( $post_id, 'custom', 'new value' );
+
+		// Relink the post.
+		$this->incoming_post->set_unlinked( false );
+
+		// Assert that the custom post meta was removed on relink.
+		$this->assertEmpty( get_post_meta( $post_id, 'custom', true ) );
 	}
 }
