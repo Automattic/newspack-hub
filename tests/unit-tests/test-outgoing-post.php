@@ -53,6 +53,24 @@ class TestOutgoingPost extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test adding a site URL to the config after already having added one.
+	 */
+	public function test_add_site_url() {
+		$config = $this->outgoing_post->get_config();
+		$this->assertTrue( in_array( $this->network[0]['url'], $config['site_urls'], true ) );
+		$this->assertEquals( 1, count( $config['site_urls'] ) );
+
+		// Now add one more site URL.
+		$this->outgoing_post->set_config( [ $this->network[1]['url'] ] );
+		$config = $this->outgoing_post->get_config();
+		// Check that both urls are there.
+		$this->assertTrue( in_array( $this->network[0]['url'], $config['site_urls'], true ) );
+		$this->assertTrue( in_array( $this->network[1]['url'], $config['site_urls'], true ) );
+		// But no more than that.
+		$this->assertEquals( 2, count( $config['site_urls'] ) );
+	}
+
+	/**
 	 * Test set post distribution configuration.
 	 */
 	public function test_set_config() {
