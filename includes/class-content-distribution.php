@@ -23,6 +23,9 @@ class Content_Distribution {
 	 * @return void
 	 */
 	public static function init() {
+		if ( ! defined( 'NEWPACK_NETWORK_CONTENT_DISTRIBUTION' ) || ! NEWPACK_NETWORK_CONTENT_DISTRIBUTION ) {
+			return;
+		}
 		add_action( 'init', [ __CLASS__, 'register_listeners' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
 	}
