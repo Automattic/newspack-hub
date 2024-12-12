@@ -7,11 +7,11 @@
 
 namespace Newspack_Network;
 
-use Newspack_Network\Content_Distribution\Outgoing_Post;
-use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack\Data_Events;
+use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\Incoming_Post;
+use Newspack_Network\Content_Distribution\Outgoing_Post;
 use WP_Post;
-use WP_Error;
 
 /**
  * Main class for content distribution
@@ -26,6 +26,7 @@ class Content_Distribution {
 		if ( ! defined( 'NEWPACK_NETWORK_CONTENT_DISTRIBUTION' ) || ! NEWPACK_NETWORK_CONTENT_DISTRIBUTION ) {
 			return;
 		}
+		CLI::init();
 		add_action( 'init', [ __CLASS__, 'register_listeners' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
 	}
@@ -73,6 +74,8 @@ class Content_Distribution {
 		if ( $post ) {
 			return $post->get_payload();
 		}
+
+		return null;
 	}
 
 	/**
@@ -149,14 +152,16 @@ class Content_Distribution {
 	 *
 	 * @param WP_Post|int $post The post object or ID.
 	 *
-	 * @return Outgoing_Post|null The distributed post or null if not found.
+	 * @return Outgoing_Post|null The distributed post or null if not found, or we couldn't create one.
 	 */
 	public static function get_distributed_post( $post ) {
-		$outgoing_post = new Outgoing_Post( $post );
-		if ( ! $outgoing_post->is_distributed() ) {
+		try {
+			$outgoing_post = new Outgoing_Post( $post );
+		} catch ( \InvalidArgumentException ) {
 			return null;
 		}
-		return $outgoing_post;
+
+		return $outgoing_post->is_distributed() ? $outgoing_post : null;
 	}
 
 	/**
