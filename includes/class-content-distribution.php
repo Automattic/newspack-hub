@@ -9,6 +9,7 @@ namespace Newspack_Network;
 
 use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
+use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack\Data_Events;
 use WP_Post;
 use WP_Error;
@@ -110,6 +111,40 @@ class Content_Distribution {
 		 * @param array $post_types Array of post types.
 		 */
 		return apply_filters( 'newspack_network_distributed_post_types', [ 'post' ] );
+	}
+
+	/**
+	 * Get post meta keys that should be ignored on content distribution.
+	 *
+	 * @return string[] The reserved post meta keys.
+	 */
+	public static function get_reserved_post_meta_keys() {
+		$reserved_keys = [
+			'_edit_lock',
+			'_edit_last',
+			'_thumbnail_id',
+			'_yoast_wpseo_primary_category',
+		];
+
+		/**
+		 * Filters the reserved post meta keys that should not be distributed.
+		 *
+		 * @param string[] $reserved_keys The reserved post meta keys.
+		 * @param WP_Post  $post          The post object.
+		 */
+		$reserved_keys = apply_filters( 'newspack_network_content_distribution_reserved_post_meta_keys', $reserved_keys );
+
+		// Always preserve content distribution post meta.
+		return array_merge(
+			$reserved_keys,
+			[
+				Outgoing_Post::DISTRIBUTED_POST_META,
+				Incoming_Post::NETWORK_POST_ID_META,
+				Incoming_Post::PAYLOAD_META,
+				Incoming_Post::UNLINKED_META,
+				Incoming_Post::ATTACHMENT_META,
+			]
+		);
 	}
 
 	/**

@@ -104,8 +104,39 @@ class TestOutgoingPoist extends WP_UnitTestCase {
 			'excerpt',
 			'thumbnail_url',
 			'taxonomy',
+			'post_meta',
 		];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $payload['post_data'] ), $post_data_keys ) );
+	}
+
+	/**
+	 * Test post meta.
+	 */
+	public function test_post_meta() {
+		$post = $this->outgoing_post->get_post();
+		$meta_key   = 'test_meta_key';
+		$meta_value = 'test_meta_value';
+		update_post_meta( $post->ID, $meta_key, $meta_value );
+
+		$arr_meta_key = 'test_arr_meta_key';
+		$arr_meta_value = [ 1, 2, 3 ];
+		update_post_meta( $post->ID, $arr_meta_key, $arr_meta_value );
+
+		$multiple_meta_key = 'test_multiple_meta_key';
+		add_post_meta( $post->ID, $multiple_meta_key, 'a' );
+		add_post_meta( $post->ID, $multiple_meta_key, 'b' );
+
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertArrayHasKey( $meta_key, $payload['post_data']['post_meta'] );
+
+		$this->assertSame( $meta_value, $payload['post_data']['post_meta'][ $meta_key ][0] );
+
+		$this->assertArrayHasKey( $arr_meta_key, $payload['post_data']['post_meta'] );
+		$this->assertSame( $arr_meta_value, $payload['post_data']['post_meta'][ $arr_meta_key ][0] );
+
+		$this->assertArrayHasKey( $multiple_meta_key, $payload['post_data']['post_meta'] );
+		$this->assertSame( 'a', $payload['post_data']['post_meta'][ $multiple_meta_key ][0] );
+		$this->assertSame( 'b', $payload['post_data']['post_meta'][ $multiple_meta_key ][1] );
 	}
 }

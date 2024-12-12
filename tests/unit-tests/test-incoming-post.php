@@ -10,7 +10,7 @@ use Newspack_Network\Content_Distribution\Incoming_Post;
 /**
  * Test the Incoming_Post class.
  */
-class TestLinkedPost extends WP_UnitTestCase {
+class TestIncomingPost extends WP_UnitTestCase {
 	/**
 	 * URL for node that distributes posts.
 	 *
@@ -73,6 +73,11 @@ class TestLinkedPost extends WP_UnitTestCase {
 						],
 					],
 				],
+				'post_meta'     => [
+					'single'   => [ 'value' ],
+					'array'    => [ [ 'a' => 'b', 'c' => 'd' ] ], // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
+					'multiple' => [ 'value 1', 'value 2' ],
+				],
 			],
 		];
 	}
@@ -125,15 +130,24 @@ class TestLinkedPost extends WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $post_id );
 
 		$payload = $this->get_sample_payload();
+
+		// Assert post data.
 		$this->assertSame( $payload['post_data']['date_gmt'], get_the_date( 'Y-m-d H:i:s', $post_id ) );
 		$this->assertSame( $payload['post_data']['title'], get_the_title( $post_id ) );
 		$this->assertSame( $payload['post_data']['raw_content'], get_post_field( 'post_content', $post_id ) );
+
+		// Assert featured image.
 		$this->assertNotEmpty( get_post_thumbnail_id( $post_id ) );
 
 		// Assert taxonomy terms.
 		$terms = wp_get_post_terms( $post_id, [ 'category', 'post_tag' ] );
 		$this->assertSame( [ 'Category 1', 'Category 2', 'Tag 1', 'Tag 2' ], wp_list_pluck( $terms, 'name' ) );
 		$this->assertSame( [ 'category-1', 'category-2', 'tag-1', 'tag-2' ], wp_list_pluck( $terms, 'slug' ) );
+
+		// Assert post meta.
+		$this->assertSame( 'value', get_post_meta( $post_id, 'single', true ) );
+		$this->assertSame( [ 'a' => 'b', 'c' => 'd' ], get_post_meta( $post_id, 'array', true ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
+		$this->assertSame( [ 'value 1', 'value 2' ], get_post_meta( $post_id, 'multiple' ) );
 	}
 
 	/**
@@ -296,5 +310,24 @@ class TestLinkedPost extends WP_UnitTestCase {
 		// Assert that the thumbnail was removed.
 		$thumbnail_id = get_post_thumbnail_id( $post_id );
 		$this->assertEmpty( $thumbnail_id );
+	}
+
+	/**
+	 * Test post meta sync.
+	 */
+	public function test_post_meta_sync() {
+		$post_id = $this->incoming_post->insert();
+
+		// Unlink the post.
+		$this->incoming_post->set_unlinked();
+
+		// Update the post meta.
+		update_post_meta( $post_id, 'custom', 'new value' );
+
+		// Relink the post.
+		$this->incoming_post->set_unlinked( false );
+
+		// Assert that the custom post meta was removed on relink.
+		$this->assertEmpty( get_post_meta( $post_id, 'custom', true ) );
 	}
 }
