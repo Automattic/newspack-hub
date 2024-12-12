@@ -62,18 +62,19 @@ class Outgoing_Post {
 	/**
 	 * Set the distribution configuration for a given post.
 	 *
-	 * @param int[] $site_urls Array of site URLs to distribute the post to.
+	 * @param int[] $site_urls Array of networked URLs to distribute the post to.
 	 *
 	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
 	public function set_config( $site_urls = [] ) {
-		$urls_not_in_network = array_filter(
-			$site_urls,
-			fn( $site ) => ! Network::is_networked_url( $site )
-		);
-
+		$networked_urls      = Network::get_networked_urls();
+		$urls_not_in_network = array_diff( $site_urls, $networked_urls );
 		if ( ! empty( $urls_not_in_network ) ) {
 			Debugger::log( sprintf( 'Non-networked URLs were passed to config on post ID %d: %s', $this->post->ID, implode( ', ', $urls_not_in_network ) ) );
+			$site_urls = array_filter(
+				$site_urls,
+				fn( $site ) => Network::is_networked_url( $site )
+			);
 		}
 
 		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
@@ -84,7 +85,10 @@ class Outgoing_Post {
 		if ( empty( $config['network_post_id'] ) ) {
 			$config['network_post_id'] = md5( $this->post->ID . get_bloginfo( 'url' ) );
 		}
-		$config['site_urls'] = $site_urls;
+
+		// If there are urls not already in the config, add them. Note that we don't support
+		// removing urls from the config.
+		$config['site_urls'] = array_unique( array_merge( $config['site_urls'] ?? [], $site_urls ) );
 		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $config );
 	}
 

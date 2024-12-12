@@ -5,9 +5,9 @@
  * @package Newspack
  */
 
-namespace Newspack_Network;
+namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution\Outgoing_Post;
+use Newspack_Network\Content_Distribution;
 use Newspack_Network\Utils\Network;
 use WP_CLI;
 use WP_CLI\ExitException;
@@ -15,7 +15,7 @@ use WP_CLI\ExitException;
 /**
  * Class Distribution.
  */
-class Distribution {
+class CLI {
 	/**
 	 * Initialize this class and register hooks
 	 *
@@ -89,8 +89,9 @@ class Distribution {
 
 		try {
 			$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
-			$config = $outgoing_post->set_config( $sites );
-			$sites_distributed_to = $config['site_urls'] ?? [];
+			$outgoing_post->set_config( $sites );
+			$config = $outgoing_post->get_config();
+			$sites_distributed_to = array_diff($config['site_urls'], $sites);
 			Content_Distribution::distribute_post( $outgoing_post );
 			WP_CLI::success( sprintf( 'Distributed post %d to %d sites: %s', $post_id, count( $sites_distributed_to ), implode( ', ', $sites_distributed_to ) ) );
 

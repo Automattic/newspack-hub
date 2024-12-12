@@ -8,6 +8,7 @@
 namespace Newspack_Network;
 
 use Newspack\Data_Events;
+use Newspack_Network\Content_Distribution\CLI;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use WP_Post;
 
@@ -23,7 +24,7 @@ class Content_Distribution {
 	public static function init() {
 		add_action( 'init', [ __CLASS__, 'register_listeners' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
-		Distribution::init();
+		CLI::init();
 	}
 
 	/**
