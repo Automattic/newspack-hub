@@ -7,6 +7,7 @@
 
 namespace Newspack_Network;
 
+use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack\Data_Events;
 use WP_Post;
@@ -27,7 +28,8 @@ class Content_Distribution {
 		}
 		add_action( 'init', [ __CLASS__, 'register_listeners' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
-		add_action( 'enqueue_block_editor_assets', [ __CLASS__, 'enqueue_block_editor_assets' ] );
+
+		Editor::init();
 	}
 
 	/**
@@ -57,26 +59,6 @@ class Content_Distribution {
 			return 1;
 		}
 		return $priority;
-	}
-
-	/**
-	 * Enqueue block editor assets.
-	 *
-	 * @return void
-	 */
-	public static function enqueue_block_editor_assets() {
-		$screen = get_current_screen();
-		if ( ! in_array( $screen->post_type, self::get_distributed_post_types(), true ) ) {
-			return;
-		}
-
-		wp_enqueue_script(
-			'newspack-network-content-distribution',
-			plugins_url( '../dist/editor.js', __FILE__ ),
-			[],
-			filemtime( NEWSPACK_NETWORK_PLUGIN_FILE . 'dist/blocks.js' ),
-			true
-		);
 	}
 
 	/**

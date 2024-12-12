@@ -10,7 +10,7 @@ const path = require( 'path' );
 module.exports = getBaseWebpackConfig(
 	{
 		entry: {
-      editor: path.join( __dirname, 'src', 'editor' ),
+      distribute: path.join( __dirname, 'src', 'content-distribution', 'distribute' ),
     },
 	}
 );
