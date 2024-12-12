@@ -8,8 +8,9 @@
 namespace Newspack_Network\Content_Distribution;
 
 use Newspack_Network\Content_Distribution;
-use WP_Post;
+use Newspack_Network\Utils\Network;
 use WP_Error;
+use WP_Post;
 
 /**
  * Outgoing Post Class.
@@ -40,6 +41,11 @@ class Outgoing_Post {
 			throw new \InvalidArgumentException( esc_html( __( 'Invalid post.', 'newspack-network' ) ) );
 		}
 
+		if ( ! in_array( $post->post_type, Content_Distribution::get_distributed_post_types() ) ) {
+			/* translators: unsupported post type for content distribution */
+			throw new \InvalidArgumentException( esc_html( sprintf( __( 'Post type %s is not supported as a distributed outgoing post.', 'newspack-network' ), $post->post_type ) ) );
+		}
+
 		$this->post = $post;
 	}
 
@@ -57,9 +63,27 @@ class Outgoing_Post {
 	 *
 	 * @param int[] $site_urls Array of site URLs to distribute the post to.
 	 *
-	 * @return void|WP_Error Void on success, WP_Error on failure.
+	 * @return array|WP_Error Config array on success, WP_Error on failure.
 	 */
-	public function set_config( $site_urls = [] ) {
+	public function set_config( $site_urls ) {
+		if ( empty( $site_urls ) ) {
+			return new WP_Error( 'config_no_site_urls', __( 'No site URLs provided.', 'newspack-network' ) );
+		}
+
+		$networked_urls      = Network::get_networked_urls();
+		$urls_not_in_network = array_diff( $site_urls, $networked_urls );
+		if ( ! empty( $urls_not_in_network ) ) {
+			return new WP_Error(
+				'config_non_networked_urls',
+				sprintf(
+					/* translators: %s: list of non-networked URLs */
+					__( 'Non-networked URLs were passed to config: %s', 'newspack-network' ),
+					implode( ', ', $urls_not_in_network )
+				)
+			);
+		}
+
+
 		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
@@ -68,8 +92,18 @@ class Outgoing_Post {
 		if ( empty( $config['network_post_id'] ) ) {
 			$config['network_post_id'] = md5( $this->post->ID . get_bloginfo( 'url' ) );
 		}
-		$config['site_urls'] = $site_urls;
+
+		if ( empty( $config['site_urls'] ) ) {
+			$config['site_urls'] = [];
+		}
+
+		// If there are urls not already in the config, add them. Note that we don't support
+		// removing urls from the config.
+		$config['site_urls'] = array_unique( array_merge( $config['site_urls'], $site_urls ) );
+
 		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $config );
+
+		return $config;
 	}
 
 	/**
