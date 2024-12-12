@@ -56,7 +56,7 @@ class CLI {
 					[
 						'type'        => 'assoc',
 						'name'        => 'sites',
-						'description' => __( "Networked site url to distribute the post to – or 'all' to distribute to all sites." ),
+						'description' => __( "Networked site url(s) comma separated to distribute the post to – or 'all' to distribute to all sites in the network." ),
 						'optional'    => false,
 					],
 				],
@@ -89,11 +89,13 @@ class CLI {
 
 		try {
 			$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
-			$outgoing_post->set_config( $sites );
-			$config = $outgoing_post->get_config();
-			$sites_distributed_to = array_diff($config['site_urls'], $sites);
+			$config = $outgoing_post->set_config( $sites );
+			if ( is_wp_error( $config ) ) {
+				WP_CLI::error( $config->get_error_message() );
+			}
+
 			Content_Distribution::distribute_post( $outgoing_post );
-			WP_CLI::success( sprintf( 'Distributed post %d to %d sites: %s', $post_id, count( $sites_distributed_to ), implode( ', ', $sites_distributed_to ) ) );
+			WP_CLI::success( sprintf( 'Post with ID %d is distributed to %d sites: %s', $post_id, count( $config['site_urls'] ), implode( ', ', $config['site_urls'] ) ) );
 
 		} catch ( \Exception $e ) {
 			WP_CLI::error( $e->getMessage() );
