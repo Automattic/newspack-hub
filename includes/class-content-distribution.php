@@ -29,6 +29,7 @@ class Content_Distribution {
 		}
 		add_action( 'init', [ __CLASS__, 'register_listeners' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
+		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
 
 		Editor::init();
 	}
@@ -60,6 +61,34 @@ class Content_Distribution {
 			return 1;
 		}
 		return $priority;
+	}
+
+	/**
+	 * Distribute post on postmeta update.
+	 *
+	 * @param int    $meta_id    Meta ID.
+	 * @param int    $object_id  Object ID.
+	 * @param string $meta_key   Meta key.
+	 */
+	public static function handle_postmeta_update( $meta_id, $object_id, $meta_key ) {
+		if ( ! $object_id ) {
+			return;
+		}
+		$post = get_post( $object_id );
+		if ( ! $post ) {
+			return;
+		}
+		if ( ! in_array( $post->post_type, self::get_distributed_post_types(), true ) ) {
+			return;
+		}
+		// Ignore reserved keys but run if the meta is setting the distribution.
+		if (
+			Outgoing_Post::DISTRIBUTED_POST_META !== $meta_key &&
+			in_array( $meta_key, self::get_reserved_post_meta_keys(), true )
+		) {
+			return;
+		}
+		self::distribute_post( $post );
 	}
 
 	/**
