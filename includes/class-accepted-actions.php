@@ -40,6 +40,7 @@ class Accepted_Actions {
 		'network_manual_sync_user'                 => 'User_Manually_Synced',
 		'network_nodes_synced'                     => 'Nodes_Synced',
 		'newspack_network_membership_plan_updated' => 'Membership_Plan_Updated',
+		'network_post_updated'                     => 'Network_Post_Updated',
 	];
 
 	/**
@@ -61,5 +62,6 @@ class Accepted_Actions {
 		'network_nodes_synced',
 		'newspack_node_subscription_changed',
 		'newspack_network_membership_plan_updated',
+		'network_post_updated',
 	];
 }
