@@ -3,7 +3,7 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { sprintf, __, _n } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { PluginSidebar } from '@wordpress/editor';
@@ -16,7 +16,6 @@ const distributedMetaKey = newspack_network_distribute.distributed_meta;
 
 function Distribute() {
 	const [ search, setSearch ] = useState( '' );
-	const [ filteredSites, setFilteredSites ] = useState( networkSites );
 
 	const { savedUrls, editedUrls } = useSelect( select => {
 		const { getCurrentPostAttribute, getEditedPostAttribute } = select( 'core/editor' );
@@ -28,13 +27,11 @@ function Distribute() {
 		};
 	} );
 
-	useEffect( () => {
-		setFilteredSites(
-			networkSites.filter( url => url.includes( search ) )
-		);
-	}, [ search ] );
-
 	const { editPost, savePost } = useDispatch( 'core/editor' );
+
+	const selectedConnectionsCount = editedUrls.length - savedUrls.length;
+
+	const sites = networkSites.filter( url => url.includes( search ) );
 
 	return (
 		<PluginSidebar
@@ -44,9 +41,21 @@ function Distribute() {
 		>
 			<Panel>
 				<PanelBody>
-					{ ! savedUrls.length && (
+					{ ! savedUrls.length ? (
 						<p>
 							{ __( 'This post has not been distributed to any connections yet.', 'newspack-network' ) }
+						</p>
+					) : (
+						<p>
+							{ sprintf(
+								_n(
+									'This post has been distributed with one connection.',
+									'This post has been distributed with %d connections.',
+									savedUrls.length,
+									'newspack-network'
+								),
+								savedUrls.length
+							) }
 						</p>
 					) }
 					<TextControl
@@ -54,7 +63,7 @@ function Distribute() {
 						value={ search }
 						onChange={ setSearch }
 					/>
-					{ filteredSites.length === networkSites.length && (
+					{ sites.length === networkSites.length && (
 						<CheckboxControl
 							label={ __( 'Select all', 'newspack-network' ) }
 							checked={ editedUrls.length === networkSites.length }
@@ -65,18 +74,31 @@ function Distribute() {
 							} }
 						/>
 					) }
-					{ filteredSites.map( siteUrl => (
+					{ sites.map( siteUrl => (
 						<CheckboxControl
 							key={ siteUrl }
 							label={ siteUrl }
 							disabled={ savedUrls.includes( siteUrl ) } // Do not allow undistributing a site.
-							checked={ editedUrls.includes( siteUrl ) }
+							checked={ editedUrls.includes( siteUrl ) || savedUrls.includes( siteUrl ) }
 							onChange={ checked => {
 								const urls = checked ? [ ...editedUrls, siteUrl ] : editedUrls.filter( url => siteUrl !== url );
 								editPost( { meta: { [ distributedMetaKey ]: urls } } );
 							} }
 						/>
 					) ) }
+					{ selectedConnectionsCount > 0 && (
+						<p>
+							{ sprintf(
+								_n(
+									'One connection selected.',
+									'%d connections selected.',
+									selectedConnectionsCount,
+									'newspack-network'
+								),
+								selectedConnectionsCount
+							) }
+						</p>
+					) }
 					<Button
 						variant="primary"
 						onClick={ savePost }
