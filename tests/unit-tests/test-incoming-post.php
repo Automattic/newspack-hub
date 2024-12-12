@@ -37,14 +37,11 @@ class TestLinkedPost extends WP_UnitTestCase {
 	 */
 	private function get_sample_payload() {
 		return [
-			'site_url'  => $this->node_1,
-			'post_id'   => 1,
-			'config'    => [
-				'enabled'         => true,
-				'site_urls'       => [ $this->node_2 ],
-				'network_post_id' => '1234567890abcdef1234567890abcdef',
-			],
-			'post_data' => [
+			'site_url'        => $this->node_1,
+			'post_id'         => 1,
+			'network_post_id' => '1234567890abcdef1234567890abcdef',
+			'sites'           => [ $this->node_2 ],
+			'post_data'       => [
 				'title'         => 'Title',
 				'date_gmt'      => '2021-01-01 00:00:00',
 				'modified_gmt'  => '2021-01-01 00:00:00',
@@ -112,12 +109,6 @@ class TestLinkedPost extends WP_UnitTestCase {
 		$error = Incoming_Post::get_payload_error( $payload );
 		$this->assertTrue( is_wp_error( $error ) );
 		$this->assertSame( 'not_distributed_to_site', $error->get_error_code() );
-
-		// Assert invalid config.
-		$payload['config'] = 'invalid';
-		$error = Incoming_Post::get_payload_error( $payload );
-		$this->assertTrue( is_wp_error( $error ) );
-		$this->assertSame( 'not_distributed', $error->get_error_code() );
 	}
 
 	/**

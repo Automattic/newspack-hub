@@ -11,23 +11,26 @@ import { Panel, PanelBody, CheckboxControl, TextControl, Button } from '@wordpre
 import { globe } from '@wordpress/icons';
 import { registerPlugin } from '@wordpress/plugins';
 
+const networkSites = newspack_network_distribute.network_sites;
+const distributedMetaKey = newspack_network_distribute.distributed_meta;
+
 function Distribute() {
 	const [ search, setSearch ] = useState( '' );
-	const [ filteredSites, setFilteredSites ] = useState( newspack_network_distribute.network_sites );
+	const [ filteredSites, setFilteredSites ] = useState( networkSites );
 
-	const { savedUrls, editedUrls } = useSelect( ( select ) => {
+	const { savedUrls, editedUrls } = useSelect( select => {
 		const { getCurrentPostAttribute, getEditedPostAttribute } = select( 'core/editor' );
 		const savedMeta = getCurrentPostAttribute( 'meta' );
 		const editedMeta = getEditedPostAttribute( 'meta' );
 		return {
-			savedUrls: savedMeta?.[ newspack_network_distribute.distribute_meta ]?.site_urls || [],
-			editedUrls: editedMeta?.[ newspack_network_distribute.distribute_meta ]?.site_urls || [],
+			savedUrls: savedMeta?.[ distributedMetaKey ],
+			editedUrls: editedMeta?.[ distributedMetaKey ],
 		};
 	} );
 
 	useEffect( () => {
 		setFilteredSites(
-			newspack_network_distribute.network_sites.filter( ( url ) => url.includes( search ) )
+			networkSites.filter( url => url.includes( search ) )
 		);
 	}, [ search ] );
 
@@ -51,14 +54,14 @@ function Distribute() {
 						value={ search }
 						onChange={ setSearch }
 					/>
-					{ filteredSites.length === newspack_network_distribute.network_sites.length && (
+					{ filteredSites.length === networkSites.length && (
 						<CheckboxControl
 							label={ __( 'Select all', 'newspack-network' ) }
-							checked={ editedUrls.length === newspack_network_distribute.network_sites.length }
-							indeterminate={ editedUrls.length > 0 && editedUrls.length < newspack_network_distribute.network_sites.length }
+							checked={ editedUrls.length === networkSites.length }
+							indeterminate={ editedUrls.length > 0 && editedUrls.length < networkSites.length }
 							onChange={ checked => {
-								const urls = checked ? [ ...newspack_network_distribute.network_sites ] : [ ...savedUrls ];
-								editPost( { meta: { [ newspack_network_distribute.distribute_meta ]: { site_urls: urls } } } );
+								const urls = checked ? [ ...networkSites ] : [ ...savedUrls ];
+								editPost( { meta: { [ distributedMetaKey ]: urls } } );
 							} }
 						/>
 					) }
@@ -66,11 +69,11 @@ function Distribute() {
 						<CheckboxControl
 							key={ siteUrl }
 							label={ siteUrl }
-							disabled={ savedUrls.includes( siteUrl ) } // Do not allow undistributing to sites that have been distributed to.
+							disabled={ savedUrls.includes( siteUrl ) } // Do not allow undistributing a site.
 							checked={ editedUrls.includes( siteUrl ) }
 							onChange={ checked => {
 								const urls = checked ? [ ...editedUrls, siteUrl ] : editedUrls.filter( url => siteUrl !== url );
-								editPost( { meta: { [ newspack_network_distribute.distribute_meta ]: { site_urls: urls } } } );
+								editPost( { meta: { [ distributedMetaKey ]: urls } } );
 							} }
 						/>
 					) ) }

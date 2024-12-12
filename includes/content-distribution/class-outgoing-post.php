@@ -16,9 +16,9 @@ use WP_Error;
  */
 class Outgoing_Post {
 	/**
-	 * The post meta key for the distributed post configuration.
+	 * The post meta key for the sites the post is distributed to.
 	 */
-	const DISTRIBUTED_POST_META = 'newspack_network_distributed';
+	const DISTRIBUTED_POST_META = 'newspack_network_distributed_sites';
 
 	/**
 	 * The post object.
@@ -53,23 +53,28 @@ class Outgoing_Post {
 	}
 
 	/**
+	 * Get network post ID.
+	 *
+	 * @return string The network post ID.
+	 */
+	public function get_network_post_id() {
+		return md5( $this->post->ID . get_bloginfo( 'url' ) );
+	}
+
+	/**
 	 * Set the distribution configuration for a given post.
 	 *
 	 * @param int[] $site_urls Array of site URLs to distribute the post to.
 	 *
 	 * @return void|WP_Error Void on success, WP_Error on failure.
 	 */
-	public function set_config( $site_urls = [] ) {
-		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
-		if ( ! is_array( $config ) ) {
-			$config = [];
+	public function set_distribution( $site_urls = [] ) {
+		$distribution = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
+		if ( ! is_array( $distribution ) ) {
+			$distribution = [];
 		}
-		// Set post network ID.
-		if ( empty( $config['network_post_id'] ) ) {
-			$config['network_post_id'] = md5( $this->post->ID . get_bloginfo( 'url' ) );
-		}
-		$config['site_urls'] = $site_urls;
-		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $config );
+		$distribution = $site_urls;
+		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $distribution );
 	}
 
 	/**
@@ -86,35 +91,28 @@ class Outgoing_Post {
 			return false;
 		}
 
-		$config = $this->get_config();
-		if ( empty( $config['site_urls'] ) ) {
+		$distribution = $this->get_distribution();
+		if ( empty( $distribution ) ) {
 			return false;
 		}
 
 		if ( ! empty( $site_url ) ) {
-			return in_array( $site_url, $config['site_urls'], true );
+			return in_array( $site_url, $distribution, true );
 		}
 
 		return true;
 	}
 
 	/**
-	 * Get the distribution configuration for a given post.
+	 * Get the sites the post is distributed to.
 	 *
 	 * @return array The distribution configuration.
 	 */
-	public function get_config() {
+	public function get_distribution() {
 		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
-		$config = wp_parse_args(
-			$config,
-			[
-				'site_urls'       => [],
-				'network_post_id' => '',
-			]
-		);
 		return $config;
 	}
 
@@ -124,12 +122,12 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload() {
-		$config = self::get_config();
 		return [
-			'site_url'  => get_bloginfo( 'url' ),
-			'post_id'   => $this->post->ID,
-			'config'    => $config,
-			'post_data' => [
+			'site_url'        => get_bloginfo( 'url' ),
+			'post_id'         => $this->post->ID,
+			'network_post_id' => $this->get_network_post_id(),
+			'sites'           => $this->get_distribution(),
+			'post_data'       => [
 				'title'         => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
 				'date_gmt'      => $this->post->post_date_gmt,
 				'modified_gmt'  => $this->post->post_modified_gmt,

@@ -29,24 +29,23 @@ class Editor {
 	public static function register_meta() {
 		$post_types = Content_Distribution::get_distributed_post_types();
 		foreach ( $post_types as $post_type ) {
-			register_meta(
-				'post',
+			register_post_meta(
+				$post_type,
 				Outgoing_Post::DISTRIBUTED_POST_META,
 				[
-					'object_subtype' => $post_type,
-					'single'         => true,
-					'type'           => 'object',
-					'show_in_rest'   => [
-						'properties' => [
-							'site_urls' => [
-								'type'  => 'array',
-								'items' => [
-									'type' => 'string',
-								],
+					'single'        => true,
+					'type'          => 'array',
+					'show_in_rest'  => [
+						'schema' => [
+							'context' => [ 'edit' ],
+							'type'    => 'array',
+							'default' => [],
+							'items'   => [
+								'type' => 'string',
 							],
 						],
 					],
-					'auth_callback'  => function() {
+					'auth_callback' => function() {
 						return current_user_can( 'edit_posts' );
 					},
 				]
@@ -77,8 +76,8 @@ class Editor {
 			'newspack-network-distribute',
 			'newspack_network_distribute',
 			[
-				'network_sites'   => Network::get_networked_urls(),
-				'distribute_meta' => Outgoing_Post::DISTRIBUTED_POST_META,
+				'network_sites'    => Network::get_networked_urls(),
+				'distributed_meta' => Outgoing_Post::DISTRIBUTED_POST_META,
 			]
 		);
 	}
