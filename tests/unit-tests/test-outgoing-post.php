@@ -25,6 +25,11 @@ class TestOutgoingPost extends WP_UnitTestCase {
 			'title' => 'Test Node',
 			'url'   => 'https://node.test',
 		],
+		[
+			'id'    => 5678,
+			'title' => 'Test Node 2',
+			'url'   => 'https://other-node.test',
+		],
 	];
 
 	/**
@@ -83,8 +88,8 @@ class TestOutgoingPost extends WP_UnitTestCase {
 		$this->outgoing_post->set_config( [ $this->network[0]['url'] ] );
 		$config = $this->outgoing_post->get_config();
 
-		// Update the post distribution.
-		$this->outgoing_post->set_config( [ 'https://other-node.test' ] );
+		// Update the post distribution with one more node.
+		$this->outgoing_post->set_config( [ $this->network[1]['url'] ] );
 		$new_config = $this->outgoing_post->get_config();
 
 		$this->assertSame( $config['network_post_id'], $new_config['network_post_id'] );
