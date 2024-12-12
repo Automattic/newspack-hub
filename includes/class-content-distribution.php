@@ -132,7 +132,7 @@ class Content_Distribution {
 		$reserved_keys = apply_filters( 'newspack_network_content_distribution_reserved_post_meta_keys', $reserved_keys );
 
 		// Always preserve content distribution post meta.
-		$reserved_keys = array_merge(
+		return array_merge(
 			$reserved_keys,
 			[
 				Outgoing_Post::DISTRIBUTED_POST_META,
@@ -142,8 +142,6 @@ class Content_Distribution {
 				Incoming_Post::ATTACHMENT_META,
 			]
 		);
-
-		return $reserved_keys;
 	}
 
 	/**

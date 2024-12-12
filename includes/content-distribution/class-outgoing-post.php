@@ -235,8 +235,6 @@ class Outgoing_Post {
 		 * @param array   $meta The post meta data.
 		 * @param WP_Post $post The post object.
 		 */
-		$meta = apply_filters( 'newspack_network_distributed_post_meta', $meta, $this->post );
-
-		return $meta;
+		return apply_filters( 'newspack_network_distributed_post_meta', $meta, $this->post );
 	}
 }
