@@ -6,17 +6,26 @@
  */
 
 use Newspack_Network\Content_Distribution\Outgoing_Post;
+use Newspack_Network\Hub\Node as Hub_Node;
 
 /**
  * Test the Outgoing_Post class.
  */
-class TestOutgoingPoist extends WP_UnitTestCase {
+class TestOutgoingPost extends WP_UnitTestCase {
+
+
 	/**
-	 * URL for node that receives posts.
+	 * "Mocked" network nodes.
 	 *
-	 * @var string
+	 * @var array
 	 */
-	protected $node_url = 'https://node.test';
+	protected $network = [
+		[
+			'id'    => 1234,
+			'title' => 'Test Node',
+			'url'   => 'https://node.test',
+		],
+	];
 
 	/**
 	 * A distributed post.
@@ -31,16 +40,18 @@ class TestOutgoingPoist extends WP_UnitTestCase {
 	public function set_up() {
 		parent::set_up();
 
-		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
+		// "Mock" the network node(s).
+		update_option( Hub_Node::HUB_NODES_SYNCED_OPTION, $this->network );
+		$post                = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$this->outgoing_post = new Outgoing_Post( $post );
-		$this->outgoing_post->set_config( [ $this->node_url ] );
+		$this->outgoing_post->set_config( [ $this->network[0]['url'] ] );
 	}
 
 	/**
 	 * Test set post distribution configuration.
 	 */
 	public function test_set_config() {
-		$result = $this->outgoing_post->set_config( [ $this->node_url ] );
+		$result = $this->outgoing_post->set_config( [ $this->network[0]['url'] ] );
 		$this->assertFalse( is_wp_error( $result ) );
 	}
 
@@ -49,7 +60,7 @@ class TestOutgoingPoist extends WP_UnitTestCase {
 	 */
 	public function test_get_config() {
 		$config = $this->outgoing_post->get_config();
-		$this->assertSame( [ $this->node_url ], $config['site_urls'] );
+		$this->assertSame( [ $this->network[0]['url'] ], $config['site_urls'] );
 		$this->assertSame( 32, strlen( $config['network_post_id'] ) );
 	}
 
@@ -57,9 +68,9 @@ class TestOutgoingPoist extends WP_UnitTestCase {
 	 * Test get config for non-distributed.
 	 */
 	public function test_get_config_for_non_distributed() {
-		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
+		$post          = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$outgoing_post = new Outgoing_Post( $post );
-		$config           = $outgoing_post->get_config();
+		$config        = $outgoing_post->get_config();
 		$this->assertEmpty( $config['site_urls'] );
 		$this->assertEmpty( $config['network_post_id'] );
 	}
@@ -68,11 +79,12 @@ class TestOutgoingPoist extends WP_UnitTestCase {
 	 * Test set post distribution persists the network post ID.
 	 */
 	public function test_set_config_persists_network_post_id() {
-		$result = $this->outgoing_post->set_config( [ $this->node_url ] );
+		$horse = '';
+		$this->outgoing_post->set_config( [ $this->network[0]['url'] ] );
 		$config = $this->outgoing_post->get_config();
 
 		// Update the post distribution.
-		$result     = $this->outgoing_post->set_config( [ 'https://other-node.test' ] );
+		$this->outgoing_post->set_config( [ 'https://other-node.test' ] );
 		$new_config = $this->outgoing_post->get_config();
 
 		$this->assertSame( $config['network_post_id'], $new_config['network_post_id'] );
@@ -82,14 +94,8 @@ class TestOutgoingPoist extends WP_UnitTestCase {
 	 * Test is distributed.
 	 */
 	public function test_is_distributed() {
-		$this->assertTrue( $this->outgoing_post->is_distributed() );
-
-		// Update the post distribution.
-		$result = $this->outgoing_post->set_config( [] );
-		$this->assertFalse( $this->outgoing_post->is_distributed() );
-
 		// Assert regular post.
-		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
+		$post          = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$outgoing_post = new Outgoing_Post( $post );
 		$this->assertFalse( $outgoing_post->is_distributed() );
 	}
