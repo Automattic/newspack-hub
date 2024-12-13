@@ -75,12 +75,9 @@ class Editor {
 			return false;
 		}
 
-		// Ensure the sites are part of the network.
-		$network_sites = Network::get_networked_urls();
-		foreach ( $meta_value as $site_url ) {
-			if ( ! in_array( $site_url, $network_sites, true ) ) {
-				return false;
-			}
+		$error = Outgoing_Post::validate_distribution( $meta_value );
+		if ( $error ) {
+			return false;
 		}
 
 		// Prevent removing existing distributions.

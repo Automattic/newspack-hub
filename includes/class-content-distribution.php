@@ -9,6 +9,7 @@ namespace Newspack_Network;
 
 use Newspack\Data_Events;
 use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use WP_Post;

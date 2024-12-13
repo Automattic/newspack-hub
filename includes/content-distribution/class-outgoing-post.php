@@ -68,22 +68,25 @@ class Outgoing_Post {
 	}
 
 	/**
-	 * Set the distribution configuration for a given post.
+	 * Validate URLs for distribution.
 	 *
-	 * @param int[] $site_urls Array of site URLs to distribute the post to.
+	 * @param string[] $urls Array of site URLs to distribute the post to.
 	 *
-	 * @return array|WP_Error Config array on success, WP_Error on failure.
+	 * @return true|WP_Error True on success, WP_Error on failure.
 	 */
-	public function set_distribution( $site_urls ) {
-		if ( empty( $site_urls ) ) {
-			return new WP_Error( 'config_no_site_urls', __( 'No site URLs provided.', 'newspack-network' ) );
+	public static function validate_distribution( $urls ) {
+		if ( empty( $urls ) ) {
+			return new WP_Error( 'no_site_urls', __( 'No site URLs provided.', 'newspack-network' ) );
 		}
 
-		$networked_urls      = Network::get_networked_urls();
-		$urls_not_in_network = array_diff( $site_urls, $networked_urls );
+		if ( in_array( get_bloginfo( 'url' ), $urls, true ) ) {
+			return new WP_Error( 'no_own_site', __( 'Cannot distribute to own site.', 'newspack-network' ) );
+		}
+
+		$urls_not_in_network = Network::get_non_networked_urls_from_list( $urls );
 		if ( ! empty( $urls_not_in_network ) ) {
 			return new WP_Error(
-				'config_non_networked_urls',
+				'non_networked_urls',
 				sprintf(
 					/* translators: %s: list of non-networked URLs */
 					__( 'Non-networked URLs were passed to config: %s', 'newspack-network' ),
@@ -92,6 +95,21 @@ class Outgoing_Post {
 			);
 		}
 
+		return true;
+	}
+
+	/**
+	 * Set the distribution configuration for a given post.
+	 *
+	 * @param int[] $site_urls Array of site URLs to distribute the post to.
+	 *
+	 * @return array|WP_Error Config array on success, WP_Error on failure.
+	 */
+	public function set_distribution( $site_urls ) {
+		$error = self::validate_distribution( $site_urls );
+		if ( is_wp_error( $error ) ) {
+			return $error;
+		}
 
 		$distribution = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $distribution ) ) {
