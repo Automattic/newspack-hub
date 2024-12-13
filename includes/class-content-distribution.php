@@ -42,7 +42,7 @@ class Content_Distribution {
 		add_action( 'init', [ __CLASS__, 'register_data_event_actions' ] );
 		add_action( 'shutdown', [ __CLASS__, 'distribute_queued_posts' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
-		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_shortcircuit_distributed_meta' ], 10, 4 );
+		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_short_circuit_distributed_meta' ], 10, 4 );
 		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
@@ -101,27 +101,24 @@ class Content_Distribution {
 	 * @param string    $meta_key   Meta key.
 	 * @param mixed     $meta_value Metadata value.
 	 */
-	public static function maybe_shortcircuit_distributed_meta( $check, $object_id, $meta_key, $meta_value ) {
+	public static function maybe_short_circuit_distributed_meta( $check, $object_id, $meta_key, $meta_value ) {
 		if ( Outgoing_Post::DISTRIBUTED_POST_META !== $meta_key ) {
 			return $check;
 		}
 
 		// Ensure the post type can be distributed.
 		$post_types = self::get_distributed_post_types();
-		$post_type  = get_post_type( $object_id );
-		if ( ! in_array( $post_type, $post_types, true ) ) {
+		if ( ! in_array( get_post_type( $object_id ), $post_types, true ) ) {
 			return false;
 		}
 
-		$error = Outgoing_Post::validate_distribution( $meta_value );
-		if ( is_wp_error( $error ) ) {
+		if ( is_wp_error( Outgoing_Post::validate_distribution( $meta_value ) ) ) {
 			return false;
 		}
 
 		// Prevent removing existing distributions.
 		$current_value = get_post_meta( $object_id, $meta_key, true );
-		$diff = array_diff( empty( $current_value ) ? [] : $current_value, $meta_value );
-		if ( ! empty( $diff ) ) {
+		if ( ! empty( array_diff( empty( $current_value ) ? [] : $current_value, $meta_value ) ) ) {
 			return false;
 		}
 
@@ -272,7 +269,6 @@ class Content_Distribution {
 		} catch ( \InvalidArgumentException ) {
 			return null;
 		}
-
 		return $outgoing_post->is_distributed() ? $outgoing_post : null;
 	}
 
