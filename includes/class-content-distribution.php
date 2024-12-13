@@ -161,6 +161,7 @@ class Content_Distribution {
 	 * @return void
 	 */
 	public static function handle_post_updated( $post ) {
+		$post = get_post( $post );
 		if ( ! $post ) {
 			return;
 		}
