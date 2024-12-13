@@ -21,7 +21,6 @@ class Editor {
 	public static function init() {
 		add_action( 'init', [ __CLASS__, 'register_meta' ] );
 		add_action( 'enqueue_block_editor_assets', [ __CLASS__, 'enqueue_block_editor_assets' ] );
-		add_filter( 'update_post_metadata', [ __CLASS__, 'update_post_metadata' ], 10, 5 );
 	}
 
 	/**
@@ -52,41 +51,6 @@ class Editor {
 				]
 			);
 		}
-	}
-
-	/**
-	 * Control distributed post metadata update.
-	 *
-	 * @param null|bool $check      Whether to allow updating metadata for the given type. Default null.
-	 * @param int       $object_id  Object ID.
-	 * @param string    $meta_key   Meta key.
-	 * @param mixed     $meta_value Metadata value.
-	 * @param mixed     $prev_value Previous value to check before updating.
-	 */
-	public static function update_post_metadata( $check, $object_id, $meta_key, $meta_value, $prev_value ) {
-		if ( Outgoing_Post::DISTRIBUTED_POST_META !== $meta_key ) {
-			return $check;
-		}
-
-		// Ensure the post type can be distributed.
-		$post_types = Content_Distribution::get_distributed_post_types();
-		$post_type  = get_post_type( $object_id );
-		if ( ! in_array( $post_type, $post_types, true ) ) {
-			return false;
-		}
-
-		$error = Outgoing_Post::validate_distribution( $meta_value );
-		if ( $error ) {
-			return false;
-		}
-
-		// Prevent removing existing distributions.
-		$diff = array_diff( (array) $prev_value, $meta_value );
-		if ( ! empty( $diff ) ) {
-			return false;
-		}
-
-		return $check;
 	}
 
 	/**

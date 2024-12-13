@@ -12,8 +12,6 @@ use Newspack_Network\Hub\Node as Hub_Node;
  * Test the Outgoing_Post class.
  */
 class TestOutgoingPost extends WP_UnitTestCase {
-
-
 	/**
 	 * "Mocked" network nodes.
 	 *
