@@ -46,7 +46,7 @@ class Editor {
 						],
 					],
 					'auth_callback' => function() {
-						return current_user_can( 'edit_posts' );
+						return current_user_can( 'edit_posts' ); // @TODO Custom capability.
 					},
 				]
 			);

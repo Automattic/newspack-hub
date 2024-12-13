@@ -4,7 +4,7 @@
  * WordPress dependencies.
  */
 import { sprintf, __, _n } from '@wordpress/i18n';
-import { useState, useEffect } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { PluginSidebar } from '@wordpress/editor';
 import { Panel, PanelBody, CheckboxControl, TextControl, Button } from '@wordpress/components';
