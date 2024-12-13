@@ -45,4 +45,26 @@ class Network {
 	public static function is_networked_url( string $url ): bool {
 		return in_array( untrailingslashit( $url ), self::get_networked_urls(), true );
 	}
+
+	/**
+	 * Get list of network URLs given a list of URLs.
+	 *
+	 * @param string[] $urls Array of URLs.
+	 *
+	 * @return string[] Array of networked URLs.
+	 */
+	public static function get_networked_urls_from_list( array $urls ): array {
+		return array_intersect( array_map( 'untrailingslashit', $urls ), self::get_networked_urls() );
+	}
+
+	/**
+	 * Get list of URLs that don't belong in the network given a list of URLs.
+	 *
+	 * @param string[] $urls Array of URLs.
+	 *
+	 * @return string[] Array of networked URLs.
+	 */
+	public static function get_non_networked_urls_from_list( array $urls ): array {
+		return array_diff( array_map( 'untrailingslashit', $urls ), self::get_networked_urls() );
+	}
 }

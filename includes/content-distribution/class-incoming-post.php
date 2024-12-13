@@ -85,7 +85,7 @@ class Incoming_Post {
 		}
 
 		$this->payload         = $payload;
-		$this->network_post_id = $payload['config']['network_post_id'];
+		$this->network_post_id = $payload['network_post_id'];
 
 		$post = $this->query_post();
 		if ( $post ) {
@@ -105,20 +105,19 @@ class Incoming_Post {
 		if (
 			! is_array( $payload ) ||
 			empty( $payload['post_id'] ) ||
-			empty( $payload['config'] ) ||
+			empty( $payload['network_post_id'] ) ||
+			empty( $payload['sites'] ) ||
 			empty( $payload['post_data'] )
 		) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post payload.', 'newspack-network' ) );
 		}
 
-		$config = $payload['config'];
-
-		if ( empty( $config['network_post_id'] ) || empty( $config['site_urls'] ) ) {
+		if ( empty( $payload['sites'] ) ) {
 			return new WP_Error( 'not_distributed', __( 'Post is not configured for distribution.', 'newspack-network' ) );
 		}
 
 		$site_url = get_bloginfo( 'url' );
-		if ( ! in_array( $site_url, $config['site_urls'], true ) ) {
+		if ( ! in_array( $site_url, $payload['sites'], true ) ) {
 			return new WP_Error( 'not_distributed_to_site', __( 'Post is not configured for distribution on this site.', 'newspack-network' ) );
 		}
 	}
@@ -317,7 +316,7 @@ class Incoming_Post {
 		}
 
 		// Do not update if network post ID mismatches.
-		if ( $this->network_post_id !== $payload['config']['network_post_id'] ) {
+		if ( $this->network_post_id !== $payload['network_post_id'] ) {
 			return new WP_Error( 'mismatched_post_id', __( 'Mismatched post ID.', 'newspack-network' ) );
 		}
 

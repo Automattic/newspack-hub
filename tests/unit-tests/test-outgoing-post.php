@@ -12,8 +12,6 @@ use Newspack_Network\Hub\Node as Hub_Node;
  * Test the Outgoing_Post class.
  */
 class TestOutgoingPost extends WP_UnitTestCase {
-
-
 	/**
 	 * "Mocked" network nodes.
 	 *
@@ -49,68 +47,51 @@ class TestOutgoingPost extends WP_UnitTestCase {
 		update_option( Hub_Node::HUB_NODES_SYNCED_OPTION, $this->network );
 		$post                = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$this->outgoing_post = new Outgoing_Post( $post );
-		$this->outgoing_post->set_config( [ $this->network[0]['url'] ] );
+		$this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
 	}
 
 	/**
 	 * Test adding a site URL to the config after already having added one.
 	 */
 	public function test_add_site_url() {
-		$config = $this->outgoing_post->get_config();
-		$this->assertTrue( in_array( $this->network[0]['url'], $config['site_urls'], true ) );
-		$this->assertEquals( 1, count( $config['site_urls'] ) );
+		$distribution = $this->outgoing_post->get_distribution();
+		$this->assertTrue( in_array( $this->network[0]['url'], $distribution, true ) );
+		$this->assertEquals( 1, count( $distribution ) );
 
 		// Now add one more site URL.
-		$this->outgoing_post->set_config( [ $this->network[1]['url'] ] );
-		$config = $this->outgoing_post->get_config();
+		$this->outgoing_post->set_distribution( [ $this->network[1]['url'] ] );
+		$distribution = $this->outgoing_post->get_distribution();
 		// Check that both urls are there.
-		$this->assertTrue( in_array( $this->network[0]['url'], $config['site_urls'], true ) );
-		$this->assertTrue( in_array( $this->network[1]['url'], $config['site_urls'], true ) );
+		$this->assertTrue( in_array( $this->network[0]['url'], $distribution, true ) );
+		$this->assertTrue( in_array( $this->network[1]['url'], $distribution, true ) );
 		// But no more than that.
-		$this->assertEquals( 2, count( $config['site_urls'] ) );
+		$this->assertEquals( 2, count( $distribution ) );
 	}
 
 	/**
-	 * Test set post distribution configuration.
+	 * Test set post distribution.
 	 */
-	public function test_set_config() {
-		$result = $this->outgoing_post->set_config( [ $this->network[0]['url'] ] );
+	public function test_set_distribution() {
+		$result = $this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
 		$this->assertFalse( is_wp_error( $result ) );
 	}
 
 	/**
-	 * Test get config.
+	 * Test get post distribution.
 	 */
-	public function test_get_config() {
-		$config = $this->outgoing_post->get_config();
-		$this->assertSame( [ $this->network[0]['url'] ], $config['site_urls'] );
-		$this->assertSame( 32, strlen( $config['network_post_id'] ) );
+	public function test_get_distribution() {
+		$distribution = $this->outgoing_post->get_distribution();
+		$this->assertSame( [ $this->network[0]['url'] ], $distribution );
 	}
 
 	/**
-	 * Test get config for non-distributed.
+	 * Test get distribution for non-distributed.
 	 */
-	public function test_get_config_for_non_distributed() {
+	public function test_get_distribution_for_non_distributed() {
 		$post          = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
 		$outgoing_post = new Outgoing_Post( $post );
-		$config        = $outgoing_post->get_config();
-		$this->assertEmpty( $config['site_urls'] );
-		$this->assertEmpty( $config['network_post_id'] );
-	}
-
-	/**
-	 * Test set post distribution persists the network post ID.
-	 */
-	public function test_set_config_persists_network_post_id() {
-		$horse = '';
-		$this->outgoing_post->set_config( [ $this->network[0]['url'] ] );
-		$config = $this->outgoing_post->get_config();
-
-		// Update the post distribution with one more node.
-		$this->outgoing_post->set_config( [ $this->network[1]['url'] ] );
-		$new_config = $this->outgoing_post->get_config();
-
-		$this->assertSame( $config['network_post_id'], $new_config['network_post_id'] );
+		$distribution  = $outgoing_post->get_distribution();
+		$this->assertEmpty( $distribution );
 	}
 
 	/**
@@ -130,11 +111,12 @@ class TestOutgoingPost extends WP_UnitTestCase {
 		$payload = $this->outgoing_post->get_payload();
 		$this->assertNotEmpty( $payload );
 
-		$config = $this->outgoing_post->get_config();
+		$distribution = $this->outgoing_post->get_distribution();
 
 		$this->assertSame( get_bloginfo( 'url' ), $payload['site_url'] );
 		$this->assertSame( $this->outgoing_post->get_post()->ID, $payload['post_id'] );
-		$this->assertEquals( $config, $payload['config'] );
+		$this->assertSame( 32, strlen( $payload['network_post_id'] ) );
+		$this->assertEquals( $distribution, $payload['sites'] );
 
 		// Assert that 'post_data' only contains the expected keys.
 		$post_data_keys = [
