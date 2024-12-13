@@ -216,17 +216,20 @@ class Incoming_Post {
 	 * @return void
 	 */
 	protected function update_post_meta() {
+		$data = $this->payload['post_data']['post_meta'];
+
 		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
 
-		// Clear existing post meta.
+		// Clear existing post meta that are not in the payload.
 		$post_meta = get_post_meta( $this->ID );
 		foreach ( $post_meta as $meta_key => $meta_value ) {
-			if ( ! in_array( $meta_key, $reserved_keys, true ) ) {
+			if (
+				! in_array( $meta_key, $reserved_keys, true ) &&
+				! array_key_exists( $meta_key, $data )
+			) {
 				delete_post_meta( $this->ID, $meta_key );
 			}
 		}
-
-		$data = $this->payload['post_data']['post_meta'];
 
 		if ( empty( $data ) ) {
 			return;
@@ -234,8 +237,12 @@ class Incoming_Post {
 
 		foreach ( $data as $meta_key => $meta_value ) {
 			if ( ! in_array( $meta_key, $reserved_keys, true ) ) {
-				foreach ( $meta_value as $value ) {
-					add_post_meta( $this->ID, $meta_key, $value );
+				if ( 1 === count( $meta_value ) ) {
+					update_post_meta( $this->ID, $meta_key, $meta_value[0] );
+				} else {
+					foreach ( $meta_value as $value ) {
+						add_post_meta( $this->ID, $meta_key, $value );
+					}
 				}
 			}
 		}
