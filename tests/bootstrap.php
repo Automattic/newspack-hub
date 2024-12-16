@@ -16,6 +16,8 @@ if ( ! file_exists( "{$newspack_network_hub_test_dir}/includes/functions.php" ) 
 	exit( 1 );
 }
 
+define( 'IS_TEST_ENV', 1 );
+
 // Give access to tests_add_filter() function.
 require_once "{$newspack_network_hub_test_dir}/includes/functions.php";
 

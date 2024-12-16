@@ -18,30 +18,61 @@ use WP_Post;
  */
 class Content_Distribution {
 	/**
+	 * Queued network post updates.
+	 *
+	 * @var array Post IDs to update.
+	 */
+	private static $queued_post_updates = [];
+
+	/**
 	 * Initialize this class and register hooks
 	 *
 	 * @return void
 	 */
 	public static function init() {
-		if ( ! defined( 'NEWPACK_NETWORK_CONTENT_DISTRIBUTION' ) || ! NEWPACK_NETWORK_CONTENT_DISTRIBUTION ) {
+		// Place content distribution behind a constant but run under unit tests.
+		if (
+			! ( defined( 'IS_TEST_ENV' ) && IS_TEST_ENV ) &&
+			( ! defined( 'NEWPACK_NETWORK_CONTENT_DISTRIBUTION' ) || ! NEWPACK_NETWORK_CONTENT_DISTRIBUTION )
+		) {
 			return;
 		}
-		CLI::init();
-		add_action( 'init', [ __CLASS__, 'register_listeners' ] );
+
+		add_action( 'init', [ __CLASS__, 'register_data_event_actions' ] );
+		add_action( 'shutdown', [ __CLASS__, 'distribute_queued_posts' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
+		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_short_circuit_distributed_meta' ], 10, 4 );
+		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
+
+		CLI::init();
 	}
 
 	/**
-	 * Register the listeners to the Newspack Data Events API
+	 * Register the data event actions for content distribution.
 	 *
 	 * @return void
 	 */
-	public static function register_listeners() {
+	public static function register_data_event_actions() {
 		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
 			return;
 		}
-		Data_Events::register_listener( 'wp_after_insert_post', 'network_post_updated', [ __CLASS__, 'handle_post_updated' ] );
-		Data_Events::register_listener( 'newspack_network_incoming_post_inserted', 'network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ] );
+		Data_Events::register_action( 'network_post_updated' );
+		Data_Events::register_action( 'network_incoming_post_inserted' );
+	}
+
+	/**
+	 * Distribute queued posts.
+	 */
+	public static function distribute_queued_posts() {
+		$post_ids = array_unique( self::$queued_post_updates );
+		foreach ( $post_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post ) {
+				continue;
+			}
+			self::distribute_post( $post );
+		}
 	}
 
 	/**
@@ -61,21 +92,83 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Post update listener callback.
+	 * Validate whether an update to DISTRIBUTED_POST_META is allowed.
 	 *
-	 * @param Outgoing_Post|WP_Post|int $post The post object or ID.
-	 *
-	 * @return array|null The post payload or null if the post is not distributed.
+	 * @param null|bool $check      Whether to allow updating metadata for the given type. Default null.
+	 * @param int       $object_id  Object ID.
+	 * @param string    $meta_key   Meta key.
+	 * @param mixed     $meta_value Metadata value.
 	 */
-	public static function handle_post_updated( $post ) {
-		if ( ! $post instanceof Outgoing_Post ) {
-			$post = self::get_distributed_post( $post );
-		}
-		if ( $post ) {
-			return $post->get_payload();
+	public static function maybe_short_circuit_distributed_meta( $check, $object_id, $meta_key, $meta_value ) {
+		if ( Outgoing_Post::DISTRIBUTED_POST_META !== $meta_key ) {
+			return $check;
 		}
 
-		return null;
+		// Ensure the post type can be distributed.
+		$post_types = self::get_distributed_post_types();
+		if ( ! in_array( get_post_type( $object_id ), $post_types, true ) ) {
+			return false;
+		}
+
+		if ( is_wp_error( Outgoing_Post::validate_distribution( $meta_value ) ) ) {
+			return false;
+		}
+
+		// Prevent removing existing distributions.
+		$current_value = get_post_meta( $object_id, $meta_key, true );
+		if ( ! empty( array_diff( empty( $current_value ) ? [] : $current_value, $meta_value ) ) ) {
+			return false;
+		}
+
+		return $check;
+	}
+
+	/**
+	 * Distribute post on postmeta update.
+	 *
+	 * @param int    $meta_id    Meta ID.
+	 * @param int    $object_id  Object ID.
+	 * @param string $meta_key   Meta key.
+	 *
+	 * @return void
+	 */
+	public static function handle_postmeta_update( $meta_id, $object_id, $meta_key ) {
+		if ( ! $object_id ) {
+			return;
+		}
+		$post = get_post( $object_id );
+		if ( ! $post ) {
+			return;
+		}
+		if ( ! self::is_post_distributed( $post ) ) {
+			return;
+		}
+		// Ignore reserved keys but run if the meta is setting the distribution.
+		if (
+			Outgoing_Post::DISTRIBUTED_POST_META !== $meta_key &&
+			in_array( $meta_key, self::get_reserved_post_meta_keys(), true )
+		) {
+			return;
+		}
+		self::$queued_post_updates[] = $object_id;
+	}
+
+	/**
+	 * Distribute post on post updated.
+	 *
+	 * @param WP_Post|int $post The post object or ID.
+	 *
+	 * @return void
+	 */
+	public static function handle_post_updated( $post ) {
+		$post = get_post( $post );
+		if ( ! $post ) {
+			return;
+		}
+		if ( ! self::is_post_distributed( $post ) ) {
+			return;
+		}
+		self::$queued_post_updates[] = $post->ID;
 	}
 
 	/**
@@ -86,7 +179,10 @@ class Content_Distribution {
 	 * @param array   $post_payload The post payload.
 	 */
 	public static function handle_incoming_post_inserted( $post_id, $is_linked, $post_payload ) {
-		return [
+		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
+			return;
+		}
+		$data = [
 			'origin'      => [
 				'site_url' => $post_payload['site_url'],
 				'post_id'  => $post_payload['post_id'],
@@ -97,6 +193,7 @@ class Content_Distribution {
 				'is_linked' => $is_linked,
 			],
 		];
+		Data_Events::dispatch( 'network_incoming_post_inserted', $data );
 	}
 
 	/**
@@ -148,6 +245,17 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Whether a given post is distributed.
+	 *
+	 * @param WP_Post|int $post The post object or ID.
+	 *
+	 * @return bool Whether the post is distributed.
+	 */
+	public static function is_post_distributed( $post ) {
+		return (bool) self::get_distributed_post( $post );
+	}
+
+	/**
 	 * Get a distributed post.
 	 *
 	 * @param WP_Post|int $post The post object or ID.
@@ -160,21 +268,27 @@ class Content_Distribution {
 		} catch ( \InvalidArgumentException ) {
 			return null;
 		}
-
 		return $outgoing_post->is_distributed() ? $outgoing_post : null;
 	}
 
 	/**
-	 * Manually trigger post distribution.
+	 * Trigger post distribution.
 	 *
 	 * @param WP_Post|Outgoing_Post|int $post The post object or ID.
 	 *
 	 * @return void
 	 */
 	public static function distribute_post( $post ) {
-		$data = self::handle_post_updated( $post );
-		if ( $data ) {
-			Data_Events::dispatch( 'network_post_updated', $data );
+		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
+			return;
+		}
+		if ( $post instanceof Outgoing_Post ) {
+			$distributed_post = $post;
+		} else {
+			$distributed_post = self::get_distributed_post( $post );
+		}
+		if ( $distributed_post ) {
+			Data_Events::dispatch( 'network_post_updated', $distributed_post->get_payload() );
 		}
 	}
 }

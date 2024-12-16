@@ -89,13 +89,13 @@ class CLI {
 
 		try {
 			$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
-			$config = $outgoing_post->set_config( $sites );
-			if ( is_wp_error( $config ) ) {
-				WP_CLI::error( $config->get_error_message() );
+			$sites = $outgoing_post->set_distribution( $sites );
+			if ( is_wp_error( $sites ) ) {
+				WP_CLI::error( $sites->get_error_message() );
 			}
 
 			Content_Distribution::distribute_post( $outgoing_post );
-			WP_CLI::success( sprintf( 'Post with ID %d is distributed to %d sites: %s', $post_id, count( $config['site_urls'] ), implode( ', ', $config['site_urls'] ) ) );
+			WP_CLI::success( sprintf( 'Post with ID %d is distributed to %d sites: %s', $post_id, count( $sites ), implode( ', ', $sites ) ) );
 
 		} catch ( \Exception $e ) {
 			WP_CLI::error( $e->getMessage() );
