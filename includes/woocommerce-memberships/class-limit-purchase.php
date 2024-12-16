@@ -22,18 +22,20 @@ class Limit_Purchase {
 		add_filter( 'woocommerce_cart_product_cannot_be_purchased_message', [ __CLASS__, 'woocommerce_cart_product_cannot_be_purchased_message' ], 10, 2 );
 
 		// Also limit purchase for logged out users, inferring their IDs from the email.
-		// add_filter( 'woocommerce_subscriptions_product_limited_for_user', [ __CLASS__, 'subscriptions_product_limited_for_user' ], 10, 3 );
-		add_filter( 'woocommerce_cart_item_is_purchasable', [ __CLASS__, 'subscriptions_product_limited_for_user' ], 10, 4 );
+		add_action( 'woocommerce_after_checkout_validation', [ __CLASS__, 'validate_network_subscription' ], 10, 2 );
 	}
 
 	/**
-	 * Restricts subscription purchasing from a network-synchronized plan to one.
+	 * Restricts subscription purchasing from a network-synchronized plan to one for logged in readers.
 	 *
 	 * @param bool                                                        $purchasable Whether the subscription product is purchasable.
 	 * @param \WC_Product_Subscription|\WC_Product_Subscription_Variation $subscription_product The subscription product.
 	 * @return bool
 	 */
 	public static function restrict_network_subscriptions( $purchasable, $subscription_product ) {
+		if ( ! is_user_logged_in() ) {
+			return $purchasable;
+		}
 		return self::get_network_equivalent_subscription_for_current_user( $subscription_product ) ? false : $purchasable;
 	}
 
@@ -121,7 +123,6 @@ class Limit_Purchase {
 	 */
 	private static function get_user_id_from_email() {
 		$billing_email = filter_input( INPUT_POST, 'billing_email', FILTER_SANITIZE_EMAIL );
-		error_log( print_r( $_REQUEST, true ) );
 		if ( $billing_email ) {
 			$customer = \get_user_by( 'email', $billing_email );
 			if ( $customer ) {
@@ -132,45 +133,24 @@ class Limit_Purchase {
 	}
 
 	/**
-	 * Trigger the subscriptions-limiting logic, using the user gleaned from the email address.
+ 	 * Validate network subscription for logged out readers.
 	 *
-	 * @param bool           $is_limited_for_user If the subscription should be limited.
-	 * @param int|WC_Product $product A WC_Product object or the ID of a product.
-	 * @param int            $user_id The user ID.
+	 * @param array     $data   Checkout data.
+	 * @param WC_Errors $errors Checkout errors.
 	 */
-	public static function subscriptions_product_limited_for_user( $is_limited_for_user, $key, $values, $product ) {
-		error_log( '=========================' );
-		error_log( 'Limiting purchase for logged out user' );
-
-		$user_id = get_current_user_id();
-
-		if ( $user_id !== 0 ) {
-			return $is_limited_for_user;
+	public static function validate_network_subscription( $data, $errors ) {
+		if ( is_user_logged_in() || ! function_exists( 'WC' ) ) {
+			return;
 		}
-
-
 		$id_from_email = self::get_user_id_from_email();
-		error_log( $id_from_email );
 		if ( $id_from_email ) {
-			$network_subscription = self::get_network_equivalent_subscription_for_current_user( $product, $user_id );
-
-			error_log( 'Network subscription: ' . print_r( $network_subscription, true ) );
-			if ( $network_subscription ) {
-				add_filter(
-					'woocommerce_cart_item_removed_message',
-					function( $message ) use ( $network_subscription ) {
-						return sprintf(
-							/* translators: %s: Site URL */
-							__( "You can't buy this subscription because you already have it active on %s", 'newspack-network' ),
-							$network_subscription['site']
-						);
-					},
-					10,
-					2
-				);
-				$is_limited_for_user = true;
+			$cart_items = WC()->cart->get_cart();
+			foreach ( $cart_items as $cart_item ) {
+				$product = $cart_item['data'];
+				if ( self::get_network_equivalent_subscription_for_current_user( $product, $id_from_email ) ) {
+					$errors->add( 'network_subscription', __( 'You can\'t buy this subscription because you already have it active on another site.', 'newspack-network' ) );
+				}
 			}
 		}
-		return $is_limited_for_user;
 	}
 }
