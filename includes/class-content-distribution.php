@@ -20,7 +20,7 @@ class Content_Distribution {
 	/**
 	 * Queued network post updates.
 	 *
-	 * @var array Map of post IDs to update.
+	 * @var array Post IDs to update.
 	 */
 	private static $queued_post_updates = [];
 
@@ -65,7 +65,7 @@ class Content_Distribution {
 	 * Distribute queued posts.
 	 */
 	public static function distribute_queued_posts() {
-		$post_ids = array_keys( self::$queued_post_updates );
+		$post_ids = array_unique( self::$queued_post_updates );
 		foreach ( $post_ids as $post_id ) {
 			$post = get_post( $post_id );
 			if ( ! $post ) {
@@ -150,7 +150,7 @@ class Content_Distribution {
 		) {
 			return;
 		}
-		self::$queued_post_updates[ $object_id ] = true;
+		self::$queued_post_updates[] = $object_id;
 	}
 
 	/**
@@ -168,7 +168,7 @@ class Content_Distribution {
 		if ( ! self::is_post_distributed( $post ) ) {
 			return;
 		}
-		self::$queued_post_updates[ $post->ID ] = true;
+		self::$queued_post_updates[] = $post->ID;
 	}
 
 	/**
