@@ -133,7 +133,7 @@ class Limit_Purchase {
 	}
 
 	/**
- 	 * Validate network subscription for logged out readers.
+	 * Validate network subscription for logged out readers.
 	 *
 	 * @param array     $data   Checkout data.
 	 * @param WC_Errors $errors Checkout errors.
@@ -147,8 +147,14 @@ class Limit_Purchase {
 			$cart_items = WC()->cart->get_cart();
 			foreach ( $cart_items as $cart_item ) {
 				$product = $cart_item['data'];
-				if ( self::get_network_equivalent_subscription_for_current_user( $product, $id_from_email ) ) {
-					$errors->add( 'network_subscription', __( 'You can\'t buy this subscription because you already have it active on another site.', 'newspack-network' ) );
+				$network_active_subscription = self::get_network_equivalent_subscription_for_current_user( $product, $id_from_email );
+				if ( $network_active_subscription ) {
+					$error_message = sprintf(
+						/* translators: %s: Site URL */
+						__( "You can't buy this subscription because you already have it active on %s", 'newspack-network' ),
+						$network_active_subscription['site']
+					);
+					$errors->add( 'network_subscription', $error_message );
 				}
 			}
 		}
