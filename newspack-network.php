@@ -30,7 +30,12 @@ if ( ! defined( 'NEWSPACK_NETWORK_PLUGIN_FILE' ) ) {
 define( 'NEWSPACK_NETWORK_READER_ROLE', 'network_reader' );
 
 // Load language files.
-load_plugin_textdomain( 'newspack-network', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+add_action(
+	'init',
+	function () {
+		load_plugin_textdomain( 'newspack-network', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	}
+);
 
 require_once __DIR__ . '/vendor/autoload.php';
 
