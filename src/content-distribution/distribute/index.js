@@ -26,13 +26,20 @@ function Distribute() {
 	const [ distribution, setDistribution ] = useState( [] );
 	const [ siteSelection, setSiteSelection ] = useState( [] );
 
-	const { postId, savedUrls, isDirty, isSavingPost } = useSelect( select => {
-		const { getCurrentPostId, getCurrentPostAttribute, hasChangedContent, isSavingPost } = select( 'core/editor' );
+	const { postId, savedUrls, hasChangedContent, isSavingPost, isCleanNewPost } = useSelect( select => {
+		const {
+			getCurrentPostId,
+			getCurrentPostAttribute,
+			hasChangedContent,
+			isSavingPost,
+			isCleanNewPost,
+		} = select( 'core/editor' );
 		return {
 			postId: getCurrentPostId(),
 			savedUrls: getCurrentPostAttribute( 'meta' )?.[ distributedMetaKey ] || [],
-			isDirty: hasChangedContent(),
+			hasChangedContent: hasChangedContent(),
 			isSavingPost: isSavingPost(),
+			isCleanNewPost: isCleanNewPost(),
 		};
 	} );
 
@@ -177,7 +184,7 @@ function Distribute() {
 						variant="primary"
 						disabled={ siteSelection.length === 0 || isSavingPost || isDistributing }
 						onClick={ () => {
-							if ( isDirty ) {
+							if ( hasChangedContent || isCleanNewPost ) {
 								savePost().then( () => {
 									distribute();
 								} );
@@ -186,12 +193,12 @@ function Distribute() {
 							}
 						} }
 					>
-						{ isSavingPost ? (
+						{ isDistributing ? (
 							<>
 								{ __( 'Distributing...', 'newspack-network' ) }
 							</>
 						) : (
-							isDirty ? (
+							hasChangedContent || isCleanNewPost ? (
 								<>
 									{ __( 'Save & Distribute', 'newspack-network' ) }
 								</>
