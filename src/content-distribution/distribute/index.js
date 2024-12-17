@@ -193,20 +193,10 @@ function Distribute() {
 							}
 						} }
 					>
-						{ isDistributing ? (
-							<>
-								{ __( 'Distributing...', 'newspack-network' ) }
-							</>
-						) : (
-							hasChangedContent || isCleanNewPost ? (
-								<>
-									{ __( 'Save & Distribute', 'newspack-network' ) }
-								</>
-							) : (
-								<>
-									{ __( 'Distribute', 'newspack-network' ) }
-								</>
-							)
+						{ isDistributing ? __( 'Distributing...', 'newspack-network' ) : (
+							hasChangedContent || isCleanNewPost ?
+							__( 'Save & Distribute', 'newspack-network' ) :
+							__( 'Distribute', 'newspack-network' )
 						) }
 					</Button>
 				</PanelBody>
