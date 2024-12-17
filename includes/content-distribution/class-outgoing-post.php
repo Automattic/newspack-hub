@@ -17,9 +17,9 @@ use WP_Post;
  */
 class Outgoing_Post {
 	/**
-	 * The post meta key for the distributed post configuration.
+	 * The post meta key for the sites the post is distributed to.
 	 */
-	const DISTRIBUTED_POST_META = 'newspack_network_distributed';
+	const DISTRIBUTED_POST_META = 'newspack_network_distributed_sites';
 
 	/**
 	 * The post object.
@@ -59,22 +59,34 @@ class Outgoing_Post {
 	}
 
 	/**
-	 * Set the distribution configuration for a given post.
+	 * Get network post ID.
 	 *
-	 * @param int[] $site_urls Array of site URLs to distribute the post to.
-	 *
-	 * @return array|WP_Error Config array on success, WP_Error on failure.
+	 * @return string The network post ID.
 	 */
-	public function set_config( $site_urls ) {
-		if ( empty( $site_urls ) ) {
-			return new WP_Error( 'config_no_site_urls', __( 'No site URLs provided.', 'newspack-network' ) );
+	public function get_network_post_id() {
+		return md5( $this->post->ID . get_bloginfo( 'url' ) );
+	}
+
+	/**
+	 * Validate URLs for distribution.
+	 *
+	 * @param string[] $urls Array of site URLs to distribute the post to.
+	 *
+	 * @return true|WP_Error True on success, WP_Error on failure.
+	 */
+	public static function validate_distribution( $urls ) {
+		if ( empty( $urls ) ) {
+			return new WP_Error( 'no_site_urls', __( 'No site URLs provided.', 'newspack-network' ) );
 		}
 
-		$networked_urls      = Network::get_networked_urls();
-		$urls_not_in_network = array_diff( $site_urls, $networked_urls );
+		if ( in_array( get_bloginfo( 'url' ), $urls, true ) ) {
+			return new WP_Error( 'no_own_site', __( 'Cannot distribute to own site.', 'newspack-network' ) );
+		}
+
+		$urls_not_in_network = Network::get_non_networked_urls_from_list( $urls );
 		if ( ! empty( $urls_not_in_network ) ) {
 			return new WP_Error(
-				'config_non_networked_urls',
+				'non_networked_urls',
 				sprintf(
 					/* translators: %s: list of non-networked URLs */
 					__( 'Non-networked URLs were passed to config: %s', 'newspack-network' ),
@@ -83,27 +95,34 @@ class Outgoing_Post {
 			);
 		}
 
+		return true;
+	}
 
-		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
-		if ( ! is_array( $config ) ) {
-			$config = [];
-		}
-		// Set post network ID.
-		if ( empty( $config['network_post_id'] ) ) {
-			$config['network_post_id'] = md5( $this->post->ID . get_bloginfo( 'url' ) );
+	/**
+	 * Set the distribution configuration for a given post.
+	 *
+	 * @param int[] $site_urls Array of site URLs to distribute the post to.
+	 *
+	 * @return array|WP_Error Config array on success, WP_Error on failure.
+	 */
+	public function set_distribution( $site_urls ) {
+		$error = self::validate_distribution( $site_urls );
+		if ( is_wp_error( $error ) ) {
+			return $error;
 		}
 
-		if ( empty( $config['site_urls'] ) ) {
-			$config['site_urls'] = [];
+		$distribution = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
+		if ( ! is_array( $distribution ) ) {
+			$distribution = [];
 		}
 
 		// If there are urls not already in the config, add them. Note that we don't support
 		// removing urls from the config.
-		$config['site_urls'] = array_unique( array_merge( $config['site_urls'], $site_urls ) );
+		$distribution = array_unique( array_merge( $distribution, $site_urls ) );
 
-		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $config );
+		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $distribution );
 
-		return $config;
+		return $distribution;
 	}
 
 	/**
@@ -120,35 +139,28 @@ class Outgoing_Post {
 			return false;
 		}
 
-		$config = $this->get_config();
-		if ( empty( $config['site_urls'] ) ) {
+		$distribution = $this->get_distribution();
+		if ( empty( $distribution ) ) {
 			return false;
 		}
 
 		if ( ! empty( $site_url ) ) {
-			return in_array( $site_url, $config['site_urls'], true );
+			return in_array( $site_url, $distribution, true );
 		}
 
 		return true;
 	}
 
 	/**
-	 * Get the distribution configuration for a given post.
+	 * Get the sites the post is distributed to.
 	 *
 	 * @return array The distribution configuration.
 	 */
-	public function get_config() {
+	public function get_distribution() {
 		$config = get_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, true );
 		if ( ! is_array( $config ) ) {
 			$config = [];
 		}
-		$config = wp_parse_args(
-			$config,
-			[
-				'site_urls'       => [],
-				'network_post_id' => '',
-			]
-		);
 		return $config;
 	}
 
@@ -158,12 +170,12 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload() {
-		$config = self::get_config();
 		return [
-			'site_url'  => get_bloginfo( 'url' ),
-			'post_id'   => $this->post->ID,
-			'config'    => $config,
-			'post_data' => [
+			'site_url'        => get_bloginfo( 'url' ),
+			'post_id'         => $this->post->ID,
+			'network_post_id' => $this->get_network_post_id(),
+			'sites'           => $this->get_distribution(),
+			'post_data'       => [
 				'title'         => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
 				'post_status'   => $this->post->post_status,
 				'date_gmt'      => $this->post->post_date_gmt,

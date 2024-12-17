@@ -38,7 +38,7 @@ class Network_Post_Updated extends Abstract_Incoming_Event {
 	protected function process_post_updated() {
 		$payload = (array) $this->get_data();
 
-		Debugger::log( 'Processing network_post_updated ' . wp_json_encode( $payload['config'] ) );
+		Debugger::log( 'Processing network_post_updated ' . wp_json_encode( $payload['sites'] ) );
 
 		$error = Incoming_Post::get_payload_error( $payload );
 		if ( is_wp_error( $error ) ) {
