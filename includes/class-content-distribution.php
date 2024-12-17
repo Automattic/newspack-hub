@@ -185,12 +185,12 @@ class Content_Distribution {
 		}
 		$data = [
 			'network_post_id' => $post_payload['network_post_id'],
-			'outgoing' => [
+			'outgoing'        => [
 				'site_url' => $post_payload['site_url'],
 				'post_id'  => $post_payload['post_id'],
 				'post_url' => $post_payload['post_url'],
 			],
-			'incoming' => [
+			'incoming'        => [
 				'site_url'  => get_bloginfo( 'url' ),
 				'post_id'   => $post_id,
 				'post_url'  => get_permalink( $post_id ),
