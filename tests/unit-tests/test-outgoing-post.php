@@ -72,7 +72,7 @@ class TestOutgoingPost extends WP_UnitTestCase {
 	 * Test set post distribution.
 	 */
 	public function test_set_distribution() {
-		$result = $this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
+		$result = $this->outgoing_post->set_distribution( [ $this->network[1]['url'] ] );
 		$this->assertFalse( is_wp_error( $result ) );
 	}
 
