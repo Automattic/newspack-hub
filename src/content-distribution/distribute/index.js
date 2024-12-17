@@ -185,9 +185,7 @@ function Distribute() {
 						disabled={ siteSelection.length === 0 || isSavingPost || isDistributing }
 						onClick={ () => {
 							if ( hasChangedContent || isCleanNewPost ) {
-								savePost().then( () => {
-									distribute();
-								} );
+								savePost().then( distribute );
 							} else {
 								distribute();
 							}
