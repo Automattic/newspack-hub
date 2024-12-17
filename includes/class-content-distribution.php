@@ -184,13 +184,16 @@ class Content_Distribution {
 			return;
 		}
 		$data = [
-			'origin'      => [
+			'network_post_id' => $post_payload['network_post_id'],
+			'outgoing' => [
 				'site_url' => $post_payload['site_url'],
 				'post_id'  => $post_payload['post_id'],
+				'post_url' => $post_payload['post_url'],
 			],
-			'destination' => [
+			'incoming' => [
 				'site_url'  => get_bloginfo( 'url' ),
 				'post_id'   => $post_id,
+				'post_url'  => get_permalink( $post_id ),
 				'is_linked' => $is_linked,
 			],
 		];
