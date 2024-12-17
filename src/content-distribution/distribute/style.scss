@@ -1,0 +1,53 @@
+.newspack-network-distribute {
+	height: calc(100% - 47px);
+	.components-panel {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+	.components-panel__body {
+		border: 0;
+		&.distribute-header {
+			p {
+				color: #757575;
+			}
+			.components-base-control__field {
+				margin: 0;
+			}
+			input[type="text"] {
+				padding: 0 16px;
+				height: 40px;
+			}
+		}
+		&.distribute-body {
+			flex: 1 1 100%;
+			overflow-y: auto;
+			padding-top: 0;
+			.components-checkbox-control {
+				--checkbox-input-size: 20px;
+				height: 44px;
+				display: flex;
+				align-items: center;
+				.components-base-control__field {
+					margin-bottom: 0;
+				}
+				.components-checkbox-control__input-container {
+					margin-right: 1em;
+				}
+				&:has( input:disabled ) {
+					opacity: 0.5;
+				}
+				&:has( input[name="select-all"] ) label {
+					font-weight: 600;
+				}
+			}
+		}
+		&.distribute-footer {
+			button {
+				display: block;
+				width: 100%;
+				margin-top: 1em;
+			}
+		}
+	}
+}

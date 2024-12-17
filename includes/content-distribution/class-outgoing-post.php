@@ -120,7 +120,11 @@ class Outgoing_Post {
 		// removing urls from the config.
 		$distribution = array_unique( array_merge( $distribution, $site_urls ) );
 
-		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $distribution );
+		$updated = update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $distribution );
+
+		if ( ! $updated ) {
+			return new WP_Error( 'update_failed', __( 'Failed to update post distribution.', 'newspack-network' ) );
+		}
 
 		return $distribution;
 	}

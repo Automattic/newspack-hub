@@ -64,13 +64,28 @@ class Editor {
 			return;
 		}
 
+		$post = get_post();
+
+		// Don't enqueue the script for incoming posts.
+		if ( Content_Distribution::is_post_incoming( $post ) ) {
+			return;
+		}
+
 		wp_enqueue_script(
 			'newspack-network-distribute',
 			plugins_url( '../../dist/distribute.js', __FILE__ ),
 			[],
-			filemtime( NEWSPACK_NETWORK_PLUGIN_FILE . 'dist/distribute.js' ),
+			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/distribute.js' ),
 			true
 		);
+		wp_register_style(
+			'newspack-network-distribute',
+			plugins_url( '../../dist/distribute.css', __FILE__ ),
+			[],
+			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/distribute.css' ),
+		);
+		wp_style_add_data( 'newspack-network-distribute', 'rtl', 'replace' );
+		wp_enqueue_style( 'newspack-network-distribute' );
 
 		wp_localize_script(
 			'newspack-network-distribute',

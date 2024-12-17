@@ -3,45 +3,103 @@
 /**
  * WordPress dependencies.
  */
+import apiFetch from '@wordpress/api-fetch';
 import { sprintf, __, _n } from '@wordpress/i18n';
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { PluginSidebar } from '@wordpress/editor';
 import { Panel, PanelBody, CheckboxControl, TextControl, Button } from '@wordpress/components';
 import { globe } from '@wordpress/icons';
 import { registerPlugin } from '@wordpress/plugins';
 
+/**
+ * Internal dependencies.
+ */
+import './style.scss';
+
 const networkSites = newspack_network_distribute.network_sites;
 const distributedMetaKey = newspack_network_distribute.distributed_meta;
 
 function Distribute() {
 	const [ search, setSearch ] = useState( '' );
+	const [ isDistributing, setIsDistributing ] = useState( false );
+	const [ distribution, setDistribution ] = useState( [] );
+	const [ siteSelection, setSiteSelection ] = useState( [] );
 
-	const { savedUrls, editedUrls } = useSelect( select => {
-		const { getCurrentPostAttribute, getEditedPostAttribute } = select( 'core/editor' );
-		const savedMeta = getCurrentPostAttribute( 'meta' );
-		const editedMeta = getEditedPostAttribute( 'meta' );
+	const { postId, savedUrls, isDirty, isSavingPost } = useSelect( select => {
+		const { getCurrentPostId, getCurrentPostAttribute, hasChangedContent, isSavingPost } = select( 'core/editor' );
 		return {
-			savedUrls: savedMeta?.[ distributedMetaKey ],
-			editedUrls: editedMeta?.[ distributedMetaKey ],
+			postId: getCurrentPostId(),
+			savedUrls: getCurrentPostAttribute( 'meta' )?.[ distributedMetaKey ] || [],
+			isDirty: hasChangedContent(),
+			isSavingPost: isSavingPost(),
 		};
 	} );
 
-	const { editPost, savePost } = useDispatch( 'core/editor' );
+	useEffect( () => {
+		setSiteSelection( [] );
+	}, [ postId ] );
 
-	const selectedConnectionsCount = editedUrls.length - savedUrls.length;
+	useEffect( () => {
+		setDistribution( savedUrls );
+	}, [ savedUrls ] );
+
+	const { savePost } = useDispatch( 'core/editor' );
+	const { createNotice } = useDispatch( 'core/notices' );
 
 	const sites = networkSites.filter( url => url.includes( search ) );
+
+	const selectableSites = networkSites.filter( url => ! distribution.includes( url ) );
+
+	const getFormattedSite = site => {
+		const url = new URL( site );
+		return url.hostname;
+	}
+
+	const distribute = () => {
+		setIsDistributing( true );
+		apiFetch( {
+			path: `newspack-network/v1/content-distribution/distribute/${ postId }`,
+			method: 'POST',
+			data: {
+				urls: siteSelection,
+			},
+		} ).then( urls => {
+			setDistribution( urls );
+			setSiteSelection( [] );
+			createNotice(
+				'info',
+				sprintf(
+					_n(
+						'Post distributed with one connection.',
+						'Post distributed with %d connections.',
+						urls.length,
+						'newspack-network'
+					),
+					urls.length
+				),
+				{
+					type: 'snackbar',
+					isDismissible: true,
+				}
+			);
+		} ).catch( error => {
+			createNotice( 'error', error.message );
+		} ).finally( () => {
+			setIsDistributing( false );
+		} );
+	}
 
 	return (
 		<PluginSidebar
 			name="newspack-network-distribute"
 			icon={ globe }
 			title={ __( 'Distribute', 'newspack-network' ) }
+			className="newspack-network-distribute"
 		>
 			<Panel>
-				<PanelBody>
-					{ ! savedUrls.length ? (
+				<PanelBody className="distribute-header">
+					{ ! distribution.length ? (
 						<p>
 							{ __( 'This post has not been distributed to any connections yet.', 'newspack-network' ) }
 						</p>
@@ -51,59 +109,98 @@ function Distribute() {
 								_n(
 									'This post has been distributed with one connection.',
 									'This post has been distributed with %d connections.',
-									savedUrls.length,
+									distribution.length,
 									'newspack-network'
 								),
-								savedUrls.length
+								distribution.length
 							) }
 						</p>
 					) }
 					<TextControl
 						placeholder={ __( 'Search available connections', 'newspack-network' ) }
 						value={ search }
+						disabled={ isSavingPost || isDistributing }
 						onChange={ setSearch }
 					/>
-					{ sites.length === networkSites.length && (
+				</PanelBody>
+				<PanelBody className="distribute-body">
+					{ selectableSites.length !== 0 && sites.length === networkSites.length && (
 						<CheckboxControl
+							name="select-all"
 							label={ __( 'Select all', 'newspack-network' ) }
-							checked={ editedUrls.length === networkSites.length }
-							indeterminate={ editedUrls.length > 0 && editedUrls.length < networkSites.length }
+							disabled={ isSavingPost || isDistributing }
+							checked={ siteSelection.length === selectableSites.length }
+							indeterminate={ siteSelection.length > 0 && siteSelection.length < selectableSites.length }
 							onChange={ checked => {
-								const urls = checked ? [ ...networkSites ] : [ ...savedUrls ];
-								editPost( { meta: { [ distributedMetaKey ]: urls } } );
+								setSiteSelection( checked ? selectableSites : [] );
 							} }
 						/>
 					) }
 					{ sites.map( siteUrl => (
 						<CheckboxControl
 							key={ siteUrl }
-							label={ siteUrl }
-							disabled={ savedUrls.includes( siteUrl ) } // Do not allow undistributing a site.
-							checked={ editedUrls.includes( siteUrl ) || savedUrls.includes( siteUrl ) }
+							label={ getFormattedSite( siteUrl ) }
+							disabled={ distribution.includes( siteUrl ) || isSavingPost || isDistributing } // Do not allow undistributing a site.
+							checked={ siteSelection.includes( siteUrl ) || distribution.includes( siteUrl ) }
 							onChange={ checked => {
-								const urls = checked ? [ ...editedUrls, siteUrl ] : editedUrls.filter( url => siteUrl !== url );
-								editPost( { meta: { [ distributedMetaKey ]: urls } } );
+								const urls = checked ? [ ...siteSelection, siteUrl ] : siteSelection.filter( url => siteUrl !== url );
+								setSiteSelection( urls );
 							} }
 						/>
 					) ) }
-					{ selectedConnectionsCount > 0 && (
+				</PanelBody>
+				<PanelBody className="distribute-footer">
+					{ siteSelection.length > 0 && (
 						<p>
 							{ sprintf(
 								_n(
 									'One connection selected.',
 									'%d connections selected.',
-									selectedConnectionsCount,
+									siteSelection.length,
 									'newspack-network'
 								),
-								selectedConnectionsCount
+								siteSelection.length
 							) }
 						</p>
 					) }
+					{ siteSelection.length > 0 && (
+						<Button
+							variant="secondary"
+							disabled={ isSavingPost || isDistributing }
+							onClick={ () => setSiteSelection( [] ) }
+						>
+							{ __( 'Clear', 'newspack-network' ) }
+						</Button>
+					) }
 					<Button
+						isBusy={ isDistributing }
 						variant="primary"
-						onClick={ savePost }
+						disabled={ siteSelection.length === 0 || isSavingPost || isDistributing }
+						onClick={ () => {
+							if ( isDirty ) {
+								savePost().then( () => {
+									distribute();
+								} );
+							} else {
+								distribute();
+							}
+						} }
 					>
-						{ __( 'Distribute', 'newspack-network' ) }
+						{ isSavingPost ? (
+							<>
+								{ __( 'Distributing...', 'newspack-network' ) }
+							</>
+						) : (
+							isDirty ? (
+								<>
+									{ __( 'Save & Distribute', 'newspack-network' ) }
+								</>
+							) : (
+								<>
+									{ __( 'Distribute', 'newspack-network' ) }
+								</>
+							)
+						) }
 					</Button>
 				</PanelBody>
 			</Panel>
