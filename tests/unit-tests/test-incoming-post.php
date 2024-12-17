@@ -345,7 +345,7 @@ class TestIncomingPost extends WP_UnitTestCase {
 			[
 				'name' => 'Author 1',
 				'slug' => 'author-1',
-			]
+			],
 		];
 
 		// Insert the linked post.
