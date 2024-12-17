@@ -115,6 +115,7 @@ class TestOutgoingPost extends WP_UnitTestCase {
 
 		$this->assertSame( get_bloginfo( 'url' ), $payload['site_url'] );
 		$this->assertSame( $this->outgoing_post->get_post()->ID, $payload['post_id'] );
+		$this->assertSame( get_permalink( $this->outgoing_post->get_post()->ID ), $payload['post_url'] );
 		$this->assertSame( 32, strlen( $payload['network_post_id'] ) );
 		$this->assertEquals( $distribution, $payload['sites'] );
 

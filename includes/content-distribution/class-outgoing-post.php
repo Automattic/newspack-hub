@@ -173,6 +173,7 @@ class Outgoing_Post {
 		return [
 			'site_url'        => get_bloginfo( 'url' ),
 			'post_id'         => $this->post->ID,
+			'post_url'        => get_permalink( $this->post->ID ),
 			'network_post_id' => $this->get_network_post_id(),
 			'sites'           => $this->get_distribution(),
 			'post_data'       => [
