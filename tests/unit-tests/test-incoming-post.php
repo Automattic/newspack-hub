@@ -330,4 +330,29 @@ class TestIncomingPost extends WP_UnitTestCase {
 		// Assert that the custom post meta was removed on relink.
 		$this->assertEmpty( get_post_meta( $post_id, 'custom', true ) );
 	}
+
+	/**
+	 * Test reserved taxonomies.
+	 */
+	public function test_reserved_taxonomies() {
+		$payload = $this->get_sample_payload();
+		$taxonomy = 'author';
+
+		// Register a reserved taxonomy.
+		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
+
+		$payload['post_data']['taxonomy']['author'] = [
+			[
+				'name' => 'Author 1',
+				'slug' => 'author-1',
+			],
+		];
+
+		// Insert the linked post.
+		$post_id = $this->incoming_post->insert( $payload );
+
+		// Assert that the post does not have the reserved taxonomy term.
+		$terms = wp_get_post_terms( $post_id, $taxonomy );
+		$this->assertEmpty( $terms );
+	}
 }

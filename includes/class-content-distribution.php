@@ -254,6 +254,24 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Get taxonomies that should not be distributed.
+	 *
+	 * @return string[] The reserved taxonomies.
+	 */
+	public static function get_reserved_taxonomies() {
+		$reserved_taxonomies = [
+			'author', // Co-Authors Plus 'author' taxonomy should be ignored as it requires custom handling.
+		];
+
+		/**
+		 * Filters the reserved taxonomies that should not be distributed.
+		 *
+		 * @param string[] $reserved_taxonomies The reserved taxonomies.
+		 */
+		return apply_filters( 'newspack_network_content_distribution_reserved_taxonomies', $reserved_taxonomies );
+	}
+
+	/**
 	 * Whether a given post is distributed.
 	 *
 	 * @param WP_Post|int $post The post object or ID.
