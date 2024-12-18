@@ -26,7 +26,7 @@ function Distribute() {
 	const [ distribution, setDistribution ] = useState( [] );
 	const [ siteSelection, setSiteSelection ] = useState( [] );
 
-	const { postId, savedUrls, hasChangedContent, isSavingPost, isCleanNewPost } = useSelect( select => {
+	const { postId, postStatus, savedUrls, hasChangedContent, isSavingPost, isCleanNewPost } = useSelect( select => {
 		const {
 			getCurrentPostId,
 			getCurrentPostAttribute,
@@ -36,6 +36,7 @@ function Distribute() {
 		} = select( 'core/editor' );
 		return {
 			postId: getCurrentPostId(),
+			postStatus: getCurrentPostAttribute( 'status' ),
 			savedUrls: getCurrentPostAttribute( 'meta' )?.[ distributedMetaKey ] || [],
 			hasChangedContent: hasChangedContent(),
 			isSavingPost: isSavingPost(),
@@ -203,7 +204,7 @@ function Distribute() {
 					<Button
 						isBusy={ isDistributing }
 						variant="primary"
-						disabled={ siteSelection.length === 0 || isSavingPost || isDistributing }
+						disabled={ postStatus !== 'publish' || siteSelection.length === 0 || isSavingPost || isDistributing }
 						onClick={ () => {
 							if ( hasChangedContent || isCleanNewPost ) {
 								savePost().then( distribute );
