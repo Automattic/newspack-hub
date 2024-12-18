@@ -92,6 +92,7 @@ class Editor {
 			[
 				'network_sites'    => Network::get_networked_urls(),
 				'distributed_meta' => Outgoing_Post::DISTRIBUTED_POST_META,
+				'post_type_label'  => get_post_type_labels( get_post_type_object( $screen->post_type ) )->singular_name,
 			]
 		);
 	}

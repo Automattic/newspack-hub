@@ -19,6 +19,7 @@ import './style.scss';
 
 const networkSites = newspack_network_distribute.network_sites;
 const distributedMetaKey = newspack_network_distribute.distributed_meta;
+const postTypeLabel = newspack_network_distribute.post_type_label;
 
 function Distribute() {
 	const [ search, setSearch ] = useState( '' );
@@ -56,9 +57,10 @@ function Distribute() {
 				'warning',
 				sprintf(
 					__(
-						'This post is distributed to %s.',
+						'This %s is distributed to %s.',
 						'newspack-network'
 					),
+					postTypeLabel.toLowerCase(),
 					savedUrls.slice( 0, -1 ).join( ', ' ) + ( savedUrls.length > 1 ? ' ' + __( 'and', 'newspack-network' ) + ' ' : '' ) + savedUrls.slice( -1 )
 				),
 				{
@@ -74,6 +76,8 @@ function Distribute() {
 	const sites = networkSites.filter( url => url.includes( search ) );
 
 	const selectableSites = networkSites.filter( url => ! distribution.includes( url ) );
+
+	const isUnpublished = postStatus !== 'publish';
 
 	const getFormattedSite = site => {
 		const url = new URL( site );
@@ -95,11 +99,12 @@ function Distribute() {
 				'info',
 				sprintf(
 					_n(
-						'Post distributed to one connection.',
-						'Post distributed to %d connections.',
+						'%s distributed to one network site.',
+						'%s distributed to %d network sites.',
 						urls.length,
 						'newspack-network'
 					),
+					postTypeLabel,
 					urls.length
 				),
 				{
@@ -125,19 +130,23 @@ function Distribute() {
 				<PanelBody className="distribute-header">
 					{ ! distribution.length ? (
 						<p>
-							{ networkSites.length === 1 ?
-								__( 'This post has not been distributed to your connection yet.', 'newspack-network' ) :
-								__( 'This post has not been distributed to any connections yet.', 'newspack-network' ) }
+							{ isUnpublished ? (
+								sprintf( __( 'This %s has not been published yet. Please publish the %s before distributing it to any network sites.', 'newspack-network' ), postTypeLabel.toLowerCase(), postTypeLabel.toLowerCase() )
+							) : networkSites.length === 1 ?
+								sprintf( __( 'This %s has not been distributed to your network site yet.', 'newspack-network' ), postTypeLabel.toLowerCase() ) :
+								sprintf( __( 'This %s has not been distributed to any network sites yet.', 'newspack-network' ), postTypeLabel.toLowerCase() )
+							}
 						</p>
 					) : (
 						<p>
 							{ sprintf(
 								_n(
-									'This post has been distributed to one connection.',
-									'This post has been distributed to %d connections.',
+									'This %s has been distributed to one network site.',
+									'This %s has been distributed to %d network sites.',
 									distribution.length,
 									'newspack-network'
 								),
+								postTypeLabel.toLowerCase(),
 								distribution.length
 							) }
 						</p>
@@ -145,9 +154,9 @@ function Distribute() {
 					{ networkSites.length > 5 && (
 						<TextControl
 							__next40pxDefaultSize
-							placeholder={ __( 'Search available connections', 'newspack-network' ) }
+							placeholder={ __( 'Search available network sites', 'newspack-network' ) }
 							value={ search }
-							disabled={ isSavingPost || isDistributing }
+							disabled={ isSavingPost || isDistributing || isUnpublished }
 							onChange={ setSearch }
 						/>
 					) }
@@ -157,7 +166,7 @@ function Distribute() {
 						<CheckboxControl
 							name="select-all"
 							label={ __( 'Select all', 'newspack-network' ) }
-							disabled={ isSavingPost || isDistributing }
+							disabled={ isSavingPost || isDistributing || isUnpublished }
 							checked={ siteSelection.length === selectableSites.length }
 							indeterminate={ siteSelection.length > 0 && siteSelection.length < selectableSites.length }
 							onChange={ checked => {
@@ -169,7 +178,7 @@ function Distribute() {
 						<CheckboxControl
 							key={ siteUrl }
 							label={ getFormattedSite( siteUrl ) }
-							disabled={ distribution.includes( siteUrl ) || isSavingPost || isDistributing } // Do not allow undistributing a site.
+							disabled={ distribution.includes( siteUrl ) || isSavingPost || isDistributing || isUnpublished } // Do not allow undistributing a site.
 							checked={ siteSelection.includes( siteUrl ) || distribution.includes( siteUrl ) }
 							onChange={ checked => {
 								const urls = checked ? [ ...siteSelection, siteUrl ] : siteSelection.filter( url => siteUrl !== url );
@@ -183,8 +192,8 @@ function Distribute() {
 						<p>
 							{ sprintf(
 								_n(
-									'One connection selected.',
-									'%d connections selected.',
+									'One network site selected.',
+									'%d network sites selected.',
 									siteSelection.length,
 									'newspack-network'
 								),
@@ -195,7 +204,7 @@ function Distribute() {
 					{ siteSelection.length > 0 && (
 						<Button
 							variant="secondary"
-							disabled={ isSavingPost || isDistributing }
+							disabled={ isSavingPost || isDistributing || isUnpublished }
 							onClick={ () => setSiteSelection( [] ) }
 						>
 							{ __( 'Clear', 'newspack-network' ) }
@@ -204,7 +213,7 @@ function Distribute() {
 					<Button
 						isBusy={ isDistributing }
 						variant="primary"
-						disabled={ postStatus !== 'publish' || siteSelection.length === 0 || isSavingPost || isDistributing }
+						disabled={ isUnpublished || siteSelection.length === 0 || isSavingPost || isDistributing }
 						onClick={ () => {
 							if ( hasChangedContent || isCleanNewPost ) {
 								savePost().then( distribute );
