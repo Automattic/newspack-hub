@@ -167,4 +167,19 @@ class TestOutgoingPost extends WP_UnitTestCase {
 		$this->assertSame( 'a', $payload['post_data']['post_meta'][ $multiple_meta_key ][0] );
 		$this->assertSame( 'b', $payload['post_data']['post_meta'][ $multiple_meta_key ][1] );
 	}
+
+	/**
+	 * Test reserved taxonomies.
+	 */
+	public function test_reserved_taxonomies() {
+		$post = $this->outgoing_post->get_post();
+		$taxonomy = 'author';
+		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
+
+		$term = $this->factory->term->create( [ 'taxonomy' => $taxonomy ] );
+		wp_set_post_terms( $post->ID, [ $term ], $taxonomy );
+
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertTrue( empty( $payload['post_data']['taxonomy'][ $taxonomy ] ) );
+	}
 }

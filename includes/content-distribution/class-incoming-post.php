@@ -288,16 +288,20 @@ class Incoming_Post {
 	 * @return void
 	 */
 	protected function update_taxonomy_terms() {
-		$data = $this->payload['post_data']['taxonomy'];
+		$reserved_taxonomies = Content_Distribution::get_reserved_taxonomies();
+		$data                = $this->payload['post_data']['taxonomy'];
 		foreach ( $data as $taxonomy => $terms ) {
+			if ( in_array( $taxonomy, $reserved_taxonomies, true ) ) {
+				continue;
+			}
 			if ( ! taxonomy_exists( $taxonomy ) ) {
 				continue;
 			}
 			$term_ids = [];
 			foreach ( $terms as $term_data ) {
-				$term = get_term_by( 'slug', $term_data['slug'], $taxonomy, ARRAY_A );
+				$term = get_term_by( 'name', $term_data['name'], $taxonomy, ARRAY_A );
 				if ( ! $term ) {
-					$term = wp_insert_term( $term_data['name'], $taxonomy, [ 'slug' => $term_data['slug'] ] );
+					$term = wp_insert_term( $term_data['name'], $taxonomy );
 					if ( is_wp_error( $term ) ) {
 						continue;
 					}
