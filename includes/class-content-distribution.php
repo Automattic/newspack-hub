@@ -175,11 +175,11 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Post delete listener callback.
+	 * Distribute post deletion.
 	 *
 	 * @param int $post_id The post ID.
 	 *
-	 * @return array|null The post payload or null if the post is not distributed.
+	 * @return @void
 	 */
 	public static function handle_post_deleted( $post_id ) {
 		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
@@ -187,7 +187,7 @@ class Content_Distribution {
 		}
 		$post = self::get_distributed_post( $post_id );
 		if ( ! $post ) {
-			return null;
+			return;
 		}
 		Data_Events::dispatch( 'network_post_deleted', $post->get_payload() );
 	}
