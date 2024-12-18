@@ -1,5 +1,3 @@
-@use "~@wordpress/base-styles/colors";
-
 .newspack-network-distribute {
 	height: calc(100% - 47px);
 	.components-panel {
@@ -10,9 +8,6 @@
 	.components-panel__body {
 		border: 0;
 		&.distribute-header {
-			p {
-				color: colors.$gray-700;
-			}
 			.components-base-control__field {
 				margin: 0;
 			}
