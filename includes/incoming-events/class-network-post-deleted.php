@@ -33,7 +33,7 @@ class Network_Post_Deleted extends Abstract_Incoming_Event {
 	}
 
 	/**
-	 * Process post updated
+	 * Process post deleted
 	 */
 	protected function process_post_deleted() {
 		$payload = (array) $this->get_data();
