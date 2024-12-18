@@ -8,7 +8,6 @@
 namespace Newspack_Network\Content_Distribution;
 
 use Newspack_Network\Content_Distribution;
-use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack_Network\Utils\Network;
 
 /**
