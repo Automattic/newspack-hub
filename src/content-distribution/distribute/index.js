@@ -79,6 +79,8 @@ function Distribute() {
 
 	const isUnpublished = postStatus !== 'publish';
 
+	const isDisabled = isUnpublished || isSavingPost || isDistributing || isCleanNewPost;
+
 	const getFormattedSite = site => {
 		const url = new URL( site );
 		return url.hostname;
@@ -156,7 +158,7 @@ function Distribute() {
 							__next40pxDefaultSize
 							placeholder={ __( 'Search available network sites', 'newspack-network' ) }
 							value={ search }
-							disabled={ isSavingPost || isDistributing || isUnpublished }
+							disabled={ isDisabled }
 							onChange={ setSearch }
 						/>
 					) }
@@ -166,7 +168,7 @@ function Distribute() {
 						<CheckboxControl
 							name="select-all"
 							label={ __( 'Select all', 'newspack-network' ) }
-							disabled={ isSavingPost || isDistributing || isUnpublished }
+							disabled={ isDisabled }
 							checked={ siteSelection.length === selectableSites.length }
 							indeterminate={ siteSelection.length > 0 && siteSelection.length < selectableSites.length }
 							onChange={ checked => {
@@ -178,7 +180,7 @@ function Distribute() {
 						<CheckboxControl
 							key={ siteUrl }
 							label={ getFormattedSite( siteUrl ) }
-							disabled={ distribution.includes( siteUrl ) || isSavingPost || isDistributing || isUnpublished } // Do not allow undistributing a site.
+							disabled={ isDisabled || distribution.includes( siteUrl ) } // Do not allow undistributing a site.
 							checked={ siteSelection.includes( siteUrl ) || distribution.includes( siteUrl ) }
 							onChange={ checked => {
 								const urls = checked ? [ ...siteSelection, siteUrl ] : siteSelection.filter( url => siteUrl !== url );
@@ -204,7 +206,7 @@ function Distribute() {
 					{ siteSelection.length > 0 && (
 						<Button
 							variant="secondary"
-							disabled={ isSavingPost || isDistributing || isUnpublished }
+							disabled={ isDisabled }
 							onClick={ () => setSiteSelection( [] ) }
 						>
 							{ __( 'Clear', 'newspack-network' ) }
@@ -213,7 +215,7 @@ function Distribute() {
 					<Button
 						isBusy={ isDistributing }
 						variant="primary"
-						disabled={ isUnpublished || siteSelection.length === 0 || isSavingPost || isDistributing }
+						disabled={ isDisabled || siteSelection.length === 0 }
 						onClick={ () => {
 							if ( hasChangedContent || isCleanNewPost ) {
 								savePost().then( distribute );
