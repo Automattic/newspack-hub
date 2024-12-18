@@ -1,3 +1,10 @@
+## [2.3.4](https://github.com/Automattic/newspack-network/compare/v2.3.3...v2.3.4) (2024-12-18)
+
+
+### Bug Fixes
+
+* Force Distributor to not override bylines ([#175](https://github.com/Automattic/newspack-network/issues/175)) ([efbc979](https://github.com/Automattic/newspack-network/commit/efbc9798cc7c13985e2a9a2e4920f485dbe8a11e))
+
 ## [2.3.3](https://github.com/Automattic/newspack-network/compare/v2.3.2...v2.3.3) (2024-12-16)
 
 
