@@ -51,7 +51,8 @@ class API {
 	 * Distribute a post to the network.
 	 *
 	 * @param \WP_REST_Request $request The REST request object.
-	 * @return \WP_REST_Response
+	 *
+	 * @return \WP_REST_Response|WP_Error The REST response or error.
 	 */
 	public static function distribute( $request ) {
 		$post_id = $request->get_param( 'post_id' );
