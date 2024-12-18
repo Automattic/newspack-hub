@@ -56,12 +56,14 @@ function Distribute() {
 			createNotice(
 				'warning',
 				sprintf(
-					__(
-						'This %s is distributed to %s.',
+					_n(
+						'This %s is distributed to one network site.',
+						'This %s is distributed to %d network sites.',
+						savedUrls.length,
 						'newspack-network'
 					),
 					postTypeLabel.toLowerCase(),
-					savedUrls.slice( 0, -1 ).join( ', ' ) + ( savedUrls.length > 1 ? ' ' + __( 'and', 'newspack-network' ) + ' ' : '' ) + savedUrls.slice( -1 )
+					savedUrls.length
 				),
 				{
 					id: 'newspack-network-distributed-notice',
