@@ -124,6 +124,7 @@ function Distribute() {
 						</p>
 					) }
 					<TextControl
+						__next40pxDefaultSize
 						placeholder={ __( 'Search available connections', 'newspack-network' ) }
 						value={ search }
 						disabled={ isSavingPost || isDistributing }
