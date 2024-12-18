@@ -49,6 +49,22 @@ function Distribute() {
 
 	useEffect( () => {
 		setDistribution( savedUrls );
+		// Create notice if the post has been distributed.
+		if ( savedUrls.length > 0 ) {
+			createNotice(
+				'warning',
+				sprintf(
+					__(
+						'This post is distributed to %s.',
+						'newspack-network'
+					),
+					savedUrls.slice( 0, -1 ).join( ', ' ) + ( savedUrls.length > 1 ? ' ' + __( 'and', 'newspack-network' ) + ' ' : '' ) + savedUrls.slice( -1 )
+				),
+				{
+					id: 'newspack-network-distributed-notice',
+				}
+			);
+		}
 	}, [ savedUrls ] );
 
 	const { savePost } = useDispatch( 'core/editor' );
