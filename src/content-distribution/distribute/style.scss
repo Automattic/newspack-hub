@@ -22,6 +22,11 @@
 				.components-base-control__field {
 					margin-bottom: 0;
 				}
+				label {
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
 				&:has( input:disabled ) {
 					opacity: 0.5;
 				}
