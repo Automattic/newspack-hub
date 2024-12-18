@@ -124,7 +124,9 @@ function Distribute() {
 				<PanelBody className="distribute-header">
 					{ ! distribution.length ? (
 						<p>
-							{ __( 'This post has not been distributed to any connections yet.', 'newspack-network' ) }
+							{ networkSites.length === 1 ?
+								__( 'This post has not been distributed to your connection yet.', 'newspack-network' ) :
+								__( 'This post has not been distributed to any connections yet.', 'newspack-network' ) }
 						</p>
 					) : (
 						<p>
@@ -139,16 +141,18 @@ function Distribute() {
 							) }
 						</p>
 					) }
-					<TextControl
-						__next40pxDefaultSize
-						placeholder={ __( 'Search available connections', 'newspack-network' ) }
-						value={ search }
-						disabled={ isSavingPost || isDistributing }
-						onChange={ setSearch }
-					/>
+					{ networkSites.length > 5 && (
+						<TextControl
+							__next40pxDefaultSize
+							placeholder={ __( 'Search available connections', 'newspack-network' ) }
+							value={ search }
+							disabled={ isSavingPost || isDistributing }
+							onChange={ setSearch }
+						/>
+					) }
 				</PanelBody>
 				<PanelBody className="distribute-body">
-					{ selectableSites.length !== 0 && sites.length === networkSites.length && (
+					{ networkSites.length > 1 && selectableSites.length !== 0 && sites.length === networkSites.length && (
 						<CheckboxControl
 							name="select-all"
 							label={ __( 'Select all', 'newspack-network' ) }

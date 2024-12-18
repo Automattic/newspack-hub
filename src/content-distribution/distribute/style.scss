@@ -8,6 +8,7 @@
 	.components-panel__body {
 		border: 0;
 		&.distribute-header {
+			> *:last-child,
 			.components-base-control__field {
 				margin: 0;
 			}
