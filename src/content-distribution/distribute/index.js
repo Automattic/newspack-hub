@@ -94,8 +94,8 @@ function Distribute() {
 				'info',
 				sprintf(
 					_n(
-						'Post distributed with one connection.',
-						'Post distributed with %d connections.',
+						'Post distributed to one connection.',
+						'Post distributed to %d connections.',
 						urls.length,
 						'newspack-network'
 					),
@@ -130,8 +130,8 @@ function Distribute() {
 						<p>
 							{ sprintf(
 								_n(
-									'This post has been distributed with one connection.',
-									'This post has been distributed with %d connections.',
+									'This post has been distributed to one connection.',
+									'This post has been distributed to %d connections.',
 									distribution.length,
 									'newspack-network'
 								),
