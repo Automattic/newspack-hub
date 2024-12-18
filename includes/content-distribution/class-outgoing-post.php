@@ -181,6 +181,7 @@ class Outgoing_Post {
 				'modified_gmt'  => $this->post->post_modified_gmt,
 				'slug'          => $this->post->post_name,
 				'post_type'     => $this->post->post_type,
+				'authors'       => Author_Distribution::get_authors_for_distribution( $this->post ),
 				'raw_content'   => $this->post->post_content,
 				'content'       => $this->get_processed_post_content(),
 				'excerpt'       => $this->post->post_excerpt,

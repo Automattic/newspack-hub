@@ -5,7 +5,7 @@
  * @package Newspack
  */
 
-namespace Newspack_Network\Distributor_Customizations;
+namespace Newspack_Network\Content_Distribution;
 
 use Newspack_Network\Debugger;
 use Newspack_Network\User_Update_Watcher;
@@ -25,12 +25,12 @@ class Author_Distribution {
 	 * @return void
 	 */
 	public static function init() {
-		add_filter( 'dt_push_post_args', [ __CLASS__, 'add_author_data_to_push' ], 10, 2 );
-		add_filter( 'dt_subscription_post_args', [ __CLASS__, 'add_author_data_to_push' ], 10, 2 );
-		add_filter( 'dt_post_to_pull', [ __CLASS__, 'add_author_data_to_pull' ] );
-		add_filter( 'dt_syncable_taxonomies', [ __CLASS__, 'filter_syncable_taxonomies' ] );
-
-		add_filter( 'rest_request_after_callbacks', [ __CLASS__, 'after_coauthors_update' ], 10, 3 );
+//		add_filter( 'dt_push_post_args', [ __CLASS__, 'add_author_data_to_push' ], 10, 2 );
+//		add_filter( 'dt_subscription_post_args', [ __CLASS__, 'add_author_data_to_push' ], 10, 2 );
+//		add_filter( 'dt_post_to_pull', [ __CLASS__, 'add_author_data_to_pull' ] );
+//		add_filter( 'dt_syncable_taxonomies', [ __CLASS__, 'filter_syncable_taxonomies' ] );
+//
+//		add_filter( 'rest_request_after_callbacks', [ __CLASS__, 'after_coauthors_update' ], 10, 3 );
 	}
 
 	/**
@@ -40,12 +40,13 @@ class Author_Distribution {
 	 * Distributor to try to sync the author taxonomy.
 	 *
 	 * @param array $taxonomies An array of taxonomies slugs.
+	 *
 	 * @return array
 	 */
 	public static function filter_syncable_taxonomies( $taxonomies ) {
 		return array_filter(
 			$taxonomies,
-			function( $taxonomy ) {
+			function ( $taxonomy ) {
 				return 'author' !== $taxonomy;
 			}
 		);
@@ -58,7 +59,8 @@ class Author_Distribution {
 	 * (sends an update to the linked posts in other sites)
 	 *
 	 * @param array   $post_body The post data.
-	 * @param WP_Post $post The post object.
+	 * @param WP_Post $post      The post object.
+	 *
 	 * @return array
 	 */
 	public static function add_author_data_to_push( $post_body, $post ) {
@@ -66,6 +68,7 @@ class Author_Distribution {
 		if ( ! empty( $authors ) ) {
 			$post_body['newspack_network_authors'] = $authors;
 		}
+
 		return $post_body;
 	}
 
@@ -92,6 +95,7 @@ class Author_Distribution {
 	 * Get the authors of a post to be added to the distribution payload.
 	 *
 	 * @param \WP_Post $post The post object.
+	 *
 	 * @return array An array of authors.
 	 */
 	public static function get_authors_for_distribution( $post ) {
@@ -100,8 +104,10 @@ class Author_Distribution {
 		if ( ! function_exists( 'get_coauthors' ) ) {
 			if ( is_wp_error( $author ) ) {
 				Debugger::log( 'Error getting author ' . $post->post_author . ' for distribution on post ' . $post->ID . ': ' . $author->get_error_message() );
+
 				return [];
 			}
+
 			return [ $author ];
 		}
 
@@ -109,8 +115,10 @@ class Author_Distribution {
 		if ( empty( $co_authors ) ) {
 			if ( is_wp_error( $author ) ) {
 				Debugger::log( 'Error getting author ' . $post->post_author . ' for distribution on post ' . $post->ID . ': ' . $author->get_error_message() );
+
 				return [];
 			}
+
 			return [ $author ];
 		}
 
@@ -139,6 +147,7 @@ class Author_Distribution {
 	 * Gets the user data of a WP user to be distributed along with the post.
 	 *
 	 * @param int|WP_Post $user The user ID or object.
+	 *
 	 * @return WP_Error|array
 	 */
 	private static function get_wp_user_for_distribution( $user ) {
@@ -178,6 +187,7 @@ class Author_Distribution {
 	 * Get the guest author data to be distributed along with the post.
 	 *
 	 * @param object $guest_author The Guest Author object.
+	 *
 	 * @return WP_Error|array
 	 */
 	private static function get_guest_author_for_distribution( $guest_author ) {
@@ -215,6 +225,7 @@ class Author_Distribution {
 	 * @param WP_REST_Response|WP_HTTP_Response|WP_Error|mixed $response Result to send to the client.
 	 * @param array                                            $handler  Route handler used for the request.
 	 * @param WP_REST_Request                                  $request  Request used to generate the response.
+	 *
 	 * @return WP_REST_Response|WP_HTTP_Response|WP_Error|mixed
 	 */
 	public static function after_coauthors_update( $response, $handler, $request ) {

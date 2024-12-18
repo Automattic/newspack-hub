@@ -51,6 +51,13 @@ class TestIncomingPost extends WP_UnitTestCase {
 				'content'       => '<p>Content</p>',
 				'excerpt'       => 'Excerpt',
 				'thumbnail_url' => 'https://picsum.photos/id/1/300/300.jpg',
+				'authors'       => [
+					[
+						'type' => 'wp_user',
+						'user_email' => 'something-tapir@example.com',
+						'ID' => 12345,
+						]
+					],
 				'taxonomy'      => [
 					'category' => [
 						[
@@ -329,5 +336,15 @@ class TestIncomingPost extends WP_UnitTestCase {
 
 		// Assert that the custom post meta was removed on relink.
 		$this->assertEmpty( get_post_meta( $post_id, 'custom', true ) );
+	}
+
+	/**
+	 * Test that a post author is set.
+	 */
+	public function test_authors(): void {
+		$post_id = $this->incoming_post->insert( $this->get_sample_payload() );
+
+		$post = get_post( $post_id );
+		$this->assertNotEmpty( $post->post_author );
 	}
 }

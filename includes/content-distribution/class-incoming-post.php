@@ -7,10 +7,10 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Debugger;
 use Newspack_Network\Content_Distribution;
-use WP_Post;
+use Newspack_Network\Debugger;
 use WP_Error;
+use WP_Post;
 
 /**
  * Incoming Post Class.
@@ -353,11 +353,7 @@ class Incoming_Post {
 		/**
 		 * Do not insert if payload is older than the linked post's stored payload.
 		 */
-		$current_payload = $this->get_post_payload();
-		if (
-			! empty( $current_payload ) &&
-			$current_payload['post_data']['modified_gmt'] > $post_data['modified_gmt']
-		) {
+		if ( ( $this->get_post_payload()['post_data']['modified_gmt'] ?? 0 ) > $post_data['modified_gmt'] ) {
 			return new WP_Error( 'old_modified_date', __( 'Linked post content is newer than the post payload.', 'newspack-network' ) );
 		}
 
@@ -397,6 +393,8 @@ class Incoming_Post {
 			// Update the object.
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
+
+			Author_Ingestion::ingest_authors_for_post( $this->ID, $post_data['authors'] );
 
 			// Handle post meta.
 			$this->update_post_meta();

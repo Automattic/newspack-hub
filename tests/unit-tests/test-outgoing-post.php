@@ -37,15 +37,19 @@ class TestOutgoingPost extends WP_UnitTestCase {
 	 */
 	protected $outgoing_post;
 
+	private $some_editor;
+
 	/**
 	 * Set up.
 	 */
 	public function set_up() {
 		parent::set_up();
 
+		$this->some_editor = $this->factory->user->create_and_get( [ 'role' => 'editor' ] );
+
 		// "Mock" the network node(s).
 		update_option( Hub_Node::HUB_NODES_SYNCED_OPTION, $this->network );
-		$post                = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
+		$post                = $this->factory->post->create_and_get( [ 'post_type' => 'post', 'post_author' => $this->some_editor->ID ] );
 		$this->outgoing_post = new Outgoing_Post( $post );
 		$this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
 	}
@@ -131,9 +135,19 @@ class TestOutgoingPost extends WP_UnitTestCase {
 			'thumbnail_url',
 			'taxonomy',
 			'post_meta',
+			'authors',
 		];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $payload['post_data'] ), $post_data_keys ) );
+	}
+
+	/**
+	 * Test that the author(s) are included in the payload.
+	 */
+	public function test_authors_data(): void {
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertNotEmpty( $payload['post_data']['authors'][0] );
+		$this->assertEquals( $this->some_editor->ID, $payload['post_data']['authors'][0]['ID'] );
 	}
 
 	/**
