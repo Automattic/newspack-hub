@@ -215,9 +215,13 @@ class Outgoing_Post {
 	 * @return array The taxonomy term data.
 	 */
 	protected function get_post_taxonomy_terms() {
-		$taxonomies = get_object_taxonomies( $this->post->post_type, 'objects' );
-		$data       = [];
+		$reserved_taxonomies = Content_Distribution::get_reserved_taxonomies();
+		$taxonomies          = get_object_taxonomies( $this->post->post_type, 'objects' );
+		$data                = [];
 		foreach ( $taxonomies as $taxonomy ) {
+			if ( in_array( $taxonomy->name, $reserved_taxonomies, true ) ) {
+				continue;
+			}
 			if ( ! $taxonomy->public ) {
 				continue;
 			}
