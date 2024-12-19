@@ -26,10 +26,15 @@ class TestContentDistributionAdmin extends WP_UnitTestCase {
 	 * Test default roles capability.
 	 */
 	public function test_default_roles_capability() {
-		$roles = get_option( Admin::CAPABILITY_ROLES_OPTION_NAME );
-		foreach ( $roles as $role ) {
-			$role_obj = get_role( $role );
-			$this->assertTrue( $role_obj->has_cap( Admin::CAPABILITY ) );
+		$default_roles = get_option( Admin::CAPABILITY_ROLES_OPTION_NAME );
+		$all_roles = wp_roles();
+		foreach ( $all_roles->roles as $role_key => $role ) {
+			$role_obj = get_role( $role_key );
+			if ( in_array( $role_key, $default_roles, true ) ) {
+				$this->assertTrue( $role_obj->has_cap( Admin::CAPABILITY ) );
+			} else {
+				$this->assertFalse( $role_obj->has_cap( Admin::CAPABILITY ) );
+			}
 		}
 	}
 
