@@ -54,7 +54,6 @@ class Admin {
 		add_action( 'admin_menu', [ __CLASS__, 'add_menu' ] );
 		add_filter( 'allowed_options', [ __CLASS__, 'allowed_options' ] );
 		add_action( 'update_option_' . self::CAPABILITY_ROLES_OPTION_NAME, [ __CLASS__, 'update_capability_roles' ], 10, 2 );
-
 	}
 
 	/**
