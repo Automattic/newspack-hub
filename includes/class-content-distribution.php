@@ -9,6 +9,7 @@ namespace Newspack_Network;
 
 use Newspack\Data_Events;
 use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\Admin;
 use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use WP_Post;
@@ -46,6 +47,7 @@ class Content_Distribution {
 		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
+		Admin::init();
 		CLI::init();
 	}
 
