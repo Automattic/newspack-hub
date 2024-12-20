@@ -178,6 +178,7 @@ class Outgoing_Post {
 			'sites'           => $this->get_distribution(),
 			'post_data'       => [
 				'title'         => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'post_status'   => $this->post->post_status,
 				'date_gmt'      => $this->post->post_date_gmt,
 				'modified_gmt'  => $this->post->post_modified_gmt,
 				'slug'          => $this->post->post_name,

@@ -44,6 +44,7 @@ class Content_Distribution {
 		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_short_circuit_distributed_meta' ], 10, 4 );
 		add_action( 'wp_after_insert_post', [ __CLASS__, 'handle_post_updated' ] );
 		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'before_delete_post', [ __CLASS__, 'handle_post_deleted' ] );
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
 		CLI::init();
@@ -59,6 +60,7 @@ class Content_Distribution {
 			return;
 		}
 		Data_Events::register_action( 'network_post_updated' );
+		Data_Events::register_action( 'network_post_deleted' );
 		Data_Events::register_action( 'network_incoming_post_inserted' );
 	}
 
@@ -77,8 +79,8 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Filter the webhooks request priority so `network_post_updated` is
-	 * prioritized.
+	 * Filter the webhooks request priority so `network_post_updated` and
+	 * `network_post_deleted` are prioritized.
 	 *
 	 * @param int    $priority    The request priority.
 	 * @param string $action_name The action name.
@@ -86,7 +88,7 @@ class Content_Distribution {
 	 * @return int The request priority.
 	 */
 	public static function webhooks_request_priority( $priority, $action_name ) {
-		if ( 'network_post_updated' === $action_name ) {
+		if ( in_array( $action_name, [ 'network_post_updated', 'network_post_deleted' ], true ) ) {
 			return 1;
 		}
 		return $priority;
@@ -170,6 +172,24 @@ class Content_Distribution {
 			return;
 		}
 		self::$queued_post_updates[] = $post->ID;
+	}
+
+	/**
+	 * Distribute post deletion.
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return @void
+	 */
+	public static function handle_post_deleted( $post_id ) {
+		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
+			return;
+		}
+		$post = self::get_distributed_post( $post_id );
+		if ( ! $post ) {
+			return;
+		}
+		Data_Events::dispatch( 'network_post_deleted', $post->get_payload() );
 	}
 
 	/**
