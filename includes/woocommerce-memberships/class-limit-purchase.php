@@ -149,11 +149,7 @@ class Limit_Purchase {
 				$product = $cart_item['data'];
 				$network_active_subscription = self::get_network_equivalent_subscription_for_current_user( $product, $id_from_email );
 				if ( $network_active_subscription ) {
-					$error_message = sprintf(
-						/* translators: %s: Site URL */
-						__( "You can't buy this subscription because you already have it active on %s", 'newspack-network' ),
-						$network_active_subscription['site']
-					);
+					$error_message = __( 'Oops! You already have a subscription on another site in this network that grants you access to this site as well. Please log in using the same email address.', 'newspack-network' );
 					$errors->add( 'network_subscription', $error_message );
 				}
 			}
