@@ -5,6 +5,8 @@
  * @package Newspack_Network
  */
 
+namespace Test\Content_Distribution;
+
 use Newspack_Network\Content_Distribution;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack_Network\Hub\Node as Hub_Node;
@@ -12,7 +14,7 @@ use Newspack_Network\Hub\Node as Hub_Node;
 /**
  * Test the Content_Distribution class.
  */
-class TestContentDistribution extends WP_UnitTestCase {
+class TestContentDistribution extends \WP_UnitTestCase {
 	/**
 	 * "Mocked" network nodes.
 	 *
