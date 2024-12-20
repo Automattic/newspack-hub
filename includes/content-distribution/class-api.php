@@ -41,7 +41,7 @@ class API {
 					],
 				],
 				'permission_callback' => function() {
-					return current_user_can( 'edit_posts' ); // @TODO Custom capability.
+					return current_user_can( Admin::CAPABILITY );
 				},
 			]
 		);
