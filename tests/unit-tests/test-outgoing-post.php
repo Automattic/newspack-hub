@@ -72,8 +72,19 @@ class TestOutgoingPost extends WP_UnitTestCase {
 	 * Test set post distribution.
 	 */
 	public function test_set_distribution() {
-		$result = $this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
+		$result = $this->outgoing_post->set_distribution( [ $this->network[1]['url'] ] );
 		$this->assertFalse( is_wp_error( $result ) );
+	}
+
+	/**
+	 * Test non-published post.
+	 */
+	public function test_non_published_post() {
+		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post', 'post_status' => 'draft' ] ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
+		// Assert the instantiating an Outgoing_Post throws an exception.
+		$this->expectException( Exception::class );
+		$this->expectExceptionMessage( 'Only published post are allowed to be distributed.' );
+		new Outgoing_Post( $post );
 	}
 
 	/**
@@ -122,6 +133,7 @@ class TestOutgoingPost extends WP_UnitTestCase {
 		// Assert that 'post_data' only contains the expected keys.
 		$post_data_keys = [
 			'title',
+			'post_status',
 			'date_gmt',
 			'modified_gmt',
 			'slug',

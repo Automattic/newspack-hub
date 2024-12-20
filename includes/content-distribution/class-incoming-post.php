@@ -335,6 +335,30 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Handle the distributed post deletion.
+	 *
+	 * If the post is linked, it'll be trashed.
+	 *
+	 * The distributed post payload will be removed so the unlinked post can be
+	 * treated as a regular standalone post.
+	 *
+	 * We'll keep the network post ID and unlinked meta in case the original post
+	 * gets restored from a backup.
+	 *
+	 * @return void
+	 */
+	public function delete() {
+		// Bail if there's no post to delete.
+		if ( ! $this->ID ) {
+			return;
+		}
+		if ( $this->is_linked() ) {
+			wp_trash_post( $this->ID );
+		}
+		delete_post_meta( $this->ID, self::PAYLOAD_META );
+	}
+
+	/**
 	 * Insert the incoming post.
 	 *
 	 * This will create or update an existing post and the stored payload.
@@ -377,13 +401,19 @@ class Incoming_Post {
 			'post_type'     => $post_type,
 		];
 
-		// New post, set post status.
+		// The default status for a new post is 'draft'.
 		if ( ! $this->ID ) {
 			$postarr['post_status'] = 'draft';
 		}
 
 		// Insert the post if it's linked or a new post.
 		if ( ! $this->ID || $this->is_linked() ) {
+
+			// If the post is moving to non-publish statuses, always update the status.
+			if ( in_array( $post_data['post_status'], [ 'draft', 'trash', 'pending', 'private' ] ) ) {
+				$postarr['post_status'] = $post_data['post_status'];
+			}
+
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
