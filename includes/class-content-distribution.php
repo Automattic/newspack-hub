@@ -9,6 +9,8 @@ namespace Newspack_Network;
 
 use Newspack\Data_Events;
 use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\API;
+use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use WP_Post;
@@ -48,6 +50,8 @@ class Content_Distribution {
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
 		CLI::init();
+		API::init();
+		Editor::init();
 	}
 
 	/**
@@ -295,6 +299,26 @@ class Content_Distribution {
 	 */
 	public static function is_post_distributed( $post ) {
 		return (bool) self::get_distributed_post( $post );
+	}
+
+	/**
+	 * Whether a given post is an incoming post. This will also return true if
+	 * the post is unlinked.
+	 *
+	 * Since the Incoming_Post object queries the post by post meta on
+	 * instantiation, this method is more efficient for checking if a post is
+	 * incoming.
+	 *
+	 * @param WP_Post|int $post The post object or ID.
+	 *
+	 * @return bool Whether the post is an incoming post.
+	 */
+	public static function is_post_incoming( $post ) {
+		$post = get_post( $post );
+		if ( ! $post ) {
+			return false;
+		}
+		return (bool) get_post_meta( $post->ID, Incoming_Post::PAYLOAD_META, true );
 	}
 
 	/**

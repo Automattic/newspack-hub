@@ -41,6 +41,10 @@ class Outgoing_Post {
 			throw new \InvalidArgumentException( esc_html( __( 'Invalid post.', 'newspack-network' ) ) );
 		}
 
+		if ( 'publish' !== $post->post_status ) {
+			throw new \InvalidArgumentException( esc_html( __( 'Only published post are allowed to be distributed.', 'newspack-network' ) ) );
+		}
+
 		if ( ! in_array( $post->post_type, Content_Distribution::get_distributed_post_types() ) ) {
 			/* translators: unsupported post type for content distribution */
 			throw new \InvalidArgumentException( esc_html( sprintf( __( 'Post type %s is not supported as a distributed outgoing post.', 'newspack-network' ), $post->post_type ) ) );
@@ -120,7 +124,11 @@ class Outgoing_Post {
 		// removing urls from the config.
 		$distribution = array_unique( array_merge( $distribution, $site_urls ) );
 
-		update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $distribution );
+		$updated = update_post_meta( $this->post->ID, self::DISTRIBUTED_POST_META, $distribution );
+
+		if ( ! $updated ) {
+			return new WP_Error( 'update_failed', __( 'Failed to update post distribution.', 'newspack-network' ) );
+		}
 
 		return $distribution;
 	}
