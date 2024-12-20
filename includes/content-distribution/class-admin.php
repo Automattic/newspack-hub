@@ -235,6 +235,8 @@ class Admin {
 
 	/**
 	 * Get the default capability roles
+	 *
+	 * @retrun array
 	 */
 	public static function get_default_capability_roles() {
 		return [ 'administrator', 'editor', 'author' ];
