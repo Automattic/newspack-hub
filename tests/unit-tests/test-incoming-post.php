@@ -381,6 +381,21 @@ class TestIncomingPost extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test delete trashed post.
+	 */
+	public function test_delete_trashed_post() {
+		$post_id = $this->incoming_post->insert();
+
+		wp_trash_post( $post_id );
+
+		$this->incoming_post->delete();
+
+		// Assert that the post remained trashed and the payload was removed.
+		$this->assertSame( 'trash', get_post_status( $post_id ) );
+		$this->assertEmpty( get_post_meta( $post_id, Incoming_Post::PAYLOAD_META, true ) );
+	}
+
+	/**
 	 * Test delete unlinked.
 	 */
 	public function test_delete_unlinked() {

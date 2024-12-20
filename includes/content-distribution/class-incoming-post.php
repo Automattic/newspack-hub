@@ -352,8 +352,8 @@ class Incoming_Post {
 		if ( ! $this->ID ) {
 			return;
 		}
-		if ( $this->is_linked() && 'trash' !== $this->post->post_status ) {
-			wp_delete_post( $this->ID, false );
+		if ( $this->is_linked() ) {
+			wp_trash_post( $this->ID );
 		}
 		delete_post_meta( $this->ID, self::PAYLOAD_META );
 	}
