@@ -158,7 +158,7 @@ class Editor {
 			}
 			printf(
 				$original_url ?
-					'<a href="%1$s" title="%2$s %3$s">%4$s<span class="screen-reader-text">%2$s %3$s</span></a>' :
+					'<a href="%1$s" title="%2$s %3$s" rel="external" target="_blank">%4$s<span class="screen-reader-text">%2$s %3$s</span></a>' :
 					'<span title="%2$s">%4$s<span class="screen-reader-text">%2$s</span></span>',
 				esc_url( $original_url ),
 				$linked ?
