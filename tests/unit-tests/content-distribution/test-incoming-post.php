@@ -413,4 +413,29 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		$terms = wp_get_post_terms( $post_id, $taxonomy );
 		$this->assertEmpty( $terms );
 	}
+
+	/**
+	 * Test comment and ping statuses.
+	 */
+	public function test_comment_and_ping_statuses() {
+		$payload = $this->get_sample_payload();
+
+		// Insert the linked post with comment and ping statuses.
+		$post_id = $this->incoming_post->insert( $payload );
+
+		// Assert that the post has the comment and ping statuses.
+		$this->assertSame( 'open', get_post_field( 'comment_status', $post_id ) );
+		$this->assertSame( 'open', get_post_field( 'ping_status', $post_id ) );
+
+		// Update the comment and ping statuses.
+		$payload['post_data']['comment_status'] = 'closed';
+		$payload['post_data']['ping_status'] = 'closed';
+
+		// Insert the updated linked post.
+		$this->incoming_post->insert( $payload );
+
+		// Assert that the post has the updated comment and ping statuses.
+		$this->assertSame( 'closed', get_post_field( 'comment_status', $post_id ) );
+		$this->assertSame( 'closed', get_post_field( 'ping_status', $post_id ) );
+	}
 }

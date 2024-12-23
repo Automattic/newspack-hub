@@ -29,17 +29,19 @@ function get_sample_payload( $origin = '', $destination = '' ) {
 		'network_post_id' => '1234567890abcdef1234567890abcdef',
 		'sites'           => [ $destination ],
 		'post_data'       => [
-			'title'         => 'Title',
-			'post_status'   => 'publish',
-			'date_gmt'      => '2021-01-01 00:00:00',
-			'modified_gmt'  => '2021-01-01 00:00:00',
-			'slug'          => 'slug',
-			'post_type'     => 'post',
-			'raw_content'   => 'Content',
-			'content'       => '<p>Content</p>',
-			'excerpt'       => 'Excerpt',
-			'thumbnail_url' => 'https://picsum.photos/id/1/300/300.jpg',
-			'taxonomy'      => [
+			'title'          => 'Title',
+			'post_status'    => 'publish',
+			'date_gmt'       => '2021-01-01 00:00:00',
+			'modified_gmt'   => '2021-01-01 00:00:00',
+			'slug'           => 'slug',
+			'post_type'      => 'post',
+			'raw_content'    => 'Content',
+			'content'        => '<p>Content</p>',
+			'excerpt'        => 'Excerpt',
+			'thumbnail_url'  => 'https://picsum.photos/id/1/300/300.jpg',
+			'comment_status' => 'open',
+			'ping_status'    => 'open',
+			'taxonomy'       => [
 				'category' => [
 					[
 						'name' => 'Category 1',
@@ -61,7 +63,7 @@ function get_sample_payload( $origin = '', $destination = '' ) {
 					],
 				],
 			],
-			'post_meta'     => [
+			'post_meta'      => [
 				'single'   => [ 'value' ],
 				'array'    => [ [ 'a' => 'b', 'c' => 'd' ] ], // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
 				'multiple' => [ 'value 1', 'value 2' ],
