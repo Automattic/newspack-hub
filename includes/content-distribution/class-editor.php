@@ -45,7 +45,7 @@ class Editor {
 						],
 					],
 					'auth_callback' => function() {
-						return current_user_can( 'edit_posts' ); // @TODO Custom capability.
+						return current_user_can( Admin::CAPABILITY );
 					},
 				]
 			);
@@ -60,6 +60,10 @@ class Editor {
 	public static function enqueue_block_editor_assets() {
 		$screen = get_current_screen();
 		if ( ! in_array( $screen->post_type, Content_Distribution::get_distributed_post_types(), true ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( Admin::CAPABILITY ) ) {
 			return;
 		}
 

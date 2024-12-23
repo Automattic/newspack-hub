@@ -37,6 +37,10 @@ class Distributor_Settings {
 	 * @return void
 	 */
 	public static function init() {
+		// Bail if Content Distribution is enabled.
+		if ( defined( 'NEWPACK_NETWORK_CONTENT_DISTRIBUTION' ) && NEWPACK_NETWORK_CONTENT_DISTRIBUTION ) {
+			return;
+		}
 		add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
 		add_action( 'admin_menu', [ __CLASS__, 'add_menu' ] );
 		add_filter( 'allowed_options', [ __CLASS__, 'allowed_options' ] );

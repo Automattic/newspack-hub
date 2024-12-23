@@ -9,6 +9,7 @@ namespace Newspack_Network;
 
 use Newspack\Data_Events;
 use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\Admin;
 use Newspack_Network\Content_Distribution\API;
 use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Incoming_Post;
@@ -49,6 +50,7 @@ class Content_Distribution {
 		add_action( 'before_delete_post', [ __CLASS__, 'handle_post_deleted' ] );
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
+		Admin::init();
 		CLI::init();
 		API::init();
 		Editor::init();
