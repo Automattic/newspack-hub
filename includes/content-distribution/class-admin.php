@@ -7,9 +7,9 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution;
 use Newspack_Network\Site_Role;
 use Newspack_Network\Hub\Nodes;
+use Newspack_Network\Hub\Node;
 use Newspack\Data_Events;
 use Newspack_Network\Admin as Network_Admin;
 
