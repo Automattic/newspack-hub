@@ -1,3 +1,30 @@
 .wp-list-table .column-id {
-    width: 40px;
+  width: 40px;
+}
+
+.newspack-network-data-column {
+  display: flex;
+  align-items: flex-end;
+  justify-content:flex-end;
+  position: relative;
+  width: 100%;
+  height: 80px;
+}
+.newspack-network-data-column textarea {
+  width: 100%;
+  height: 80px;
+  overflow: hidden;
+  font-size: 11px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+/* Add a fade effect to the textarea */
+.newspack-network-data-column textarea {
+  background-color: rgba(255, 255, 255, 0.5);
+  transition: background-color 0.5s;
+}
+.newspack-network-data-column button {
+  z-index: 2;
 }
