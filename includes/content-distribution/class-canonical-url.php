@@ -43,12 +43,11 @@ class Canonical_Url {
 			return $canonical_url;
 		}
 
-		$payload       = $incoming_post->get_post_payload();
-		$canonical_url = $payload['post_url'];
+		$canonical_url = $incoming_post->get_original_post_url();
 
 		$base_url = get_option( self::OPTION_NAME, '' );
 		if ( $base_url ) {
-			$canonical_url = str_replace( $payload['site_url'], $base_url, $canonical_url );
+			$canonical_url = str_replace( $incoming_post->get_original_site_url(), $base_url, $canonical_url );
 		}
 
 		return $canonical_url;

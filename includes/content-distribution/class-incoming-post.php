@@ -133,11 +133,29 @@ class Incoming_Post {
 	 *
 	 * @return array The stored payload.
 	 */
-	public function get_post_payload() {
+	protected function get_post_payload() {
 		if ( ! $this->ID ) {
 			return [];
 		}
 		return get_post_meta( $this->ID, self::PAYLOAD_META, true );
+	}
+
+	/**
+	 * Get the post original URL.
+	 *
+	 * @return string The post original post URL. Empty string if not found.
+	 */
+	public function get_original_post_url() {
+		return $this->payload['post_url'] ?? '';
+	}
+
+	/**
+	 * Get the post original site URL.
+	 *
+	 * @return string The post original site URL. Empty string if not found.
+	 */
+	public function get_original_site_url() {
+		return $this->payload['site_url'] ?? '';
 	}
 
 	/**

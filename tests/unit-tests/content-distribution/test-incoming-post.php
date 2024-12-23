@@ -181,6 +181,26 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Test get original post URL.
+	 */
+	public function test_get_original_post_url() {
+		$post_id = $this->incoming_post->insert();
+		$original_url = $this->incoming_post->get_original_post_url();
+		$payload = $this->get_sample_payload();
+		$this->assertSame( $payload['post_url'], $original_url );
+	}
+
+	/**
+	 * Test get original site URL.
+	 */
+	public function test_get_original_site_url() {
+		$post_id = $this->incoming_post->insert();
+		$original_url = $this->incoming_post->get_original_site_url();
+		$payload = $this->get_sample_payload();
+		$this->assertSame( $payload['site_url'], $original_url );
+	}
+
+	/**
 	 * Test relink post.
 	 */
 	public function test_relink_post() {
