@@ -12,7 +12,7 @@ use Newspack_Network\Content_Distribution\Admin;
 /**
  * Test the Content Distribution Admin class.
  */
-class TestContentDistributionAdmin extends \WP_UnitTestCase {
+class TestAdmin extends \WP_UnitTestCase {
 	/**
 	 * Test default roles option value.
 	 */

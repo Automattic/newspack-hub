@@ -12,7 +12,7 @@ use Newspack_Network\Content_Distribution\Incoming_Post;
 /**
  * Test the Content Distribution Canonical URL class.
  */
-class TestContentDistributionCanonicalUrl extends \WP_UnitTestCase {
+class TestCanonicalUrl extends \WP_UnitTestCase {
 	/**
 	 * Test default canonical URL.
 	 */
