@@ -54,10 +54,11 @@ class Canonical_Url {
 	}
 
 	/**
-	 * Handles the canonical URL change for distributed content when Yoast SEO is in use
+	 * Handles the canonical URL change for distributed content when Yoast SEO is in use.
 	 *
 	 * @param string $canonical_url The Yoast WPSEO deduced canonical URL.
-	 * @return string $canonical_url The updated distributor friendly URL
+	 *
+	 * @return string $canonical_url The updated distributor friendly URL.
 	 */
 	public static function wpseo_canonical_url( $canonical_url ) {
 
