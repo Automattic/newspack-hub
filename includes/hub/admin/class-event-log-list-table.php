@@ -142,7 +142,7 @@ class Event_Log_List_Table extends \WP_List_Table {
 			case 'action_name':
 				return $item->get_action_name();
 			case 'data':
-				return '<code>' . $item->get_raw_data() . '</code>';
+				return '<textarea style="width:100%;height:100px;overflow:hidden;font-size:12px;" disabled>' . wp_json_encode( $item->get_data(), JSON_PRETTY_PRINT ) . '</textarea>';
 			default:
 				return '';
 		}
