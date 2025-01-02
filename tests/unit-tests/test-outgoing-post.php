@@ -76,8 +76,19 @@ class TestOutgoingPost extends WP_UnitTestCase {
 	 * Test set post distribution.
 	 */
 	public function test_set_distribution() {
-		$result = $this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
+		$result = $this->outgoing_post->set_distribution( [ $this->network[1]['url'] ] );
 		$this->assertFalse( is_wp_error( $result ) );
+	}
+
+	/**
+	 * Test non-published post.
+	 */
+	public function test_non_published_post() {
+		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post', 'post_status' => 'draft' ] ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
+		// Assert the instantiating an Outgoing_Post throws an exception.
+		$this->expectException( Exception::class );
+		$this->expectExceptionMessage( 'Only published post are allowed to be distributed.' );
+		new Outgoing_Post( $post );
 	}
 
 	/**
@@ -119,12 +130,14 @@ class TestOutgoingPost extends WP_UnitTestCase {
 
 		$this->assertSame( get_bloginfo( 'url' ), $payload['site_url'] );
 		$this->assertSame( $this->outgoing_post->get_post()->ID, $payload['post_id'] );
+		$this->assertSame( get_permalink( $this->outgoing_post->get_post()->ID ), $payload['post_url'] );
 		$this->assertSame( 32, strlen( $payload['network_post_id'] ) );
 		$this->assertEquals( $distribution, $payload['sites'] );
 
 		// Assert that 'post_data' only contains the expected keys.
 		$post_data_keys = [
 			'title',
+			'post_status',
 			'date_gmt',
 			'modified_gmt',
 			'slug',
@@ -178,5 +191,20 @@ class TestOutgoingPost extends WP_UnitTestCase {
 		$this->assertArrayHasKey( $multiple_meta_key, $payload['post_data']['post_meta'] );
 		$this->assertSame( 'a', $payload['post_data']['post_meta'][ $multiple_meta_key ][0] );
 		$this->assertSame( 'b', $payload['post_data']['post_meta'][ $multiple_meta_key ][1] );
+	}
+
+	/**
+	 * Test reserved taxonomies.
+	 */
+	public function test_reserved_taxonomies() {
+		$post = $this->outgoing_post->get_post();
+		$taxonomy = 'author';
+		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
+
+		$term = $this->factory->term->create( [ 'taxonomy' => $taxonomy ] );
+		wp_set_post_terms( $post->ID, [ $term ], $taxonomy );
+
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertTrue( empty( $payload['post_data']['taxonomy'][ $taxonomy ] ) );
 	}
 }

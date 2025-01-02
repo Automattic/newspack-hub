@@ -41,6 +41,7 @@ class Accepted_Actions {
 		'network_nodes_synced'                     => 'Nodes_Synced',
 		'newspack_network_membership_plan_updated' => 'Membership_Plan_Updated',
 		'network_post_updated'                     => 'Network_Post_Updated',
+		'network_post_deleted'                     => 'Network_Post_Deleted',
 	];
 
 	/**
@@ -63,5 +64,6 @@ class Accepted_Actions {
 		'newspack_node_subscription_changed',
 		'newspack_network_membership_plan_updated',
 		'network_post_updated',
+		'network_post_deleted',
 	];
 }

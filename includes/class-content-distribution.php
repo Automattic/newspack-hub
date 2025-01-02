@@ -9,6 +9,9 @@ namespace Newspack_Network;
 
 use Newspack\Data_Events;
 use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\Admin;
+use Newspack_Network\Content_Distribution\API;
+use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use WP_Post;
@@ -42,10 +45,15 @@ class Content_Distribution {
 		add_action( 'shutdown', [ __CLASS__, 'distribute_queued_posts' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
 		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_short_circuit_distributed_meta' ], 10, 4 );
+		add_action( 'wp_after_insert_post', [ __CLASS__, 'handle_post_updated' ] );
 		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'before_delete_post', [ __CLASS__, 'handle_post_deleted' ] );
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
+		Admin::init();
 		CLI::init();
+		API::init();
+		Editor::init();
 	}
 
 	/**
@@ -58,6 +66,7 @@ class Content_Distribution {
 			return;
 		}
 		Data_Events::register_action( 'network_post_updated' );
+		Data_Events::register_action( 'network_post_deleted' );
 		Data_Events::register_action( 'network_incoming_post_inserted' );
 	}
 
@@ -76,8 +85,8 @@ class Content_Distribution {
 	}
 
 	/**
-	 * Filter the webhooks request priority so `network_post_updated` is
-	 * prioritized.
+	 * Filter the webhooks request priority so `network_post_updated` and
+	 * `network_post_deleted` are prioritized.
 	 *
 	 * @param int    $priority    The request priority.
 	 * @param string $action_name The action name.
@@ -85,7 +94,7 @@ class Content_Distribution {
 	 * @return int The request priority.
 	 */
 	public static function webhooks_request_priority( $priority, $action_name ) {
-		if ( 'network_post_updated' === $action_name ) {
+		if ( in_array( $action_name, [ 'network_post_updated', 'network_post_deleted' ], true ) ) {
 			return 1;
 		}
 		return $priority;
@@ -172,6 +181,24 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Distribute post deletion.
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return @void
+	 */
+	public static function handle_post_deleted( $post_id ) {
+		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
+			return;
+		}
+		$post = self::get_distributed_post( $post_id );
+		if ( ! $post ) {
+			return;
+		}
+		Data_Events::dispatch( 'network_post_deleted', $post->get_payload() );
+	}
+
+	/**
 	 * Incoming post inserted listener callback.
 	 *
 	 * @param int     $post_id      The post ID.
@@ -183,13 +210,16 @@ class Content_Distribution {
 			return;
 		}
 		$data = [
-			'origin'      => [
+			'network_post_id' => $post_payload['network_post_id'],
+			'outgoing'        => [
 				'site_url' => $post_payload['site_url'],
 				'post_id'  => $post_payload['post_id'],
+				'post_url' => $post_payload['post_url'],
 			],
-			'destination' => [
+			'incoming'        => [
 				'site_url'  => get_bloginfo( 'url' ),
 				'post_id'   => $post_id,
+				'post_url'  => get_permalink( $post_id ),
 				'is_linked' => $is_linked,
 			],
 		];
@@ -245,6 +275,24 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Get taxonomies that should not be distributed.
+	 *
+	 * @return string[] The reserved taxonomies.
+	 */
+	public static function get_reserved_taxonomies() {
+		$reserved_taxonomies = [
+			'author', // Co-Authors Plus 'author' taxonomy should be ignored as it requires custom handling.
+		];
+
+		/**
+		 * Filters the reserved taxonomies that should not be distributed.
+		 *
+		 * @param string[] $reserved_taxonomies The reserved taxonomies.
+		 */
+		return apply_filters( 'newspack_network_content_distribution_reserved_taxonomies', $reserved_taxonomies );
+	}
+
+	/**
 	 * Whether a given post is distributed.
 	 *
 	 * @param WP_Post|int $post The post object or ID.
@@ -253,6 +301,26 @@ class Content_Distribution {
 	 */
 	public static function is_post_distributed( $post ) {
 		return (bool) self::get_distributed_post( $post );
+	}
+
+	/**
+	 * Whether a given post is an incoming post. This will also return true if
+	 * the post is unlinked.
+	 *
+	 * Since the Incoming_Post object queries the post by post meta on
+	 * instantiation, this method is more efficient for checking if a post is
+	 * incoming.
+	 *
+	 * @param WP_Post|int $post The post object or ID.
+	 *
+	 * @return bool Whether the post is an incoming post.
+	 */
+	public static function is_post_incoming( $post ) {
+		$post = get_post( $post );
+		if ( ! $post ) {
+			return false;
+		}
+		return (bool) get_post_meta( $post->ID, Incoming_Post::PAYLOAD_META, true );
 	}
 
 	/**

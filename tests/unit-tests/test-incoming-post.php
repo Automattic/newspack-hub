@@ -43,6 +43,7 @@ class TestIncomingPost extends WP_UnitTestCase {
 			'sites'           => [ $this->node_2 ],
 			'post_data'       => [
 				'title'         => 'Title',
+				'post_status'   => 'publish',
 				'date_gmt'      => '2021-01-01 00:00:00',
 				'modified_gmt'  => '2021-01-01 00:00:00',
 				'slug'          => 'slug',
@@ -51,13 +52,6 @@ class TestIncomingPost extends WP_UnitTestCase {
 				'content'       => '<p>Content</p>',
 				'excerpt'       => 'Excerpt',
 				'thumbnail_url' => 'https://picsum.photos/id/1/300/300.jpg',
-				'authors'       => [
-					[
-						'type' => 'wp_user',
-						'user_email' => 'something-tapir@example.com',
-						'ID' => 12345,
-						]
-					],
 				'taxonomy'      => [
 					'category' => [
 						[
@@ -339,12 +333,106 @@ class TestIncomingPost extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that a post author is set.
+	 * Test status changes.
 	 */
-	public function test_authors(): void {
-		$post_id = $this->incoming_post->insert( $this->get_sample_payload() );
+	public function test_status_changes() {
+		$post_id = $this->incoming_post->insert();
 
-		$post = get_post( $post_id );
-		$this->assertNotEmpty( $post->post_author );
+		// Assert that the default post status is draft.
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+
+		// Publish the linked post.
+		wp_update_post(
+			[
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			]
+		);
+
+		$payload = $this->get_sample_payload();
+
+		// Assert that the post status updates to draft.
+		$payload['post_data']['post_status'] = 'draft';
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+
+		// Assert that the post status does NOT update to publish.
+		$payload['post_data']['post_status'] = 'publish';
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+
+		// Assert that the post status updates to trash.
+		$payload['post_data']['post_status'] = 'trash';
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'trash', get_post_status( $post_id ) );
+	}
+
+	/**
+	 * Test delete.
+	 */
+	public function test_delete() {
+		$post_id = $this->incoming_post->insert();
+
+		$this->incoming_post->delete();
+
+		// Assert that the post was trashed and the payload was removed.
+		$this->assertSame( 'trash', get_post_status( $post_id ) );
+		$this->assertEmpty( get_post_meta( $post_id, Incoming_Post::PAYLOAD_META, true ) );
+	}
+
+	/**
+	 * Test delete trashed post.
+	 */
+	public function test_delete_trashed_post() {
+		$post_id = $this->incoming_post->insert();
+
+		wp_trash_post( $post_id );
+
+		$this->incoming_post->delete();
+
+		// Assert that the post remained trashed and the payload was removed.
+		$this->assertSame( 'trash', get_post_status( $post_id ) );
+		$this->assertEmpty( get_post_meta( $post_id, Incoming_Post::PAYLOAD_META, true ) );
+	}
+
+	/**
+	 * Test delete unlinked.
+	 */
+	public function test_delete_unlinked() {
+		$post_id = $this->incoming_post->insert();
+
+		$this->assertNotEmpty( get_post( $post_id ) );
+
+		$this->incoming_post->set_unlinked();
+		$this->incoming_post->delete();
+
+		// Assert that the post remained as draft and the payload was removed.
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+		$this->assertEmpty( get_post_meta( $post_id, Incoming_Post::PAYLOAD_META, true ) );
+	}
+
+	/**
+	 * Test reserved taxonomies.
+	 */
+	public function test_reserved_taxonomies() {
+		$payload = $this->get_sample_payload();
+		$taxonomy = 'author';
+
+		// Register a reserved taxonomy.
+		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
+
+		$payload['post_data']['taxonomy']['author'] = [
+			[
+				'name' => 'Author 1',
+				'slug' => 'author-1',
+			],
+		];
+
+		// Insert the linked post.
+		$post_id = $this->incoming_post->insert( $payload );
+
+		// Assert that the post does not have the reserved taxonomy term.
+		$terms = wp_get_post_terms( $post_id, $taxonomy );
+		$this->assertEmpty( $terms );
 	}
 }

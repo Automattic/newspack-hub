@@ -288,16 +288,20 @@ class Incoming_Post {
 	 * @return void
 	 */
 	protected function update_taxonomy_terms() {
-		$data = $this->payload['post_data']['taxonomy'];
+		$reserved_taxonomies = Content_Distribution::get_reserved_taxonomies();
+		$data                = $this->payload['post_data']['taxonomy'];
 		foreach ( $data as $taxonomy => $terms ) {
+			if ( in_array( $taxonomy, $reserved_taxonomies, true ) ) {
+				continue;
+			}
 			if ( ! taxonomy_exists( $taxonomy ) ) {
 				continue;
 			}
 			$term_ids = [];
 			foreach ( $terms as $term_data ) {
-				$term = get_term_by( 'slug', $term_data['slug'], $taxonomy, ARRAY_A );
+				$term = get_term_by( 'name', $term_data['name'], $taxonomy, ARRAY_A );
 				if ( ! $term ) {
-					$term = wp_insert_term( $term_data['name'], $taxonomy, [ 'slug' => $term_data['slug'] ] );
+					$term = wp_insert_term( $term_data['name'], $taxonomy );
 					if ( is_wp_error( $term ) ) {
 						continue;
 					}
@@ -328,6 +332,30 @@ class Incoming_Post {
 		}
 
 		$this->payload = $payload;
+	}
+
+	/**
+	 * Handle the distributed post deletion.
+	 *
+	 * If the post is linked, it'll be trashed.
+	 *
+	 * The distributed post payload will be removed so the unlinked post can be
+	 * treated as a regular standalone post.
+	 *
+	 * We'll keep the network post ID and unlinked meta in case the original post
+	 * gets restored from a backup.
+	 *
+	 * @return void
+	 */
+	public function delete() {
+		// Bail if there's no post to delete.
+		if ( ! $this->ID ) {
+			return;
+		}
+		if ( $this->is_linked() ) {
+			wp_trash_post( $this->ID );
+		}
+		delete_post_meta( $this->ID, self::PAYLOAD_META );
 	}
 
 	/**
@@ -369,13 +397,19 @@ class Incoming_Post {
 			'post_type'     => $post_type,
 		];
 
-		// New post, set post status.
+		// The default status for a new post is 'draft'.
 		if ( ! $this->ID ) {
 			$postarr['post_status'] = 'draft';
 		}
 
 		// Insert the post if it's linked or a new post.
 		if ( ! $this->ID || $this->is_linked() ) {
+
+			// If the post is moving to non-publish statuses, always update the status.
+			if ( in_array( $post_data['post_status'], [ 'draft', 'trash', 'pending', 'private' ] ) ) {
+				$postarr['post_status'] = $post_data['post_status'];
+			}
+
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
