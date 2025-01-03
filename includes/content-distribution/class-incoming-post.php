@@ -135,6 +135,15 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Get the post's original site URL.
+	 *
+	 * @return string The post original site URL or an empty string if not found.
+	 */
+	public function get_original_site_url(): string {
+		return $this->payload['site_url'] ?? '';
+	}
+
+	/**
 	 * Find the post from the payload's network post ID.
 	 *
 	 * @return WP_Post|null The post or null if not found.

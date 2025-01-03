@@ -11,6 +11,7 @@ module.exports = getBaseWebpackConfig(
 	{
 		entry: {
 			distribute: path.join( __dirname, 'src', 'content-distribution', 'distribute' ),
+			'incoming-post': path.join( __dirname, 'src', 'content-distribution', 'incoming-post' ),
 		},
 	}
 );

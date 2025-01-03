@@ -1,0 +1,22 @@
+// Aggressively grey out and "disable" the editor.
+.edit-post-visual-editor {
+	position: relative;
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 9999;
+		pointer-events: auto;
+		cursor: not-allowed;
+	}
+
+	.block-editor-writing-flow {
+		opacity: 0.5;
+		pointer-events: none !important;
+		user-select: none !important;
+		-webkit-user-select: none !important;
+		-moz-user-select: none !important;
+		-ms-user-select: none !important;
+	}
+}
