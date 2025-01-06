@@ -214,6 +214,9 @@ class Editor {
 				width: 32px;
 				text-align: center;
 			}
+			.wp-list-table .column-content_distribution a {
+				display: inline-block;
+			}
 			.wp-list-table .column-content_distribution a svg {
 				fill: #2271b1;
 			}
