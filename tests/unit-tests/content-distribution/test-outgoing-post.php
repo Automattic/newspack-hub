@@ -5,13 +5,15 @@
  * @package Newspack_Network
  */
 
+namespace Test\Content_Distribution;
+
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack_Network\Hub\Node as Hub_Node;
 
 /**
  * Test the Outgoing_Post class.
  */
-class TestOutgoingPost extends WP_UnitTestCase {
+class TestOutgoingPost extends \WP_UnitTestCase {
 	/**
 	 * "Mocked" network nodes.
 	 *
@@ -82,7 +84,7 @@ class TestOutgoingPost extends WP_UnitTestCase {
 	public function test_non_published_post() {
 		$post = $this->factory->post->create_and_get( [ 'post_type' => 'post', 'post_status' => 'draft' ] ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
 		// Assert the instantiating an Outgoing_Post throws an exception.
-		$this->expectException( Exception::class );
+		$this->expectException( \Exception::class );
 		$this->expectExceptionMessage( 'Only published post are allowed to be distributed.' );
 		new Outgoing_Post( $post );
 	}
