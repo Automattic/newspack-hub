@@ -5,12 +5,14 @@
  * @package Newspack_Network
  */
 
+namespace Test\Content_Distribution;
+
 use Newspack_Network\Content_Distribution\Incoming_Post;
 
 /**
  * Test the Incoming_Post class.
  */
-class TestIncomingPost extends WP_UnitTestCase {
+class TestIncomingPost extends \WP_UnitTestCase {
 	/**
 	 * URL for node that distributes posts.
 	 *
@@ -36,51 +38,7 @@ class TestIncomingPost extends WP_UnitTestCase {
 	 * Get sample post payload.
 	 */
 	private function get_sample_payload() {
-		return [
-			'site_url'        => $this->node_1,
-			'post_id'         => 1,
-			'network_post_id' => '1234567890abcdef1234567890abcdef',
-			'sites'           => [ $this->node_2 ],
-			'post_data'       => [
-				'title'         => 'Title',
-				'post_status'   => 'publish',
-				'date_gmt'      => '2021-01-01 00:00:00',
-				'modified_gmt'  => '2021-01-01 00:00:00',
-				'slug'          => 'slug',
-				'post_type'     => 'post',
-				'raw_content'   => 'Content',
-				'content'       => '<p>Content</p>',
-				'excerpt'       => 'Excerpt',
-				'thumbnail_url' => 'https://picsum.photos/id/1/300/300.jpg',
-				'taxonomy'      => [
-					'category' => [
-						[
-							'name' => 'Category 1',
-							'slug' => 'category-1',
-						],
-						[
-							'name' => 'Category 2',
-							'slug' => 'category-2',
-						],
-					],
-					'post_tag' => [
-						[
-							'name' => 'Tag 1',
-							'slug' => 'tag-1',
-						],
-						[
-							'name' => 'Tag 2',
-							'slug' => 'tag-2',
-						],
-					],
-				],
-				'post_meta'     => [
-					'single'   => [ 'value' ],
-					'array'    => [ [ 'a' => 'b', 'c' => 'd' ] ], // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
-					'multiple' => [ 'value 1', 'value 2' ],
-				],
-			],
-		];
+		return get_sample_payload( $this->node_1, $this->node_2 );
 	}
 
 	/**
@@ -220,6 +178,26 @@ class TestIncomingPost extends WP_UnitTestCase {
 		$incoming_post = get_post( $post_id );
 		$this->assertSame( 'Custom Title', $incoming_post->post_title );
 		$this->assertSame( 'Custom Content', $incoming_post->post_content );
+	}
+
+	/**
+	 * Test get original post URL.
+	 */
+	public function test_get_original_post_url() {
+		$post_id = $this->incoming_post->insert();
+		$original_url = $this->incoming_post->get_original_post_url();
+		$payload = $this->get_sample_payload();
+		$this->assertSame( $payload['post_url'], $original_url );
+	}
+
+	/**
+	 * Test get original site URL.
+	 */
+	public function test_get_original_site_url() {
+		$post_id = $this->incoming_post->insert();
+		$original_url = $this->incoming_post->get_original_site_url();
+		$payload = $this->get_sample_payload();
+		$this->assertSame( $payload['site_url'], $original_url );
 	}
 
 	/**
