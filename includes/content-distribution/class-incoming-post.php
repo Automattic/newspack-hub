@@ -414,15 +414,17 @@ class Incoming_Post {
 		}
 
 		$postarr = [
-			'ID'            => $this->ID,
-			'post_date_gmt' => $post_data['date_gmt'],
-			'post_title'    => $post_data['title'],
-			'post_name'     => $post_data['slug'],
-			'post_content'  => use_block_editor_for_post_type( $post_type ) ?
+			'ID'             => $this->ID,
+			'post_date_gmt'  => $post_data['date_gmt'],
+			'post_title'     => $post_data['title'],
+			'post_name'      => $post_data['slug'],
+			'post_content'   => use_block_editor_for_post_type( $post_type ) ?
 				$post_data['raw_content'] :
 				$post_data['content'],
-			'post_excerpt'  => $post_data['excerpt'],
-			'post_type'     => $post_type,
+			'post_excerpt'   => $post_data['excerpt'],
+			'post_type'      => $post_type,
+			'comment_status' => $post_data['comment_status'],
+			'ping_status'    => $post_data['ping_status'],
 		];
 
 		// The default status for a new post is 'draft'.
