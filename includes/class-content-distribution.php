@@ -12,6 +12,7 @@ use Newspack_Network\Content_Distribution\CLI;
 use Newspack_Network\Content_Distribution\Admin;
 use Newspack_Network\Content_Distribution\API;
 use Newspack_Network\Content_Distribution\Editor;
+use Newspack_Network\Content_Distribution\Canonical_Url;
 use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use WP_Post;
@@ -54,6 +55,8 @@ class Content_Distribution {
 		CLI::init();
 		API::init();
 		Editor::init();
+
+		Canonical_Url::init();
 	}
 
 	/**
