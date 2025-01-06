@@ -74,7 +74,10 @@ class Incoming_Post {
 	 *                                   not configured for distribution.
 	 */
 	public function __construct( $payload ) {
+		$post = null;
+
 		if ( is_numeric( $payload ) ) {
+			$post    = get_post( $payload );
 			$payload = get_post_meta( $payload, self::PAYLOAD_META, true );
 		}
 
@@ -87,7 +90,10 @@ class Incoming_Post {
 		$this->payload         = $payload;
 		$this->network_post_id = $payload['network_post_id'];
 
-		$post = $this->query_post();
+		if ( ! $post ) {
+			$post = $this->query_post();
+		}
+
 		if ( $post ) {
 			$this->ID      = $post->ID;
 			$this->post    = $post;
@@ -132,6 +138,24 @@ class Incoming_Post {
 			return [];
 		}
 		return get_post_meta( $this->ID, self::PAYLOAD_META, true );
+	}
+
+	/**
+	 * Get the post original URL.
+	 *
+	 * @return string The post original post URL. Empty string if not found.
+	 */
+	public function get_original_post_url() {
+		return $this->payload['post_url'] ?? '';
+	}
+
+	/**
+	 * Get the post original site URL.
+	 *
+	 * @return string The post original site URL. Empty string if not found.
+	 */
+	public function get_original_site_url() {
+		return $this->payload['site_url'] ?? '';
 	}
 
 	/**
