@@ -130,9 +130,16 @@ class Event_Log_List_Table extends \WP_List_Table {
 	 * @return string
 	 */
 	protected function get_data_column( $item ) {
+		$str = wp_json_encode( $item->get_data(), JSON_PRETTY_PRINT );
+		if ( 300 > strlen( $str ) ) {
+			return sprintf(
+				'<div class="newspack-network-data-column"><pre><code>%1$s</code></pre></div>',
+				$str
+			);
+		}
 		return sprintf(
 			'<div class="newspack-network-data-column"><textarea disabled>%1$s</textarea><button type="button" class="button button-secondary">%2$s</button></div>',
-			wp_json_encode( $item->get_data(), JSON_PRETTY_PRINT ),
+			$str,
 			esc_html__( 'Copy to clipboard', 'newspack-network' )
 		);
 	}
