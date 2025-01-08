@@ -101,6 +101,19 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Log a message.
+	 *
+	 * @param string $message The message to log.
+	 */
+	protected function log( $message ) {
+		$prefix = '[Incoming Post]';
+		if ( ! empty( $this->payload ) ) {
+			$prefix .= ' ' . $this->payload['network_post_id'];
+		}
+		Debugger::log( $prefix . ' ' . $message );
+	}
+
+	/**
 	 * Validate a payload.
 	 *
 	 * @param array $payload The payload to validate.
@@ -297,7 +310,7 @@ class Incoming_Post {
 
 		$attachment_id = media_sideload_image( $thumbnail_url, $this->ID, '', 'id' );
 		if ( is_wp_error( $attachment_id ) ) {
-			Debugger::log( 'Failed to upload featured image for post ' . $this->ID . ' with message: ' . $attachment_id->get_error_message() );
+			self::log( 'Failed to upload featured image for post ' . $this->ID . ' with message: ' . $attachment_id->get_error_message() );
 			return;
 		}
 
@@ -327,6 +340,7 @@ class Incoming_Post {
 				if ( ! $term ) {
 					$term = wp_insert_term( $term_data['name'], $taxonomy );
 					if ( is_wp_error( $term ) ) {
+						self::log( 'Failed to insert term ' . $term_data['name'] . ' for taxonomy ' . $taxonomy . ' with message: ' . $term->get_error_message() );
 						continue;
 					}
 					$term = get_term_by( 'id', $term['term_id'], $taxonomy, ARRAY_A );
@@ -395,6 +409,7 @@ class Incoming_Post {
 		if ( ! empty( $payload ) ) {
 			$error = $this->update_payload( $payload );
 			if ( is_wp_error( $error ) ) {
+				self::log( 'Failed to update payload: ' . $error->get_error_message() );
 				return $error;
 			}
 		}
@@ -451,6 +466,7 @@ class Incoming_Post {
 
 			// The wp_insert_post() function might return `0` on failure.
 			if ( ! $post_id ) {
+				self::log( 'Failed to insert post with data: ' . print_r( $postarr, true ) );
 				return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
 			}
 
