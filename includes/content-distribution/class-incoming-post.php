@@ -206,7 +206,7 @@ class Incoming_Post {
 		if ( ! $this->ID ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
 		}
-		update_post_meta( $this->ID, self::UNLINKED_META, (bool) $unlinked );
+		update_post_meta( $this->ID, self::UNLINKED_META, $unlinked ? 1 : 0 );
 
 		// If the post is being re-linked, update content.
 		if ( ! $unlinked ) {
@@ -219,8 +219,8 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	protected function is_unlinked() {
-		return get_post_meta( $this->ID, self::UNLINKED_META, true );
+	protected function is_unlinked(): bool {
+		return (bool) get_post_meta( $this->ID, self::UNLINKED_META, true );
 	}
 
 	/**
@@ -230,7 +230,7 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	public function is_linked() {
+	public function is_linked(): bool {
 		return $this->ID && ! $this->is_unlinked();
 	}
 

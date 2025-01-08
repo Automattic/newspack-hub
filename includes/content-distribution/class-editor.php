@@ -53,6 +53,24 @@ class Editor {
 					},
 				]
 			);
+			register_post_meta(
+				$post_type,
+				Incoming_Post::UNLINKED_META,
+				[
+					'single'        => true,
+					'type'          => 'boolean',
+					'show_in_rest'  => [
+						'schema' => [
+							'context' => [ 'edit' ],
+							'type'    => 'boolean',
+							'default' => false,
+						],
+					],
+					'auth_callback' => function () {
+						return current_user_can( Admin::CAPABILITY );
+					},
+				]
+			);
 		}
 	}
 
@@ -111,7 +129,7 @@ class Editor {
 			'newspack_network_incoming_post',
 			[
 				'original_url' => $incoming->get_original_site_url(),
-				'is_linked'    => $incoming->is_linked(),
+				'unlinked_meta_key'    => Incoming_Post::UNLINKED_META,
 			]
 		);
 	}

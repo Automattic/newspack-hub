@@ -10,7 +10,8 @@ const path = require( 'path' );
 module.exports = getBaseWebpackConfig(
 	{
 		entry: {
-			distribute: path.join( __dirname, 'src', 'content-distribution', 'distribute' ),
+			'distribute-panel': path.join( __dirname, 'src', 'content-distribution', 'distribute-panel' ),
+			'distribute': path.join( __dirname, 'src', 'content-distribution', 'distribute' ), // TODO. Rename to outgoing-post
 			'incoming-post': path.join( __dirname, 'src', 'content-distribution', 'incoming-post' ),
 		},
 	}
