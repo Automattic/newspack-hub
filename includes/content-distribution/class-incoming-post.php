@@ -463,6 +463,7 @@ class Incoming_Post {
 			$post_id = wp_insert_post( $postarr, true );
 
 			if ( is_wp_error( $post_id ) ) {
+				self::log( 'Failed to insert post with message: ' . $post_id->get_error_message() );
 				return $post_id;
 			}
 
