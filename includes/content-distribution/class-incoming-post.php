@@ -104,6 +104,8 @@ class Incoming_Post {
 	 * Log a message.
 	 *
 	 * @param string $message The message to log.
+	 *
+	 * @return void
 	 */
 	protected function log( $message ) {
 		$prefix = '[Incoming Post]';
@@ -466,7 +468,7 @@ class Incoming_Post {
 
 			// The wp_insert_post() function might return `0` on failure.
 			if ( ! $post_id ) {
-				self::log( 'Failed to insert post with data: ' . print_r( $postarr, true ) );
+				self::log( 'Failed to insert post.' );
 				return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
 			}
 
