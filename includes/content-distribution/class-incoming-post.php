@@ -427,6 +427,7 @@ class Incoming_Post {
 			! empty( $current_payload ) &&
 			$current_payload['post_data']['modified_gmt'] > $post_data['modified_gmt']
 		) {
+			self::log( 'Linked post content is newer than the post payload.' );
 			return new WP_Error( 'old_modified_date', __( 'Linked post content is newer than the post payload.', 'newspack-network' ) );
 		}
 
