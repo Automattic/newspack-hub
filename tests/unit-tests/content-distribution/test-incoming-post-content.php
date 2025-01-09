@@ -29,13 +29,6 @@ class TestIncomingPostContent extends \WP_UnitTestCase {
 	protected $node_2 = 'https://node2.test';
 
 	/**
-	 * Get sample post payload.
-	 */
-	private function get_sample_payload() {
-		return get_sample_payload( $this->node_1, $this->node_2 );
-	}
-
-	/**
 	 * Set up.
 	 */
 	public function set_up() {
@@ -102,8 +95,6 @@ class TestIncomingPostContent extends \WP_UnitTestCase {
 	 * Test gallery block content.
 	 */
 	public function test_gallery_block_content() {
-		$payload = $this->get_sample_payload();
-
 		ob_start();
 		?>
 		<!-- wp:gallery {"linkTo":"none"} -->

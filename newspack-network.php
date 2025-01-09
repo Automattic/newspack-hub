@@ -41,3 +41,5 @@ add_action(
 require_once __DIR__ . '/vendor/autoload.php';
 
 Newspack_Network\Initializer::init();
+
+// add_filter( 'use_block_editor_for_post_type', '__return_false' );
