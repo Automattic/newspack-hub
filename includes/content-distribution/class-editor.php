@@ -128,8 +128,8 @@ class Editor {
 			'newspack-network-incoming-post',
 			'newspack_network_incoming_post',
 			[
-				'original_url' => $incoming->get_original_site_url(),
-				'unlinked_meta_key'    => Incoming_Post::UNLINKED_META,
+				'originalUrl' => $incoming->get_original_site_url(),
+                'unlinked' => ! $incoming->is_linked(),
 			]
 		);
 	}

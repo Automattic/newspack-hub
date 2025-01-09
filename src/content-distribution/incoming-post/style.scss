@@ -1,22 +1,66 @@
-// Aggressively grey out and "disable" the editor.
-.edit-post-visual-editor {
+@mixin grey-out-outer {
 	position: relative;
-
 	&::before {
 		content: "";
 		position: absolute;
 		inset: 0;
-		z-index: 9999;
+		z-index: 9998;
 		pointer-events: auto;
 		cursor: not-allowed;
 	}
+}
 
-	.block-editor-writing-flow {
-		opacity: 0.5;
-		pointer-events: none !important;
-		user-select: none !important;
-		-webkit-user-select: none !important;
-		-moz-user-select: none !important;
-		-ms-user-select: none !important;
+@mixin grey-out-inner {
+	opacity: 0.5;
+	pointer-events: none !important;
+	user-select: none !important;
+}
+
+// Aggressively grey out and "disable" the editor and sidebar on linked posts.
+.newspack-network-incoming-post-linked {
+
+	.edit-post-visual-editor {
+		@include grey-out-outer;
+
+		.block-editor-writing-flow {
+			@include grey-out-inner;
+		}
+	}
+
+	.editor-sidebar:not(#newspack-network-incoming-post\:newspack-network-distribute-panel, #edit-post\:document) {
+		@include grey-out-outer;
+
+		.components-panel {
+			@include grey-out-inner;
+		}
+	}
+
+	// This will grey out most – but not the top part with status, trash, etc. That part is not in a panel.
+	#edit-post\:document {
+		.components-panel__body {
+			@include grey-out-outer;
+
+			* {
+				@include grey-out-inner;
+			}
+		}
+	}
+
+
+	.edit-post-meta-boxes-area {
+		@include grey-out-outer;
+
+		* {
+			@include grey-out-inner;
+		}
+	}
+
+	// This is very fragile, but there are no handles on the prepublish panel children.
+	.editor-post-publish-panel__prepublish > .components-panel__body:nth-child(n+6) {
+		@include grey-out-outer;
+
+		* {
+			@include grey-out-inner;
+		}
 	}
 }

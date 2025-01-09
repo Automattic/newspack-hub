@@ -79,10 +79,6 @@ class API {
 			return new WP_Error( 'newspack_network_content_distribution_error', $e->getMessage(), [ 'status' => 400 ] );
 		}
 
-			'post_id'   => $post_id,
-			'is_linked' => $incoming_post->is_linked(),
-			'status'    => 'success',
-
 		return rest_ensure_response( [
 			'post_id'  => $post_id,
 			'unlinked' => ! $incoming_post->is_linked(),

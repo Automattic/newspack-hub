@@ -1,5 +1,3 @@
-import React, { memo } from 'react';
-
 /**
  * WordPress dependencies.
  */
@@ -13,7 +11,7 @@ import { globe } from '@wordpress/icons';
  */
 import './style.scss';
 
-const DistributePanel = memo( ( { header, body, footer, buttons } ) => {
+const DistributePanel = ({ header, body, footer, buttons }) => {
 	return (
 		<PluginSidebar
 			name="newspack-network-distribute-panel"
@@ -37,6 +35,6 @@ const DistributePanel = memo( ( { header, body, footer, buttons } ) => {
 			</Panel>
 		</PluginSidebar>
 	);
-} );
+};
 
 export default DistributePanel;
