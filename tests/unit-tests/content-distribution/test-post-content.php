@@ -61,10 +61,14 @@ class TestPostContent extends \WP_UnitTestCase {
 	 * Data provider for content.
 	 */
 	public function content() {
-		return [
-			[ 'classic' ],
-			[ 'gallery' ],
-		];
+		$files = scandir( __DIR__ . '/post-content' );
+		$files = array_diff( $files, [ '.', '..' ] );
+		return array_map(
+			function ( $file ) {
+				return [ pathinfo( $file, PATHINFO_FILENAME ) ];
+			},
+			$files
+		);
 	}
 
 	/**
