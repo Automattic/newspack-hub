@@ -59,7 +59,7 @@ class API {
 					'unlinked' => [
 						'required' => true,
 						'type'     => 'boolean',
-					]
+					],
 				],
 				'permission_callback' => function () {
 					return current_user_can( Admin::CAPABILITY );
@@ -68,6 +68,13 @@ class API {
 		);
 	}
 
+	/**
+	 * Toggle the unlinked status of an incoming post.
+	 *
+	 * @param \WP_REST_Request $request The REST request object.
+	 *
+	 * @return WP_REST_Response|WP_Error The REST response or error.
+	 */
 	public static function toggle_unlink( $request ): WP_REST_Response|WP_Error {
 		$post_id  = $request->get_param( 'post_id' );
 		$unlinked = $request->get_param( 'unlinked' );
@@ -79,11 +86,13 @@ class API {
 			return new WP_Error( 'newspack_network_content_distribution_error', $e->getMessage(), [ 'status' => 400 ] );
 		}
 
-		return rest_ensure_response( [
-			'post_id'  => $post_id,
-			'unlinked' => ! $incoming_post->is_linked(),
-			'status'   => 'success',
-		] );
+		return rest_ensure_response(
+			[
+				'post_id'  => $post_id,
+				'unlinked' => ! $incoming_post->is_linked(),
+				'status'   => 'success',
+			]
+		);
 	}
 
 	/**
