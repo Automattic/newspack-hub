@@ -123,6 +123,28 @@ class Event_Log_List_Table extends \WP_List_Table {
 	}
 
 	/**
+	 * Get a data column for rendering
+	 *
+	 * @param Abstract_Event_Log_Item $item The line item.
+	 *
+	 * @return string
+	 */
+	protected function get_data_column( $item ) {
+		$str = wp_json_encode( $item->get_data(), JSON_PRETTY_PRINT );
+		if ( 300 > strlen( $str ) ) {
+			return sprintf(
+				'<div class="newspack-network-data-column"><pre><code>%1$s</code></pre></div>',
+				$str
+			);
+		}
+		return sprintf(
+			'<div class="newspack-network-data-column"><textarea disabled>%1$s</textarea><button type="button" class="button button-secondary">%2$s</button></div>',
+			$str,
+			esc_html__( 'Copy to clipboard', 'newspack-network' )
+		);
+	}
+
+	/**
 	 * Get the value for each column
 	 *
 	 * @param Abstract_Event_Log_Item $item The line item.
@@ -142,7 +164,7 @@ class Event_Log_List_Table extends \WP_List_Table {
 			case 'action_name':
 				return $item->get_action_name();
 			case 'data':
-				return '<code>' . $item->get_raw_data() . '</code>';
+				return $this->get_data_column( $item );
 			default:
 				return '';
 		}
