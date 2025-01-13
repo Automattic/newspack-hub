@@ -27,13 +27,19 @@ function IncomingPost() {
 	const { openGeneralSidebar } = useDispatch( 'core/edit-post' );
 	const [ isLinkedToggling, setIsLinkedToggling ] = useState( false );
 	const [ isUnLinked, setIsUnLinked ] = useState( false );
+	const [ hasInitializedSidebar, setHasInitializedSidebar ] = useState( false );
 
-	const { postId } = useSelect( select => {
+
+	const { postId, areMetaBoxesInitialized } = useSelect( select => {
 		const {
 			getCurrentPostId,
 		} = select( 'core/editor' );
+		const {
+			areMetaBoxesInitialized,
+		} = select( 'core/edit-post' );
 		return {
 			postId: getCurrentPostId(),
+			areMetaBoxesInitialized: areMetaBoxesInitialized(),
 		};
 	} );
 
@@ -42,12 +48,13 @@ function IncomingPost() {
 	}, [ unlinked ] );
 
 	useEffect( () => {
-		setTimeout( () => {
+		if ( !hasInitializedSidebar && areMetaBoxesInitialized ) {
 			openGeneralSidebar(
 				'newspack-network-incoming-post/newspack-network-distribute-panel'
 			);
-		}, 10 ); // TODO. There must be a better way
-	}, [] );
+			setHasInitializedSidebar( true ); // We only want to strongarm this once.
+		}
+	}, [ areMetaBoxesInitialized ] );
 
 	useEffect( () => {
 		createNotice(
@@ -68,7 +75,7 @@ function IncomingPost() {
 			lockPostAutosaving( lockName );
 		}
 		// Toggle the CSS overlay.
-		document.querySelector( '#editor' )?.classList.toggle( 'newspack-network-incoming-post-linked', ! isUnLinked );
+		document.querySelector( '#editor' )?.classList.toggle( 'newspack-network-incoming-post-linked', !isUnLinked );
 
 	}, [ isUnLinked ] );
 
