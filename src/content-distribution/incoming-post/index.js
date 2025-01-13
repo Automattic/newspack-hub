@@ -29,7 +29,6 @@ function IncomingPost() {
 	const [ isUnLinked, setIsUnLinked ] = useState( false );
 	const [ hasInitializedSidebar, setHasInitializedSidebar ] = useState( false );
 
-
 	const { postId, areMetaBoxesInitialized } = useSelect( select => {
 		const {
 			getCurrentPostId,
@@ -129,7 +128,7 @@ function IncomingPost() {
 							toggleLinked();
 						} }
 					>
-						{ !isUnLinked ? __( 'Unlink from origin post', 'newspack-network' ) : __( 'Relink to origin post', 'newspack-network' ) }
+						{  isLinkedToggling ? ( isUnLinked ? __( 'Linking...', 'newspack-network' ) : __( 'Unlinking...', 'newspack-network' )) : (!isUnLinked ? __( 'Unlink from origin post', 'newspack-network' ) : __( 'Relink to origin post', 'newspack-network' )) }
 					</Button>
 				</>
 			}/>
