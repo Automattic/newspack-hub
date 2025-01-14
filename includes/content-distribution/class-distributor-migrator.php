@@ -197,7 +197,7 @@ class Distributor_Migrator {
 	 * Trigger the request to link the incoming post from a subscription being
 	 * migrated.
 	 *
-	 * @param string $site_url        The URL of the site where the post is being migrated to.
+	 * @param string $site_url        The URL of the destination site.
 	 * @param int    $subscription_id The ID of the subscription being migrated.
 	 * @param string $network_post_id The network post ID for the migrated post.
 	 *
