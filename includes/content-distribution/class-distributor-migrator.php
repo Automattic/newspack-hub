@@ -13,11 +13,89 @@ use WP_Error;
 use WP_Query;
 use WP_Post;
 use InvalidArgumentException;
+use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Distributor Migrator Class.
  */
 class Distributor_Migrator {
+	/**
+	 * Initialize hooks.
+	 */
+	public static function init() {
+		add_action( 'rest_api_init', [ __CLASS__, 'register_rest_routes' ] );
+	}
+
+	/**
+	 * Register REST routes.
+	 */
+	public static function register_rest_routes() {
+		register_rest_route(
+			'newspack-network/v1',
+			'/content-distribution/distributor-migrator/link/(?P<post_id>\d+)',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ __CLASS__, 'api_link_incoming_post' ],
+				'args'                => [
+					'subscription_signature' => [
+						'type'     => 'string',
+						'required' => true,
+					],
+					'network_post_id'        => [
+						'type'     => 'string',
+						'required' => true,
+					],
+				],
+				'permission_callback' => '__return_true', // TODO: Check network signature.
+			]
+		);
+	}
+
+	/**
+	 * API callback to link a migrated incoming post.
+	 *
+	 * @param WP_REST_Request $request The REST request object.
+	 *
+	 * @return WP_REST_Response|WP_Error The REST response or error.
+	 */
+	public static function api_link_incoming_post( $request ) {
+		$post_id                = $request->get_param( 'post_id' );
+		$subscription_signature = $request->get_param( 'subscription_signature' );
+		$network_post_id        = $request->get_param( 'network_post_id' );
+
+		$response = self::link_incoming_post( $post_id, $subscription_signature, $network_post_id );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		return new WP_REST_Response( null, 200 );
+	}
+
+	/**
+	 * Link an incoming post given its subscription signature.
+	 *
+	 * @param int    $post_id                The ID of the post to link.
+	 * @param string $subscription_signature The signature of the subscription.
+	 * @param string $network_post_id        The network post ID.
+	 *
+	 * @return WP_Error|void WP_Error on failure, void on success.
+	 */
+	protected static function link_incoming_post( $post_id, $subscription_signature, $network_post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			return new WP_Error( 'post_not_found', __( 'Post not found.', 'newspack-network' ) );
+		}
+
+		$post_signature = get_post_meta( $post_id, 'dt_subscription_signature', true );
+		if ( $post_signature !== $subscription_signature ) {
+			return new WP_Error( 'subscription_signature_mismatch', __( 'Subscription signature mismatch.', 'newspack-network' ) );
+		}
+
+		update_post_meta( $post_id, Incoming_Post::NETWORK_POST_ID_META, $network_post_id );
+	}
+
 	/**
 	 * Get all Distributor subscriptions.
 	 *
@@ -87,8 +165,18 @@ class Distributor_Migrator {
 			return new WP_Error( 'outgoing_post_error', $e->getMessage() );
 		}
 		$distribution = $outgoing_post->set_distribution( [ $network_url ] );
-		if ( is_wp_error( $distribution ) ) {
+		if (
+			is_wp_error( $distribution ) &&
+			// Ignore error if the post is already distributed.
+			'update_failed' !== $distribution->get_error_code()
+		) {
 			return $distribution;
+		}
+
+		// Link the migrated post.
+		$link_result = self::link_migrated_subscription( $network_url, $subscription_id, $outgoing_post->get_network_post_id() );
+		if ( is_wp_error( $link_result ) ) {
+			return $link_result;
 		}
 
 		if ( $distribute ) {
@@ -103,5 +191,44 @@ class Distributor_Migrator {
 		wp_delete_post( $subscription_id );
 
 		return $outgoing_post;
+	}
+
+	/**
+	 * Trigger the request to link the incoming post from a subscription being
+	 * migrated.
+	 *
+	 * @param string $site_url        The URL of the site where the post is being migrated to.
+	 * @param int    $subscription_id The ID of the subscription being migrated.
+	 * @param string $network_post_id The network post ID for the migrated post.
+	 *
+	 * @return WP_Error|void WP_Error on failure, void on success.
+	 */
+	protected static function link_migrated_subscription( $site_url, $subscription_id, $network_post_id ) {
+		$remote_post_id = get_post_meta( $subscription_id, 'dt_subscription_remote_post_id', true );
+		$signature      = get_post_meta( $subscription_id, 'dt_subscription_signature', true );
+		$url            = trailingslashit( $site_url ) . 'wp-json/newspack-network/v1/content-distribution/distributor-migrator/link/' . $remote_post_id;
+		$response       = wp_remote_post(
+			$url,
+			[
+				'body'    => [
+					'subscription_signature' => $signature,
+					'network_post_id'        => $network_post_id,
+				],
+				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+			]
+		);
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$link_response_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $link_response_code ) {
+			$link_response_body = wp_remote_retrieve_body( $response );
+			$error_message      = __( 'Error linking migrated post.', 'newspack-network' );
+			if ( $link_response_body ) {
+				$error_message .= ' ' . $link_response_body;
+			}
+			return new WP_Error( 'link_migrated_subscription_error', $error_message );
+		}
 	}
 }
