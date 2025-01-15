@@ -165,18 +165,5 @@ class CLI {
 		}
 
 		WP_CLI::success( 'Migration completed.' );
-
-		foreach ( $posts as $post_id ) {
-			try {
-				$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
-				$outgoing_post->migrate_from_distributor();
-				if ( isset( $assoc_args['distribute'] ) ) {
-					Content_Distribution::distribute_post( $outgoing_post );
-				}
-				WP_CLI::success( sprintf( 'Post with ID %d is migrated.', $post_id ) );
-			} catch ( \Exception $e ) {
-				WP_CLI::error( $e->getMessage() );
-			}
-		}
 	}
 }
