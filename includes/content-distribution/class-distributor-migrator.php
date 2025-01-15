@@ -94,6 +94,20 @@ class Distributor_Migrator {
 		}
 
 		update_post_meta( $post_id, Incoming_Post::NETWORK_POST_ID_META, $network_post_id );
+
+		$distributor_meta = [
+			'dt_full_connection',
+			'dt_original_post_id',
+			'dt_original_post_url',
+			'dt_original_site_name',
+			'dt_original_site_url',
+			'dt_original_source_id',
+			'dt_subscription_signature',
+			'dt_syndicate_time',
+		];
+		foreach ( $distributor_meta as $meta_key ) {
+			delete_post_meta( $post_id, $meta_key );
+		}
 	}
 
 	/**
@@ -112,28 +126,49 @@ class Distributor_Migrator {
 	}
 
 	/**
-	 * Migrate a post subscription from Distributor to Newspack Network Content Distribution.
+	 * Migrate a post from Distributor to Newspack Network Content Distribution.
 	 *
-	 * @param int     $subscription_id The ID of the subscription to migrate.
-	 * @param boolean $distribute      Whether to distribute the post after migrating the subscription.
+	 * @param int     $post_id     The ID of the post to migrate.
+	 * @param boolean $distribute  Whether to distribute the post after migrating its subscriptions.
 	 *
 	 * @return Outgoing_Post|WP_Error Outgoing_Post on success, WP_Error on failure.
 	 */
-	public static function migrate_subscription( $subscription_id, $distribute = false ) {
-		$subscription = get_post( $subscription_id );
-		if ( ! $subscription ) {
-			return new WP_Error( 'subscription_not_found', __( 'Subscription not found.', 'newspack-network' ) );
+	public static function migrate_post( $post_id, $distribute = false ) {
+		$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
+		if ( ! $subscriptions ) {
+			return new WP_Error( 'subscriptions_not_found', __( 'Subscriptions not found.', 'newspack-network' ) );
 		}
 
-		$post_id = get_post_meta( $subscription_id, 'dt_subscription_post_id', true );
-		$post    = get_post( $post_id );
-
-		if ( ! $post_id || ! $post || empty( $post->ID ) ) {
-			return new WP_Error( 'post_not_found', __( 'Post not found.', 'newspack-network' ) );
+		// First check whether all subscriptions can be migrated.
+		foreach ( $subscriptions as $subscription_id ) {
+			$can_migrate = self::can_migrate_subscription( $subscription_id );
+			if ( is_wp_error( $can_migrate ) ) {
+				return $can_migrate;
+			}
 		}
 
+		// Migrate subscriptions.
+		$outgoing_post = null;
+		foreach ( $subscriptions as $subscription_id ) {
+			$migration_result = self::migrate_subscription( $subscription_id, $distribute );
+			if ( is_wp_error( $migration_result ) ) {
+				return $migration_result;
+			}
+			$outgoing_post = $migration_result;
+		}
+
+		return $outgoing_post;
+	}
+
+	/**
+	 * Get network URL from a subscription.
+	 *
+	 * @param int $subscription_id The ID of the subscription.
+	 *
+	 * @return string|WP_Error The network URL on success, WP_Error on failure.
+	 */
+	protected static function get_network_url_from_subscription( $subscription_id ) {
 		$target_url = get_post_meta( $subscription_id, 'dt_subscription_target_url', true );
-
 		if ( ! $target_url ) {
 			return new WP_Error( 'target_url_not_found', __( 'Target URL not found.', 'newspack-network' ) );
 		}
@@ -146,7 +181,6 @@ class Distributor_Migrator {
 			}
 		);
 		$network_url  = array_shift( $network_url );
-
 		if ( empty( $network_url ) ) {
 			return new WP_Error(
 				'target_url_not_networked',
@@ -157,10 +191,61 @@ class Distributor_Migrator {
 				)
 			);
 		}
+		return $network_url;
+	}
+
+	/**
+	 * Validate whether a subscription can be migrated.
+	 *
+	 * @param int $subscription_id The ID of the subscription to check.
+	 *
+	 * @return true|WP_Error True if the subscription can be migrated, WP_Error on failure.
+	 */
+	protected static function can_migrate_subscription( $subscription_id ) {
+		$subscription = get_post( $subscription_id );
+		if ( ! $subscription ) {
+			return new WP_Error( 'subscription_not_found', __( 'Subscription not found.', 'newspack-network' ) );
+		}
+
+		$post_id = get_post_meta( $subscription_id, 'dt_subscription_post_id', true );
+		$post    = get_post( $post_id );
+		if ( ! $post_id || ! $post || empty( $post->ID ) ) {
+			return new WP_Error( 'post_not_found', __( 'Post not found.', 'newspack-network' ) );
+		}
+
+		$target_url = get_post_meta( $subscription_id, 'dt_subscription_target_url', true );
+		if ( ! $target_url ) {
+			return new WP_Error( 'target_url_not_found', __( 'Target URL not found.', 'newspack-network' ) );
+		}
+
+		$network_url = self::get_network_url_from_subscription( $subscription_id );
+		if ( is_wp_error( $network_url ) ) {
+			return $network_url;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Migrate a post subscription from Distributor to Newspack Network Content Distribution.
+	 *
+	 * @param int     $subscription_id The ID of the subscription to migrate.
+	 * @param boolean $distribute      Whether to distribute the post after migrating the subscription.
+	 *
+	 * @return Outgoing_Post|WP_Error Outgoing_Post on success, WP_Error on failure.
+	 */
+	public static function migrate_subscription( $subscription_id, $distribute = false ) {
+		$can_migrate = self::can_migrate_subscription( $subscription_id );
+		if ( is_wp_error( $can_migrate ) ) {
+			return $can_migrate;
+		}
+
+		$post_id     = get_post_meta( $subscription_id, 'dt_subscription_post_id', true );
+		$network_url = self::get_network_url_from_subscription( $subscription_id );
 
 		// Configure distribution.
 		try {
-			$outgoing_post = new Outgoing_Post( $post );
+			$outgoing_post = new Outgoing_Post( $post_id );
 		} catch ( InvalidArgumentException $e ) {
 			return new WP_Error( 'outgoing_post_error', $e->getMessage() );
 		}
@@ -183,11 +268,32 @@ class Distributor_Migrator {
 			Content_Distribution::distribute_post( $outgoing_post );
 		}
 
-		// Delete the post meta.
-		delete_post_meta( $post_id, 'dt_subscriptions' );
-		delete_post_meta( $post_id, 'dt_connection_map' );
+		// Clear the subscription meta from the post.
+		$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
+		$subscriptions = array_diff( $subscriptions, [ $subscription_id ] );
+		if ( empty( $subscriptions ) ) {
+			delete_post_meta( $post_id, 'dt_subscriptions' );
+		} else {
+			update_post_meta( $post_id, 'dt_subscriptions', $subscriptions );
+		}
 
-		// Delete the subscription.
+		// Clear the connection map from the post.
+		$connection_map = get_post_meta( $post_id, 'dt_connection_map', true );
+		$remote_post_id = get_post_meta( $subscription_id, 'dt_subscription_remote_post_id', true );
+		if ( ! empty( $connection_map['external'] ) ) {
+			foreach ( $connection_map['external'] as $connection_id => $value ) {
+				if ( $value['post_id'] === $remote_post_id ) {
+					unset( $connection_map['external'][ $connection_id ] );
+				}
+			}
+		}
+		if ( empty( $connection_map['external'] ) && empty( $connection_map['internal'] ) ) {
+			delete_post_meta( $post_id, 'dt_connection_map' );
+		} else {
+			update_post_meta( $post_id, 'dt_connection_map', $connection_map );
+		}
+
+		// Delete the subscription post.
 		wp_delete_post( $subscription_id );
 
 		return $outgoing_post;
