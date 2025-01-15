@@ -264,10 +264,6 @@ class Distributor_Migrator {
 			return $link_result;
 		}
 
-		if ( $distribute ) {
-			Content_Distribution::distribute_post( $outgoing_post );
-		}
-
 		// Clear the subscription meta from the post.
 		$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
 		$subscriptions = array_diff( $subscriptions, [ $subscription_id ] );
@@ -282,7 +278,7 @@ class Distributor_Migrator {
 		$remote_post_id = get_post_meta( $subscription_id, 'dt_subscription_remote_post_id', true );
 		if ( ! empty( $connection_map['external'] ) ) {
 			foreach ( $connection_map['external'] as $connection_id => $value ) {
-				if ( $value['post_id'] === $remote_post_id ) {
+				if ( absint( $value['post_id'] ) === absint( $remote_post_id ) ) {
 					unset( $connection_map['external'][ $connection_id ] );
 				}
 			}
@@ -295,6 +291,10 @@ class Distributor_Migrator {
 
 		// Delete the subscription post.
 		wp_delete_post( $subscription_id );
+
+		if ( $distribute ) {
+			Content_Distribution::distribute_post( $outgoing_post );
+		}
 
 		return $outgoing_post;
 	}
