@@ -25,7 +25,7 @@ function IncomingPost() {
 	const { createNotice } = useDispatch( 'core/notices' );
 	const { lockPostAutosaving, unlockPostAutosaving } = useDispatch( 'core/editor' );
 	const { openGeneralSidebar } = useDispatch( 'core/edit-post' );
-	const [ isLinkedToggling, setIsLinkedToggling ] = useState( false );
+	const [ isUnLinkedToggling, setIsUnLinkedToggling ] = useState( false );
 	const [ isUnLinked, setIsUnLinked ] = useState( false );
 	const [ hasInitializedSidebar, setHasInitializedSidebar ] = useState( false );
 
@@ -78,26 +78,43 @@ function IncomingPost() {
 
 	}, [ isUnLinked ] );
 
-	const toggleLinked = () => {
-		setIsLinkedToggling( true );
+	const toggleUnlinkedState = async ( unlinked ) => {
+		setIsUnLinkedToggling( true );
+
 		apiFetch( {
 			path: `newspack-network/v1/content-distribution/unlink/${ postId }`,
 			method: 'POST',
 			data: {
-				unlinked: !isUnLinked,
+				unlinked: unlinked,
 			},
-		} ).then( data => {
-			setIsUnLinked( data.unlinked );
-			createNotice( 'info', __( sprintf( 'Post has been %s.', isUnLinked ? 'unlinked' : 'relinked' ), 'newspack-network' ), {
-				type: 'snackbar',
-				isDismissible: true,
-			} );
-		} ).catch( error => {
-			createNotice( 'error', error.message );
-		} ).finally( () => {
-			setIsLinkedToggling( false );
-		} );
+		} )
+			.then( ( data ) => {
+				setIsUnLinked( data.unlinked );
+				setIsUnLinkedToggling( false );
+			} )
+			.catch( ( error ) => createNotice( 'error', error.message ) );
 	}
+
+	const toggleUnlinkedClicked = ( unlinked ) => {
+		if ( isUnLinked ) {
+			// For relinking, we need to save the post (it will be overwritten by the origin post)
+			// to avoid the browser warning when reloading.
+			wp.data.dispatch( 'core/editor' ).savePost().then( () => {
+				// Remove the 'draft saved' notice.
+				wp.data.dispatch( 'core/notices' ).removeNotice( 'SAVE_POST_NOTICE_ID' );
+				toggleUnlinkedState( unlinked )
+					.then( () => window.location.reload() ); // Reload to get the origin post content.
+			} );
+		} else {
+			toggleUnlinkedState( unlinked )
+				.then( () => createNotice( 'info', __( 'Post has been unlinked', 'newspack-network' ), {
+					type: 'snackbar',
+					isDismissible: true,
+					autoDismiss: true,
+					autoDismissTimeout: 3000,
+				} ) );
+		}
+	};
 
 	return (
 		<DistributePanel
@@ -123,12 +140,12 @@ function IncomingPost() {
 					<Button
 						variant={ isUnLinked ? 'primary' : 'secondary' }
 						isDestructive={ !isUnLinked }
-						disabled={ isLinkedToggling }
+						disabled={ isUnLinkedToggling }
 						onClick={ () => {
-							toggleLinked();
+							toggleUnlinkedClicked( !isUnLinked );
 						} }
 					>
-						{  isLinkedToggling ? ( isUnLinked ? __( 'Linking...', 'newspack-network' ) : __( 'Unlinking...', 'newspack-network' )) : (!isUnLinked ? __( 'Unlink from origin post', 'newspack-network' ) : __( 'Relink to origin post', 'newspack-network' )) }
+						{ isUnLinkedToggling ? (isUnLinked ? __( 'Linking...', 'newspack-network' ) : __( 'Unlinking...', 'newspack-network' )) : (!isUnLinked ? __( 'Unlink from origin post', 'newspack-network' ) : __( 'Relink to origin post', 'newspack-network' )) }
 					</Button>
 				</>
 			}/>
