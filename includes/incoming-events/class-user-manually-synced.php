@@ -91,14 +91,14 @@ class User_Manually_Synced extends Abstract_Incoming_Event {
 
 			// Get rid of any roles that aren't being pushed.
 			if ( $remove_roles ) {
-				foreach( $remove_roles as $role ) {
+				foreach ( $remove_roles as $role ) {
 					$current_user->remove_role( $role );
 				}
 			}
 
 			// Assign each new role.
 			if ( $add_roles ) {
-				foreach( $add_roles as $role ) {
+				foreach ( $add_roles as $role ) {
 					$current_user->add_role( $role );
 				}
 			}
