@@ -79,16 +79,29 @@ class User_Manually_Synced extends Abstract_Incoming_Event {
 		$data = $this->get_data();
 
 		// Update user role if changed.
-		$user_current_role = $user->roles;
-		$new_role          = $data->role ?? '';
+		$user_current_roles = $user->roles;
+		$user_new_roles     = $data->role ?? [];
+		$remove_roles       = array_diff( $user_current_roles, $user_new_roles );
+		$add_roles          = array_diff( $user_new_roles, $user_current_roles );
 
-		if ( ! empty( $new_role ) && $user_current_role !== $new_role ) {
-			wp_update_user(
-				[
-					'ID'   => $user->ID,
-					'role' => $new_role,
-				]
-			);
+		// If the old and new role arrays aren't the same, update the roles.
+		if ( $remove_roles || $add_roles ) {
+			// Get the user object.
+			$current_user = new \WP_User( $user->ID );
+
+			// Get rid of any roles that aren't being pushed.
+			if ( $remove_roles ) {
+				foreach( $remove_roles as $role ) {
+					$current_user->remove_role( $role );
+				}
+			}
+
+			// Assign each new role.
+			if ( $add_roles ) {
+				foreach( $add_roles as $role ) {
+					$current_user->add_role( $role );
+				}
+			}
 		}
 
 		// Loop through user props and update.
