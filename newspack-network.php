@@ -2,10 +2,11 @@
 /**
  * Plugin Name: Newspack Network
  * Description: The Newspack Network plugin.
- * Version: 2.1.0
+ * Version: 2.3.4
  * Author: Automattic
  * Author URI: https://newspack.com/
  * License: GPL3
+ * Requires PHP: 8.1
  * Text Domain: newspack-network
  * Domain Path: /languages/
  *
@@ -30,7 +31,12 @@ if ( ! defined( 'NEWSPACK_NETWORK_PLUGIN_FILE' ) ) {
 define( 'NEWSPACK_NETWORK_READER_ROLE', 'network_reader' );
 
 // Load language files.
-load_plugin_textdomain( 'newspack-network', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+add_action(
+	'init',
+	function () {
+		load_plugin_textdomain( 'newspack-network', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	}
+);
 
 require_once __DIR__ . '/vendor/autoload.php';
 

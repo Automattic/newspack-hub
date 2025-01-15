@@ -1,3 +1,62 @@
+## [2.3.4](https://github.com/Automattic/newspack-network/compare/v2.3.3...v2.3.4) (2024-12-18)
+
+
+### Bug Fixes
+
+* Force Distributor to not override bylines ([#175](https://github.com/Automattic/newspack-network/issues/175)) ([efbc979](https://github.com/Automattic/newspack-network/commit/efbc9798cc7c13985e2a9a2e4920f485dbe8a11e))
+
+## [2.3.3](https://github.com/Automattic/newspack-network/compare/v2.3.2...v2.3.3) (2024-12-16)
+
+
+### Bug Fixes
+
+* load text domain on init hook ([#171](https://github.com/Automattic/newspack-network/issues/171)) ([f8d03f6](https://github.com/Automattic/newspack-network/commit/f8d03f6e5a6b8dcea433eed2ba7d7d29ab07d70e))
+
+## [2.3.2](https://github.com/Automattic/newspack-network/compare/v2.3.1...v2.3.2) (2024-11-25)
+
+
+### Bug Fixes
+
+* submenu highlights ([#146](https://github.com/Automattic/newspack-network/issues/146)) ([387d178](https://github.com/Automattic/newspack-network/commit/387d1783a5ae9216c0e4cffb95dfed7020da9116))
+
+## [2.3.1](https://github.com/Automattic/newspack-network/compare/v2.3.0...v2.3.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* merge pull request [#147](https://github.com/Automattic/newspack-network/issues/147) from Automattic/trunk ([7d0a118](https://github.com/Automattic/newspack-network/commit/7d0a118023ac87345c4fe3df360339cc55245ea1))
+
+# [2.3.0](https://github.com/Automattic/newspack-network/compare/v2.2.1...v2.3.0) (2024-10-28)
+
+
+### Bug Fixes
+
+* remove recursive import `use` ([b03bb52](https://github.com/Automattic/newspack-network/commit/b03bb52f702f873f465f8b0d62d935301933689d))
+
+
+### Features
+
+* handle email change on propagated users ([#133](https://github.com/Automattic/newspack-network/issues/133)) ([2efa226](https://github.com/Automattic/newspack-network/commit/2efa2266dee3bb22d4b01ce8fbe0f0393e37cf2f))
+
+## [2.2.1](https://github.com/Automattic/newspack-network/compare/v2.2.0...v2.2.1) (2024-10-10)
+
+
+### Bug Fixes
+
+* exclude refund orders from backfill ([cef82c1](https://github.com/Automattic/newspack-network/commit/cef82c11b2c95f62809a2ca537ea071c7a2c90cc))
+
+# [2.2.0](https://github.com/Automattic/newspack-network/compare/v2.1.0...v2.2.0) (2024-10-08)
+
+
+### Bug Fixes
+
+* **sync:** use `newspack_esp_sync_contact` filter for the `network_registration_site` field ([#132](https://github.com/Automattic/newspack-network/issues/132)) ([3755d07](https://github.com/Automattic/newspack-network/commit/3755d07f83c813c1cc0b4599371722e9eecfbd18))
+
+
+### Features
+
+* subscriptions and  memberships sync reimplementation ([#122](https://github.com/Automattic/newspack-network/issues/122)) ([04fc845](https://github.com/Automattic/newspack-network/commit/04fc845168865bb03e59c1972be319fc8f99d4a5))
+
 # [2.1.0](https://github.com/Automattic/newspack-network/compare/v2.0.0...v2.1.0) (2024-08-26)
 
 

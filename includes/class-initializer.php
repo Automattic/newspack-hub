@@ -24,7 +24,6 @@ class Initializer {
 			Hub\Nodes::init();
 			Hub\Webhook::init();
 			Hub\Pull_Endpoint::init();
-			Hub\Network_Data_Endpoint::init();
 			Hub\Event_Listeners::init();
 			Hub\Database\Subscriptions::init();
 			Hub\Database\Orders::init();
@@ -51,16 +50,18 @@ class Initializer {
 		User_Manual_Sync::init();
 		Distributor_Customizations::init();
 		Esp_Metadata_Sync::init();
+		Content_Distribution::init();
 
 		Synchronize_All::init();
 		Data_Backfill::init();
 		Membership_Dedupe::init();
 
+		Woocommerce\Events::init();
+
 		Woocommerce_Memberships\Admin::init();
 		Woocommerce_Memberships\Events::init();
-
-		Woocommerce\Events::init();
 		Woocommerce_Memberships\Subscriptions_Integration::init();
+		Woocommerce_Memberships\Limit_Purchase::init();
 
 		register_activation_hook( NEWSPACK_NETWORK_PLUGIN_FILE, [ __CLASS__, 'activation_hook' ] );
 	}
