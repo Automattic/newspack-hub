@@ -1,4 +1,4 @@
-.newspack-network-distribute-panel {
+.newspack-network-content-distribution-panel {
 	height: calc(100% - 47px);
 
 	.components-panel {
@@ -11,14 +11,14 @@
 		border: 0;
 	}
 
-	.distribute-panel-body {
+	.content-distribution-panel-body {
 		flex: 1 1 100%;
 		overflow-y: auto;
 		padding-top: 0;
 
 	}
 
-	.distribute-panel__button-column {
+	.content-distribution-panel__button-column {
 		.components-button {
 			justify-content: center;
 		}

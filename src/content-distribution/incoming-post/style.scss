@@ -27,7 +27,7 @@
 		}
 	}
 
-	.editor-sidebar:not(#newspack-network-incoming-post\:newspack-network-distribute-panel, #edit-post\:document) {
+	.editor-sidebar:not(#newspack-network-incoming-post\:newspack-network-content-distribution-panel, #edit-post\:document) {
 		@include grey-out-outer;
 
 		.components-panel {
@@ -50,7 +50,7 @@
 	.edit-post-meta-boxes-area {
 		@include grey-out-outer;
 
-		* {
+		.postbox {
 			@include grey-out-inner;
 		}
 	}

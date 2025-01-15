@@ -11,24 +11,24 @@ import { globe } from '@wordpress/icons';
  */
 import './style.scss';
 
-const DistributePanel = ({ header, body, footer, buttons }) => {
+const ContentDistributionPanel = ({ header, body, footer, buttons }) => {
 	return (
 		<PluginSidebar
-			name="newspack-network-distribute-panel"
+			name="newspack-network-content-distribution-panel"
 			icon={ globe }
 			title={ __( 'Distribute', 'newspack-network' ) }
-			className="newspack-network-distribute-panel"
+			className="newspack-network-content-distribution-panel"
 		>
 			<Panel>
-				<PanelBody className="distribute-panel-header">
+				<PanelBody className="content-distribution-panel-header">
 					{ header }
 				</PanelBody>
-				<PanelBody className="distribute-panel-body">
+				<PanelBody className="content-distribution-panel-body">
 					{ body }
 				</PanelBody>
-				<PanelBody className="distribute-panel-footer">
+				<PanelBody className="content-distribution-panel-footer">
 					{ footer }
-					<Flex direction="column" className="distribute-panel__button-column" gap={ 4 }>
+					<Flex direction="column" className="content-distribution-panel__button-column" gap={ 4 }>
 						{ buttons }
 					</Flex>
 				</PanelBody>
@@ -37,4 +37,4 @@ const DistributePanel = ({ header, body, footer, buttons }) => {
 	);
 };
 
-export default DistributePanel;
+export default ContentDistributionPanel;
