@@ -93,7 +93,7 @@ class CLI {
 						'name'        => 'delete',
 						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all subscriptions.', 'newspack-network' ),
 						'optional'    => true,
-					]
+					],
 				],
 			]
 		);
