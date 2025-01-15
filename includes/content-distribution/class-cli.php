@@ -150,6 +150,20 @@ class CLI {
 		if ( isset( $assoc_args['all'] ) ) {
 			$subscriptions = Distributor_Migrator::get_distributor_subscriptions();
 			WP_CLI::line( sprintf( 'Found %d subscriptions.', count( $subscriptions ) ) );
+
+			// Validate whether all subscriptions can be migrated.
+			$errors = [];
+			foreach ( $subscriptions as $subscription ) {
+				$can_migrate = Distributor_Migrator::can_migrate_subscription( $subscription->ID );
+				if ( is_wp_error( $can_migrate ) ) {
+					$errors[] = sprintf( 'Unable to migrate subscription %d: %s', $subscription->ID, $can_migrate->get_error_message() );
+				}
+			}
+			if ( ! empty( $errors ) ) {
+				WP_CLI::error( PHP_EOL . implode( PHP_EOL, $errors ) );
+			}
+
+			// Migrate subscriptions.
 			foreach ( $subscriptions as $i => $subscription ) {
 				$result = Distributor_Migrator::migrate_subscription( $subscription->ID, $distribute );
 				if ( is_wp_error( $result ) ) {

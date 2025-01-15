@@ -201,7 +201,7 @@ class Distributor_Migrator {
 	 *
 	 * @return true|WP_Error True if the subscription can be migrated, WP_Error on failure.
 	 */
-	protected static function can_migrate_subscription( $subscription_id ) {
+	public static function can_migrate_subscription( $subscription_id ) {
 		$subscription = get_post( $subscription_id );
 		if ( ! $subscription ) {
 			return new WP_Error( 'subscription_not_found', __( 'Subscription not found.', 'newspack-network' ) );
