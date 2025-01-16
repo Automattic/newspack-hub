@@ -84,8 +84,14 @@ class CLI {
 					],
 					[
 						'type'        => 'flag',
+						'name'        => 'strict',
+						'description' => __( 'Whether to only migrate if all distributed posts can be migrated.', 'newspack-network' ),
+						'optional'    => true,
+					],
+					[
+						'type'        => 'flag',
 						'name'        => 'delete',
-						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all subscriptions.', 'newspack-network' ),
+						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all posts.', 'newspack-network' ),
 						'optional'    => true,
 					],
 				],
@@ -154,37 +160,49 @@ class CLI {
 		}
 
 		if ( isset( $assoc_args['all'] ) ) {
-			$subscriptions = Distributor_Migrator::get_distributor_subscriptions();
+			$strict = isset( $assoc_args['strict'] );
 
-			if ( empty( $subscriptions ) ) {
-				WP_CLI::success( 'No subscriptions found.' );
+			$post_ids = Distributor_Migrator::get_posts_with_distributor_subscriptions();
+
+			if ( empty( $post_ids ) ) {
+				WP_CLI::success( 'No distributed posts found.' );
 				return;
 			}
 
-			WP_CLI::line( sprintf( 'Found %d subscriptions.', count( $subscriptions ) ) );
+			WP_CLI::line( sprintf( 'Found %d posts.', count( $post_ids ) ) );
 
-			// Validate whether all subscriptions can be migrated.
+			// In strict mode, only continue if all posts can be migrated.
+			if ( $strict ) {
+				$errors = [];
+				foreach ( $post_ids as $post_id ) {
+					$can_migrate = Distributor_Migrator::can_migrate_post( $post_id );
+					if ( is_wp_error( $can_migrate ) ) {
+						$errors[] = sprintf( 'Unable to migrate post %d: %s', $post_id, $can_migrate->get_error_message() );
+					}
+				}
+				if ( ! empty( $errors ) ) {
+					WP_CLI::error( 'Strict mode is enable: ' . PHP_EOL . implode( PHP_EOL, $errors ) );
+				}
+			}
+
+			// Migrate posts.
 			$errors = [];
-			foreach ( $subscriptions as $subscription_id ) {
-				$can_migrate = Distributor_Migrator::can_migrate_subscription( $subscription_id );
-				if ( is_wp_error( $can_migrate ) ) {
-					$errors[] = sprintf( 'Unable to migrate subscription %d: %s', $subscription_id, $can_migrate->get_error_message() );
-				}
-			}
-			if ( ! empty( $errors ) ) {
-				WP_CLI::error( PHP_EOL . implode( PHP_EOL, $errors ) );
-			}
-
-			// Migrate subscriptions.
-			foreach ( $subscriptions as $i => $subscription_id ) {
-				$result = Distributor_Migrator::migrate_subscription( $subscription_id );
+			foreach ( $post_ids as $i => $post_id ) {
+				$result = Distributor_Migrator::migrate_post( $post_id );
 				if ( is_wp_error( $result ) ) {
-					WP_CLI::error( $result->get_error_message() );
+					$message = sprintf( '(%d/%d) Post %d could not be migrated: %s', $i + 1, count( $post_ids ), $post_id, $result->get_error_message() );
+					if ( $strict ) {
+						WP_CLI::error( $message );
+					} else {
+						$errors[] = $result->get_error_message();
+						WP_CLI::line( $message );
+					}
+				} else {
+					WP_CLI::line( sprintf( '(%d/%d) Post %d is migrated.', $i + 1, count( $post_ids ), $post_id ) );
 				}
-				WP_CLI::line( sprintf( '(%d/%d) Subscription with ID %d is migrated.', $i + 1, count( $subscriptions ), $subscription_id ) );
 			}
 
-			if ( isset( $assoc_args['delete'] ) ) {
+			if ( isset( $assoc_args['delete'] ) && empty( $errors ) ) {
 				deactivate_plugins( [ 'distributor/distributor.php' ] );
 				delete_plugins( [ 'distributor/distributor.php' ] );
 				WP_CLI::line( 'Distributor plugin is deactivated and deleted.' );

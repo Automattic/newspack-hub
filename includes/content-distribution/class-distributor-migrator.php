@@ -161,37 +161,21 @@ class Distributor_Migrator {
 	}
 
 	/**
-	 * Migrate a post from Distributor to Newspack Network Content Distribution.
+	 * Get posts with Distributor subscriptions.
 	 *
-	 * @param int $post_id The ID of the post to migrate.
-	 *
-	 * @return Outgoing_Post|WP_Error Outgoing_Post on success, WP_Error on failure.
+	 * @return int[] Array of post IDs.
 	 */
-	public static function migrate_post( $post_id ) {
-		$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
-		if ( ! $subscriptions ) {
-			return new WP_Error( 'subscriptions_not_found', __( 'Subscriptions not found.', 'newspack-network' ) );
-		}
-
-		// First check whether all subscriptions can be migrated.
+	public static function get_posts_with_distributor_subscriptions() {
+		$subscriptions = self::get_distributor_subscriptions();
+		$posts         = [];
 		foreach ( $subscriptions as $subscription_id ) {
-			$can_migrate = self::can_migrate_subscription( $subscription_id );
-			if ( is_wp_error( $can_migrate ) ) {
-				return $can_migrate;
+			$post_id = get_post_meta( $subscription_id, 'dt_subscription_post_id', true );
+			if ( ! $post_id ) {
+				continue;
 			}
+			$posts[ $post_id ] = $post_id;
 		}
-
-		// Migrate subscriptions.
-		$outgoing_post = null;
-		foreach ( $subscriptions as $subscription_id ) {
-			$migration_result = self::migrate_subscription( $subscription_id );
-			if ( is_wp_error( $migration_result ) ) {
-				return $migration_result;
-			}
-			$outgoing_post = $migration_result;
-		}
-
-		return $outgoing_post;
+		return array_values( $posts );
 	}
 
 	/**
@@ -226,6 +210,65 @@ class Distributor_Migrator {
 			);
 		}
 		return $network_url;
+	}
+
+	/**
+	 * Validate whether a post can be migrated.
+	 *
+	 * @param int $post_id The ID of the post to check.
+	 *
+	 * @return true|WP_Error True if the post can be migrated, WP_Error on failure.
+	 */
+	public static function can_migrate_post( $post_id ) {
+		$connection_map = get_post_meta( $post_id, 'dt_connection_map', true );
+		if ( ! $connection_map || empty( $connection_map['external'] ) ) {
+			return new WP_Error( 'no_connection_map', __( 'No connections found.', 'newspack-network' ) );
+		}
+
+		if ( ! empty( $connection_map['internal'] ) ) {
+			return new WP_Error( 'internal_connection', __( 'This post contains internal connections, which are not supported.', 'newspack-network' ) );
+		}
+
+		$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
+		if ( ! $subscriptions ) {
+			return new WP_Error( 'subscriptions_not_found', __( 'Subscriptions not found.', 'newspack-network' ) );
+		}
+
+		foreach ( $subscriptions as $subscription_id ) { // phpcs:ignore WordPressVIPMinimum.Functions.CheckReturnValue.NonCheckedVariable
+			$can_migrate_subscription = self::can_migrate_subscription( $subscription_id );
+			if ( is_wp_error( $can_migrate_subscription ) ) {
+				return $can_migrate_subscription;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Migrate a post from Distributor to Newspack Network Content Distribution.
+	 *
+	 * @param int $post_id The ID of the post to migrate.
+	 *
+	 * @return Outgoing_Post|WP_Error Outgoing_Post on success, WP_Error on failure.
+	 */
+	public static function migrate_post( $post_id ) {
+		$can_migrate = self::can_migrate_post( $post_id );
+		if ( is_wp_error( $can_migrate ) ) {
+			return $can_migrate;
+		}
+
+		$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
+
+		$outgoing_post = null;
+		foreach ( $subscriptions as $subscription_id ) { // phpcs:ignore WordPressVIPMinimum.Functions.CheckReturnValue.NonCheckedVariable
+			$migration_result = self::migrate_subscription( $subscription_id );
+			if ( is_wp_error( $migration_result ) ) {
+				return $migration_result;
+			}
+			$outgoing_post = $migration_result;
+		}
+
+		return $outgoing_post;
 	}
 
 	/**
