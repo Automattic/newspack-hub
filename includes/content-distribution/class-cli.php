@@ -145,12 +145,22 @@ class CLI {
 			WP_CLI::error( 'Post ID must be a number.' );
 		}
 
+		if ( is_numeric( $post_id ) && isset( $assoc_args['all'] ) ) {
+			WP_CLI::error( 'The --all flag cannot be used with a post ID.' );
+		}
+
 		if ( ! isset( $assoc_args['all'] ) && isset( $assoc_args['delete'] ) ) {
 			WP_CLI::error( 'The --delete flag can only be used with the --all flag.' );
 		}
 
 		if ( isset( $assoc_args['all'] ) ) {
 			$subscriptions = Distributor_Migrator::get_distributor_subscriptions();
+
+			if ( empty( $subscriptions ) ) {
+				WP_CLI::success( 'No subscriptions found.' );
+				return;
+			}
+
 			WP_CLI::line( sprintf( 'Found %d subscriptions.', count( $subscriptions ) ) );
 
 			// Validate whether all subscriptions can be migrated.
