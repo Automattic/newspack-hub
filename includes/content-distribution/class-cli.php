@@ -91,7 +91,7 @@ class CLI {
 					[
 						'type'        => 'flag',
 						'name'        => 'delete',
-						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all posts.', 'newspack-network' ),
+						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all posts. This will only take effect if all posts were able to migrate.', 'newspack-network' ),
 						'optional'    => true,
 					],
 				],
