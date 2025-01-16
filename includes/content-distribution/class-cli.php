@@ -67,7 +67,7 @@ class CLI {
 			'newspack network distributor migrate',
 			[ __CLASS__, 'cmd_distributor_migrate' ],
 			[
-				'shortdesc' => __( 'Migrate a post from Distributor to Newspack Network content distribution', 'newspack-network' ),
+				'shortdesc' => __( 'Migrate posts from Distributor to Newspack Network\'s content distribution', 'newspack-network' ),
 				'synopsis'  => [
 					[
 						'type'        => 'positional',
