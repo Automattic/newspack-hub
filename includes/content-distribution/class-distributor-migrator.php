@@ -42,8 +42,8 @@ class Distributor_Migrator {
 						'type'     => 'string',
 						'required' => true,
 					],
-					'network_post_id'        => [
-						'type'     => 'string',
+					'payload'                => [
+						'type'     => 'object',
 						'required' => true,
 					],
 				],
@@ -62,9 +62,9 @@ class Distributor_Migrator {
 	public static function api_link_incoming_post( $request ) {
 		$post_id                = $request->get_param( 'post_id' );
 		$subscription_signature = $request->get_param( 'subscription_signature' );
-		$network_post_id        = $request->get_param( 'network_post_id' );
+		$payload                = $request->get_param( 'payload' );
 
-		$response = self::link_incoming_post( $post_id, $subscription_signature, $network_post_id );
+		$response = self::link_incoming_post( $post_id, $subscription_signature, $payload );
 
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -78,11 +78,11 @@ class Distributor_Migrator {
 	 *
 	 * @param int    $post_id                The ID of the post to link.
 	 * @param string $subscription_signature The signature of the subscription.
-	 * @param string $network_post_id        The network post ID.
+	 * @param string $payload                The incoming post payload.
 	 *
 	 * @return WP_Error|void WP_Error on failure, void on success.
 	 */
-	protected static function link_incoming_post( $post_id, $subscription_signature, $network_post_id ) {
+	protected static function link_incoming_post( $post_id, $subscription_signature, $payload ) {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
 			return new WP_Error( 'post_not_found', __( 'Post not found.', 'newspack-network' ) );
@@ -93,8 +93,40 @@ class Distributor_Migrator {
 			return new WP_Error( 'subscription_signature_mismatch', __( 'Subscription signature mismatch.', 'newspack-network' ) );
 		}
 
-		update_post_meta( $post_id, Incoming_Post::NETWORK_POST_ID_META, $network_post_id );
+		// Validate payload.
+		$payload_error = Incoming_Post::get_payload_error( $payload );
+		if ( is_wp_error( $payload_error ) ) {
+			return new WP_Error(
+				'payload_error',
+				sprintf(
+					// translators: payload error message.
+					__( 'Payload error: %s', 'newspack-network' ),
+					$payload_error->get_error_message()
+				)
+			);
+		}
 
+		// Store payload for insertion.
+		update_post_meta( $post_id, Incoming_Post::PAYLOAD_META, $payload );
+
+		try {
+			$incoming_post = new Incoming_Post( $post_id );
+		} catch ( InvalidArgumentException $e ) {
+			return new WP_Error( 'incoming_post_error', $e->getMessage() );
+		}
+
+		// Match the unlinked state.
+		if ( get_post_meta( $post_id, 'dt_unlinked', true ) ) {
+			$incoming_post->set_unlinked();
+		}
+
+		// Insert the incoming post.
+		$insert = $incoming_post->insert();
+		if ( is_wp_error( $insert ) ) {
+			return $insert;
+		}
+
+		// Clear Distributor meta.
 		$distributor_meta = [
 			'dt_full_connection',
 			'dt_original_post_id',
@@ -104,6 +136,9 @@ class Distributor_Migrator {
 			'dt_original_source_id',
 			'dt_subscription_signature',
 			'dt_syndicate_time',
+			'dt_unlinked',
+			'dt_subscriptions',
+			'dt_connection_map',
 		];
 		foreach ( $distributor_meta as $meta_key ) {
 			delete_post_meta( $post_id, $meta_key );
@@ -128,12 +163,11 @@ class Distributor_Migrator {
 	/**
 	 * Migrate a post from Distributor to Newspack Network Content Distribution.
 	 *
-	 * @param int     $post_id     The ID of the post to migrate.
-	 * @param boolean $distribute  Whether to distribute the post after migrating its subscriptions.
+	 * @param int $post_id The ID of the post to migrate.
 	 *
 	 * @return Outgoing_Post|WP_Error Outgoing_Post on success, WP_Error on failure.
 	 */
-	public static function migrate_post( $post_id, $distribute = false ) {
+	public static function migrate_post( $post_id ) {
 		$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
 		if ( ! $subscriptions ) {
 			return new WP_Error( 'subscriptions_not_found', __( 'Subscriptions not found.', 'newspack-network' ) );
@@ -150,7 +184,7 @@ class Distributor_Migrator {
 		// Migrate subscriptions.
 		$outgoing_post = null;
 		foreach ( $subscriptions as $subscription_id ) {
-			$migration_result = self::migrate_subscription( $subscription_id, $distribute );
+			$migration_result = self::migrate_subscription( $subscription_id );
 			if ( is_wp_error( $migration_result ) ) {
 				return $migration_result;
 			}
@@ -229,12 +263,11 @@ class Distributor_Migrator {
 	/**
 	 * Migrate a post subscription from Distributor to Newspack Network Content Distribution.
 	 *
-	 * @param int     $subscription_id The ID of the subscription to migrate.
-	 * @param boolean $distribute      Whether to distribute the post after migrating the subscription.
+	 * @param int $subscription_id The ID of the subscription to migrate.
 	 *
 	 * @return Outgoing_Post|WP_Error Outgoing_Post on success, WP_Error on failure.
 	 */
-	public static function migrate_subscription( $subscription_id, $distribute = false ) {
+	public static function migrate_subscription( $subscription_id ) {
 		$can_migrate = self::can_migrate_subscription( $subscription_id );
 		if ( is_wp_error( $can_migrate ) ) {
 			return $can_migrate;
@@ -259,7 +292,7 @@ class Distributor_Migrator {
 		}
 
 		// Link the migrated post.
-		$link_result = self::link_migrated_subscription( $network_url, $subscription_id, $outgoing_post->get_network_post_id() );
+		$link_result = self::link_migrated_subscription( $network_url, $subscription_id, $outgoing_post->get_payload() );
 		if ( is_wp_error( $link_result ) ) {
 			return $link_result;
 		}
@@ -292,10 +325,6 @@ class Distributor_Migrator {
 		// Delete the subscription post.
 		wp_delete_post( $subscription_id );
 
-		if ( $distribute ) {
-			Content_Distribution::distribute_post( $outgoing_post );
-		}
-
 		return $outgoing_post;
 	}
 
@@ -305,11 +334,11 @@ class Distributor_Migrator {
 	 *
 	 * @param string $site_url        The URL of the destination site.
 	 * @param int    $subscription_id The ID of the subscription being migrated.
-	 * @param string $network_post_id The network post ID for the migrated post.
+	 * @param string $payload         The outgoing post payload.
 	 *
 	 * @return WP_Error|void WP_Error on failure, void on success.
 	 */
-	protected static function link_migrated_subscription( $site_url, $subscription_id, $network_post_id ) {
+	protected static function link_migrated_subscription( $site_url, $subscription_id, $payload ) {
 		$remote_post_id = get_post_meta( $subscription_id, 'dt_subscription_remote_post_id', true );
 		$signature      = get_post_meta( $subscription_id, 'dt_subscription_signature', true );
 		$url            = trailingslashit( $site_url ) . 'wp-json/newspack-network/v1/content-distribution/distributor-migrator/link/' . $remote_post_id;
@@ -318,7 +347,7 @@ class Distributor_Migrator {
 			[
 				'body'    => [
 					'subscription_signature' => $signature,
-					'network_post_id'        => $network_post_id,
+					'payload'                => $payload,
 				],
 				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
 			]

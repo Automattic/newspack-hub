@@ -78,12 +78,6 @@ class CLI {
 					],
 					[
 						'type'        => 'flag',
-						'name'        => 'distribute',
-						'description' => __( 'Whether to distribute the post after migrating the subscription.', 'newspack-network' ),
-						'optional'    => true,
-					],
-					[
-						'type'        => 'flag',
 						'name'        => 'all',
 						'description' => __( 'Migrate all posts.', 'newspack-network' ),
 						'optional'    => true,
@@ -155,8 +149,6 @@ class CLI {
 			WP_CLI::error( 'The --delete flag can only be used with the --all flag.' );
 		}
 
-		$distribute = isset( $assoc_args['distribute'] );
-
 		if ( isset( $assoc_args['all'] ) ) {
 			$subscriptions = Distributor_Migrator::get_distributor_subscriptions();
 			WP_CLI::line( sprintf( 'Found %d subscriptions.', count( $subscriptions ) ) );
@@ -175,7 +167,7 @@ class CLI {
 
 			// Migrate subscriptions.
 			foreach ( $subscriptions as $i => $subscription ) {
-				$result = Distributor_Migrator::migrate_subscription( $subscription->ID, $distribute );
+				$result = Distributor_Migrator::migrate_subscription( $subscription->ID );
 				if ( is_wp_error( $result ) ) {
 					WP_CLI::error( $result->get_error_message() );
 				}
@@ -185,9 +177,10 @@ class CLI {
 			if ( isset( $assoc_args['delete'] ) ) {
 				deactivate_plugins( [ 'distributor/distributor.php' ] );
 				delete_plugins( [ 'distributor/distributor.php' ] );
+				WP_CLI::line( 'Distributor plugin is deactivated and deleted.' );
 			}
 		} else {
-			$result = Distributor_Migrator::migrate_post( $post_id, $distribute );
+			$result = Distributor_Migrator::migrate_post( $post_id );
 			if ( is_wp_error( $result ) ) {
 				WP_CLI::error( $result->get_error_message() );
 			}
