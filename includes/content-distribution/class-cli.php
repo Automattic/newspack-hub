@@ -155,10 +155,10 @@ class CLI {
 
 			// Validate whether all subscriptions can be migrated.
 			$errors = [];
-			foreach ( $subscriptions as $subscription ) {
-				$can_migrate = Distributor_Migrator::can_migrate_subscription( $subscription->ID );
+			foreach ( $subscriptions as $subscription_id ) {
+				$can_migrate = Distributor_Migrator::can_migrate_subscription( $subscription_id );
 				if ( is_wp_error( $can_migrate ) ) {
-					$errors[] = sprintf( 'Unable to migrate subscription %d: %s', $subscription->ID, $can_migrate->get_error_message() );
+					$errors[] = sprintf( 'Unable to migrate subscription %d: %s', $subscription_id, $can_migrate->get_error_message() );
 				}
 			}
 			if ( ! empty( $errors ) ) {
@@ -166,12 +166,12 @@ class CLI {
 			}
 
 			// Migrate subscriptions.
-			foreach ( $subscriptions as $i => $subscription ) {
-				$result = Distributor_Migrator::migrate_subscription( $subscription->ID );
+			foreach ( $subscriptions as $i => $subscription_id ) {
+				$result = Distributor_Migrator::migrate_subscription( $subscription_id );
 				if ( is_wp_error( $result ) ) {
 					WP_CLI::error( $result->get_error_message() );
 				}
-				WP_CLI::line( sprintf( '(%d/%d) Subscription with ID %d is migrated.', $i + 1, count( $subscriptions ), $subscription->ID ) );
+				WP_CLI::line( sprintf( '(%d/%d) Subscription with ID %d is migrated.', $i + 1, count( $subscriptions ), $subscription_id ) );
 			}
 
 			if ( isset( $assoc_args['delete'] ) ) {

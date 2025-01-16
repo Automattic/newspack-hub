@@ -148,16 +148,16 @@ class Distributor_Migrator {
 	/**
 	 * Get all Distributor subscriptions.
 	 *
-	 * @return WP_Post[] Array of WP_Post objects representing Distributor subscriptions.
+	 * @return int[] Array of Distributor subscription IDs.
 	 */
 	public static function get_distributor_subscriptions() {
-		$query = new WP_Query(
+		return get_posts(
 			[
 				'post_type'      => 'dt_subscription',
-				'posts_per_page' => '-1',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
 			]
 		);
-		return $query->posts;
 	}
 
 	/**
