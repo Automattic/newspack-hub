@@ -168,8 +168,8 @@ function IncomingPost() {
 				size="small"
 			>
 				{ isUnLinked ?
-					__( 'Are you sure you want to relink this post to the origin post? Any changes made to this post will be lost.', 'newspack-network' ) :
-					__( 'Are you sure you want to unlink this post from the origin post?', 'newspack-network' )
+					__( 'Are you sure you want to relink this post to its origin? Any changes you\'ve made will be lost.', 'newspack-network' ) :
+					__( 'Are you sure you want to unlink this post from its origin?', 'newspack-network' )
 				}
 			</ConfirmDialog>
 		</>
