@@ -127,11 +127,11 @@ function IncomingPost() {
 			<ContentDistributionPanel
 				header={
 					isUnLinked ? __(
-							'This post has been unlinked from the origin post. Edits to the origin post will not update this version.',
+							'This post has been unlinked from its origin. Edits to the origin post will not update this version.',
 							'newspack-network'
 						)
 						: __(
-							'This post is linked to the origin post. Edits to the origin post will update this version.',
+							'This post is linked to its origin. Edits to the origin post will update this version.',
 							'newspack-network'
 						)
 				}
