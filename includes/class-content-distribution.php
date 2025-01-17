@@ -57,7 +57,6 @@ class Content_Distribution {
 		API::init();
 		Editor::init();
 		Canonical_Url::init();
-		Distributor_Migrator::init();
 	}
 
 	/**

@@ -70,25 +70,6 @@ class CLI {
 				'shortdesc' => __( 'Migrate posts from Distributor to Newspack Network\'s content distribution', 'newspack-network' ),
 				'synopsis'  => [
 					[
-						'type'        => 'positional',
-						'name'        => 'post-id',
-						'description' => __( 'The ID of the post to migrate.', 'newspack-network' ),
-						'repeating'   => false,
-						'optional'    => true,
-					],
-					[
-						'type'        => 'flag',
-						'name'        => 'all',
-						'description' => __( 'Migrate all posts.', 'newspack-network' ),
-						'optional'    => true,
-					],
-					[
-						'type'        => 'flag',
-						'name'        => 'strict',
-						'description' => __( 'Whether to only migrate if all distributed posts can be migrated.', 'newspack-network' ),
-						'optional'    => true,
-					],
-					[
 						'type'        => 'flag',
 						'name'        => 'delete',
 						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all posts. This will only take effect if all posts were able to migrate.', 'newspack-network' ),
@@ -146,72 +127,34 @@ class CLI {
 	 * @throws ExitException If something goes wrong.
 	 */
 	public function cmd_distributor_migrate( array $pos_args, array $assoc_args ): void {
-		$post_id = $pos_args[0] ?? null;
-		if ( ! is_numeric( $post_id ) && ! isset( $assoc_args['all'] ) ) {
-			WP_CLI::error( 'Post ID must be a number.' );
+		$outgoing_post_ids = Distributor_Migrator::get_outgoing_posts();
+		$incoming_post_ids = Distributor_Migrator::get_incoming_posts();
+
+		if ( empty( $outgoing_post_ids ) && empty( $incoming_post_ids ) ) {
+			WP_CLI::success( 'No posts found to migrate.' );
+			return;
 		}
 
-		if ( is_numeric( $post_id ) && isset( $assoc_args['all'] ) ) {
-			WP_CLI::error( 'The --all flag cannot be used with a post ID.' );
-		}
+		WP_CLI::line( empty( $outgoing_post_ids ) ? 'No outgoing posts found.' : sprintf( 'Found %d outgoing posts.', count( $outgoing_post_ids ) ) );
+		WP_CLI::line( empty( $incoming_post_ids ) ? 'No incoming posts found.' : sprintf( 'Found %d incoming posts.', count( $incoming_post_ids ) ) );
 
-		if ( ! isset( $assoc_args['all'] ) && isset( $assoc_args['delete'] ) ) {
-			WP_CLI::error( 'The --delete flag can only be used with the --all flag.' );
-		}
+		$post_ids = array_merge( $outgoing_post_ids, $incoming_post_ids );
 
-		if ( isset( $assoc_args['all'] ) ) {
-			$strict = isset( $assoc_args['strict'] );
-
-			$post_ids = Distributor_Migrator::get_posts_with_distributor_subscriptions();
-
-			if ( empty( $post_ids ) ) {
-				WP_CLI::success( 'No distributed posts found.' );
-				return;
-			}
-
-			WP_CLI::line( sprintf( 'Found %d posts.', count( $post_ids ) ) );
-
-			// In strict mode, only continue if all posts can be migrated.
-			if ( $strict ) {
-				$errors = [];
-				foreach ( $post_ids as $post_id ) {
-					$can_migrate = Distributor_Migrator::can_migrate_post( $post_id );
-					if ( is_wp_error( $can_migrate ) ) {
-						$errors[] = sprintf( 'Unable to migrate post %d: %s', $post_id, $can_migrate->get_error_message() );
-					}
-				}
-				if ( ! empty( $errors ) ) {
-					WP_CLI::error( 'Strict mode is enable: ' . PHP_EOL . implode( PHP_EOL, $errors ) );
-				}
-			}
-
-			// Migrate posts.
-			$errors = [];
-			foreach ( $post_ids as $i => $post_id ) {
-				$result = Distributor_Migrator::migrate_post( $post_id );
-				if ( is_wp_error( $result ) ) {
-					$message = sprintf( '(%d/%d) Post %d could not be migrated: %s', $i + 1, count( $post_ids ), $post_id, $result->get_error_message() );
-					if ( $strict ) {
-						WP_CLI::error( $message );
-					} else {
-						$errors[] = $result->get_error_message();
-						WP_CLI::line( $message );
-					}
-				} else {
-					WP_CLI::line( sprintf( '(%d/%d) Post %d is migrated.', $i + 1, count( $post_ids ), $post_id ) );
-				}
-			}
-
-			if ( isset( $assoc_args['delete'] ) && empty( $errors ) ) {
-				deactivate_plugins( [ 'distributor/distributor.php' ] );
-				delete_plugins( [ 'distributor/distributor.php' ] );
-				WP_CLI::line( 'Distributor plugin is deactivated and deleted.' );
-			}
-		} else {
+		$errored = false;
+		foreach ( $post_ids as $i => $post_id ) {
 			$result = Distributor_Migrator::migrate_post( $post_id );
 			if ( is_wp_error( $result ) ) {
-				WP_CLI::error( $result->get_error_message() );
+				$errored = true;
+				WP_CLI::line( sprintf( '(%d/%d) Post %d could not be migrated: %s', $i + 1, count( $post_ids ), $post_id, $result->get_error_message() ) );
+			} else {
+				WP_CLI::line( sprintf( '(%d/%d) Post %d is migrated.', $i + 1, count( $post_ids ), $post_id ) );
 			}
+		}
+
+		if ( isset( $assoc_args['delete'] ) && ! $errored ) {
+			deactivate_plugins( [ 'distributor/distributor.php' ] );
+			delete_plugins( [ 'distributor/distributor.php' ] );
+			WP_CLI::line( 'Distributor plugin is deactivated and deleted.' );
 		}
 
 		WP_CLI::success( 'Migration completed.' );
