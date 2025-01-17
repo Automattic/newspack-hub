@@ -149,7 +149,6 @@ function IncomingPost() {
 							isDestructive={ !isUnLinked }
 							disabled={ isUnLinkedToggling }
 							onClick={ () => {
-								// toggleUnlinkedClicked( !isUnLinked );
 								setShowConfirmDialog( true );
 							} }
 						>
