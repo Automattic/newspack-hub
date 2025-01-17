@@ -99,7 +99,18 @@ class Woocommerce_Membership_Updated extends Abstract_Incoming_Event {
 			return;
 		}
 
-		$user_membership->update_status( $this->get_new_status() );
+		$status     = $this->get_new_status();
+		$is_managed = get_post_meta( $user_membership->get_id(), Memberships_Admin::NETWORK_MANAGED_META_KEY, true );
+		// If the membership is being cancelled or expired, remove the network managed flag.
+		if ( in_array( $status, [ 'cancelled', 'expired' ], true ) && $is_managed ) {
+			delete_post_meta( $user_membership->get_id(), Memberships_Admin::NETWORK_MANAGED_META_KEY );
+			// Otherwise, if the membership is not managed, reset relevant meta.
+		} elseif ( ! $is_managed ) {
+			update_post_meta( $user_membership->get_id(), Memberships_Admin::NETWORK_MANAGED_META_KEY, true );
+			update_post_meta( $user_membership->get_id(), Memberships_Admin::REMOTE_ID_META_KEY, $this->get_membership_id() );
+			update_post_meta( $user_membership->get_id(), Memberships_Admin::SITE_URL_META_KEY, $this->get_site() );
+		}
+		$user_membership->update_status( $status );
 		$user_membership->add_note(
 			sprintf(
 				// translators: %s is the site URL.
