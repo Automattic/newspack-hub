@@ -175,16 +175,19 @@ class Outgoing_Post {
 	/**
 	 * Get the post payload for distribution.
 	 *
+	 * @param string $status_on_create The post status when creating the post.
+	 *
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
-	public function get_payload() {
+	public function get_payload( $status_on_create = 'draft' ) {
 		return [
-			'site_url'        => get_bloginfo( 'url' ),
-			'post_id'         => $this->post->ID,
-			'post_url'        => get_permalink( $this->post->ID ),
-			'network_post_id' => $this->get_network_post_id(),
-			'sites'           => $this->get_distribution(),
-			'post_data'       => [
+			'site_url'         => get_bloginfo( 'url' ),
+			'post_id'          => $this->post->ID,
+			'post_url'         => get_permalink( $this->post->ID ),
+			'network_post_id'  => $this->get_network_post_id(),
+			'sites'            => $this->get_distribution(),
+			'status_on_create' => $status_on_create,
+			'post_data'        => [
 				'title'          => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
 				'post_status'    => $this->post->post_status,
 				'date_gmt'       => $this->post->post_date_gmt,

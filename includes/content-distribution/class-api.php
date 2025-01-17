@@ -35,12 +35,17 @@ class API {
 				'methods'             => 'POST',
 				'callback'            => [ __CLASS__, 'distribute' ],
 				'args'                => [
-					'urls' => [
+					'urls'             => [
 						'type'     => 'array',
 						'required' => true,
 						'items'    => [
 							'type' => 'string',
 						],
+					],
+					'status_on_create' => [
+						'type'    => 'string',
+						'enum'    => [ 'draft', 'publish' ],
+						'default' => 'draft',
 					],
 				],
 				'permission_callback' => function () {
@@ -103,8 +108,9 @@ class API {
 	 * @return WP_REST_Response|WP_Error The REST response or error.
 	 */
 	public static function distribute( $request ) {
-		$post_id = $request->get_param( 'post_id' );
-		$urls    = $request->get_param( 'urls' );
+		$post_id          = $request->get_param( 'post_id' );
+		$urls             = $request->get_param( 'urls' );
+		$status_on_create = $request->get_param( 'status_on_create' );
 
 		try {
 			$outgoing_post = new Outgoing_Post( $post_id );
@@ -118,7 +124,7 @@ class API {
 			return new WP_Error( 'newspack_network_content_distribution_error', $distribution->get_error_message(), [ 'status' => 400 ] );
 		}
 
-		Content_Distribution::distribute_post( $outgoing_post );
+		Content_Distribution::distribute_post( $outgoing_post, $status_on_create );
 
 		return rest_ensure_response( $distribution );
 	}
