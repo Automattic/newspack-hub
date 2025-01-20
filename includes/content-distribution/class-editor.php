@@ -148,16 +148,7 @@ class Editor {
 				'unlinked'    => ! $incoming->is_linked(),
 			]
 		);
-	}
 
-	/**
-	 * Enqueue block editor assets.
-	 *
-	 * @param WP_Post $post The post being edited.
-	 *
-	 * @return void
-	 */
-	private static function enqueue_block_editor_assets_for_outgoing_post( WP_Post $post ): void {
 		wp_enqueue_script(
 			'newspack-network-outgoing-post',
 			plugins_url( '../../dist/outgoing-post.js', __FILE__ ),
