@@ -58,9 +58,9 @@ class Distributor_Migrator {
 	}
 
 	/**
-	 * Migrate an incoming post given its subscription signature.
+	 * Migrate an incoming post.
 	 *
-	 * @param int $post_id The ID of the post to link.
+	 * @param int $post_id The ID of the post to migrate.
 	 *
 	 * @return WP_Error|void WP_Error on failure, void on success.
 	 */
