@@ -87,7 +87,6 @@ class Editor {
 	 * @return void
 	 */
 	private static function enqueue_block_editor_assets_for_incoming_post( WP_Post $post ): void {
-
 		$incoming = new Incoming_Post( $post->ID );
 
 		wp_enqueue_script(
@@ -124,31 +123,6 @@ class Editor {
 	 * @return void
 	 */
 	private static function enqueue_block_editor_assets_for_outgoing_post( WP_Post $post ): void {
-		wp_enqueue_script(
-			'newspack-network-incoming-post',
-			plugins_url( '../../dist/incoming-post.js', __FILE__ ),
-			[],
-			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/incoming-post.js' ),
-			true
-		);
-		wp_register_style(
-			'newspack-network-incoming-post',
-			plugins_url( '../../dist/incoming-post.css', __FILE__ ),
-			[],
-			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/incoming-post.css' ),
-		);
-		wp_style_add_data( 'newspack-network-incoming-post', 'rtl', 'replace' );
-		wp_enqueue_style( 'newspack-network-incoming-post' );
-
-		wp_localize_script(
-			'newspack-network-incoming-post',
-			'newspack_network_incoming_post',
-			[
-				'originalUrl' => $incoming->get_original_site_url(),
-				'unlinked'    => ! $incoming->is_linked(),
-			]
-		);
-
 		wp_enqueue_script(
 			'newspack-network-outgoing-post',
 			plugins_url( '../../dist/outgoing-post.js', __FILE__ ),
