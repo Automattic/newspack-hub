@@ -68,7 +68,12 @@ class Outgoing_Post {
 	 * @return string The network post ID.
 	 */
 	public function get_network_post_id() {
-		return md5( $this->post->ID . get_bloginfo( 'url' ) );
+		$site_hash = get_option( 'newspack_network_content_distribution_hash' );
+		if ( ! $site_hash ) {
+			$site_hash = md5( get_bloginfo( 'url' ) );
+			update_option( 'newspack_network_content_distribution_hash', $site_hash );
+		}
+		return md5( $site_hash . $this->post->ID );
 	}
 
 	/**
