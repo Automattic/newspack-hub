@@ -345,11 +345,12 @@ class Content_Distribution {
 	/**
 	 * Trigger post distribution.
 	 *
-	 * @param WP_Post|Outgoing_Post|int $post The post object or ID.
+	 * @param WP_Post|Outgoing_Post|int $post             The post object or ID.
+	 * @param string                    $status_on_create The post status on create. Default is draft.
 	 *
 	 * @return void
 	 */
-	public static function distribute_post( $post ) {
+	public static function distribute_post( $post, $status_on_create = 'draft' ) {
 		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
 			return;
 		}
@@ -359,7 +360,7 @@ class Content_Distribution {
 			$distributed_post = self::get_distributed_post( $post );
 		}
 		if ( $distributed_post ) {
-			Data_Events::dispatch( 'network_post_updated', $distributed_post->get_payload() );
+			Data_Events::dispatch( 'network_post_updated', $distributed_post->get_payload( $status_on_create ) );
 		}
 	}
 }
