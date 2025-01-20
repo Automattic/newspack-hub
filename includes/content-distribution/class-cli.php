@@ -212,6 +212,8 @@ class CLI {
 						$errors->add( $result );
 						WP_CLI::line( $message );
 					}
+				} else {
+					WP_CLI::line( sprintf( '(%d/%d) Batch migrated.', $i + 1, count( $batches ) ) );
 				}
 			}
 
