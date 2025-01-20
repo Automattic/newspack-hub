@@ -2,10 +2,11 @@
 /**
  * Plugin Name: Newspack Network
  * Description: The Newspack Network plugin.
- * Version: 2.3.4
+ * Version: 2.4.0-alpha.1
  * Author: Automattic
  * Author URI: https://newspack.com/
  * License: GPL3
+ * Requires PHP: 8.1
  * Text Domain: newspack-network
  * Domain Path: /languages/
  *

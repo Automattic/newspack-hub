@@ -7,7 +7,7 @@
 
 namespace Newspack_Network\Incoming_Events;
 
-use Newspack_Network\Distributor_Customizations\Canonical_Url;
+use Newspack_Network\Content_Distribution\Canonical_Url;
 
 /**
  * Class to handle the Canonical Url Updated Event
