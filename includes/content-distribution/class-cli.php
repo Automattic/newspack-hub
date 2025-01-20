@@ -61,6 +61,12 @@ class CLI {
 						'description' => __( "Networked site url(s) comma separated to distribute the post to – or 'all' to distribute to all sites in the network.", 'newspack-network' ),
 						'optional'    => false,
 					],
+					[
+						'type'        => 'assoc',
+						'name'        => 'status_on_create',
+						'description' => __( 'The post status when creating the post. Default is to distribute as draft.' ),
+						'optional'    => true,
+					],
 				],
 			]
 		);
@@ -137,7 +143,7 @@ class CLI {
 				WP_CLI::error( $sites->get_error_message() );
 			}
 
-			Content_Distribution::distribute_post( $outgoing_post );
+			Content_Distribution::distribute_post( $outgoing_post, $assoc_args['status_on_create'] ?? 'draft' );
 			WP_CLI::success( sprintf( 'Post with ID %d is distributed to %d sites: %s', $post_id, count( $sites ), implode( ', ', $sites ) ) );
 
 		} catch ( \Exception $e ) {
