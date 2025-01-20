@@ -10,6 +10,7 @@ namespace Newspack_Network\Content_Distribution;
 use Newspack_Network\Debugger;
 use Newspack_Network\User_Update_Watcher;
 use WP_Error;
+use WP_Post;
 
 /**
  * Class to handle author distribution.
@@ -20,85 +21,13 @@ use WP_Error;
 class Author_Distribution {
 
 	/**
-	 * Initializes the class
-	 *
-	 * @return void
-	 */
-	public static function init() {
-//		add_filter( 'dt_push_post_args', [ __CLASS__, 'add_author_data_to_push' ], 10, 2 );
-//		add_filter( 'dt_subscription_post_args', [ __CLASS__, 'add_author_data_to_push' ], 10, 2 );
-//		add_filter( 'dt_post_to_pull', [ __CLASS__, 'add_author_data_to_pull' ] );
-//		add_filter( 'dt_syncable_taxonomies', [ __CLASS__, 'filter_syncable_taxonomies' ] );
-//
-//		add_filter( 'rest_request_after_callbacks', [ __CLASS__, 'after_coauthors_update' ], 10, 3 );
-	}
-
-	/**
-	 * Removes CoAuthors Plus' author taxonomy from the list of taxonomies to be synced.
-	 *
-	 * This is crucial for out integration with CAP, as we are handling author syncing ourselves and we don't want
-	 * Distributor to try to sync the author taxonomy.
-	 *
-	 * @param array $taxonomies An array of taxonomies slugs.
-	 *
-	 * @return array
-	 */
-	public static function filter_syncable_taxonomies( $taxonomies ) {
-		return array_filter(
-			$taxonomies,
-			function ( $taxonomy ) {
-				return 'author' !== $taxonomy;
-			}
-		);
-	}
-
-	/**
-	 * Filters the post data sent on a push to add the author data.
-	 *
-	 * This callback is also used to add data to the post sent to the subscription endpoint.
-	 * (sends an update to the linked posts in other sites)
-	 *
-	 * @param array   $post_body The post data.
-	 * @param WP_Post $post      The post object.
-	 *
-	 * @return array
-	 */
-	public static function add_author_data_to_push( $post_body, $post ) {
-		$authors = self::get_authors_for_distribution( $post );
-		if ( ! empty( $authors ) ) {
-			$post_body['newspack_network_authors'] = $authors;
-		}
-
-		return $post_body;
-	}
-
-	/**
-	 * Filters the post data for a REST API response.
-	 *
-	 * This acts on requests made to pull a post from this site.
-	 *
-	 * @param array $post_array The post data.
-	 */
-	public static function add_author_data_to_pull( $post_array ) {
-
-		$authors = self::get_authors_for_distribution( (object) $post_array );
-
-		if ( ! empty( $authors ) ) {
-			Debugger::log( 'Adding authors to pull' );
-			$post_array['newspack_network_authors'] = $authors;
-		}
-
-		return $post_array;
-	}
-
-	/**
 	 * Get the authors of a post to be added to the distribution payload.
 	 *
 	 * @param \WP_Post $post The post object.
 	 *
 	 * @return array An array of authors.
 	 */
-	public static function get_authors_for_distribution( $post ) {
+	public static function get_authors_for_distribution( $post ): array {
 		$author = self::get_wp_user_for_distribution( $post->post_author );
 
 		if ( ! function_exists( 'get_coauthors' ) ) {
@@ -164,7 +93,6 @@ class Author_Distribution {
 			'ID'   => $user->ID,
 		];
 
-
 		foreach ( User_Update_Watcher::$user_props as $prop ) {
 			if ( isset( $user->$prop ) ) {
 				$author[ $prop ] = $user->$prop;
@@ -211,41 +139,5 @@ class Author_Distribution {
 		}
 
 		return $author;
-	}
-
-	/**
-	 * Sends an extra notification to subscribers when the authors of a post are updated.
-	 *
-	 * CoAuthors Plus updates the authors through an additional ajax request in the editor after the post is updated,
-	 * therefore when we change the authors and update the post in the Editor, the notification sent to the subscribers still
-	 * has the old authors
-	 *
-	 * We don't filter the response here, we just send the notification.
-	 *
-	 * @param WP_REST_Response|WP_HTTP_Response|WP_Error|mixed $response Result to send to the client.
-	 * @param array                                            $handler  Route handler used for the request.
-	 * @param WP_REST_Request                                  $request  Request used to generate the response.
-	 *
-	 * @return WP_REST_Response|WP_HTTP_Response|WP_Error|mixed
-	 */
-	public static function after_coauthors_update( $response, $handler, $request ) {
-
-		if ( ! class_exists( 'CoAuthors\API\Endpoints' ) || ! function_exists( 'Distributor\Subscriptions\send_notifications' ) ) {
-			return $response;
-		}
-
-		$coauthors_endpoint_base = \CoAuthors\API\Endpoints::NS . '/' . \CoAuthors\API\Endpoints::AUTHORS_ROUTE;
-
-		if ( false === strpos( $request->get_route(), $coauthors_endpoint_base ) ) {
-			return $response;
-		}
-
-		if ( 'POST' !== $request->get_method() ) {
-			return $response;
-		}
-
-		\Distributor\Subscriptions\send_notifications( (int) $request->get_param( 'post_id' ) );
-
-		return $response;
 	}
 }

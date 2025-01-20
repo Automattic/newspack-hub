@@ -1,6 +1,6 @@
 <?php
 /**
- * Newspack Network author ingestion.
+ * Newspack Network author ingestion for content distribution.
  *
  * @package Newspack
  */
@@ -12,29 +12,9 @@ use Newspack_Network\User_Update_Watcher;
 use Newspack_Network\Utils\Users as User_Utils;
 
 /**
- * Class to handle author ingestion.
- *
- * This class is used to handle the authorship data added by Author_Distribution to the distributed post
+ * Class to handle author ingestion for content distribution.
  */
 class Author_Ingestion {
-
-	/**
-	 * Array of authors from pulled posts. See self::capture_authorship.
-	 *
-	 * @var array
-	 */
-	private static $pulled_posts = [];
-
-	/**
-	 * Initializes the class
-	 *
-	 * @return void
-	 */
-	public static function init() {
-//		add_action( 'rest_insert_post', [ __CLASS__, 'handle_rest_insertion' ], 10, 2 );
-//		add_action( 'dt_process_subscription_attributes', [ __CLASS__, 'handle_rest_insertion' ], 10, 2 );
-//		add_action( 'dt_pull_post', [ __CLASS__, 'handle_pull' ], 10, 3 );
-	}
 
 	/**
 	 * Gets the CoAuthors Plus main object, if present
@@ -43,7 +23,7 @@ class Author_Ingestion {
 	 */
 	public static function get_coauthors_plus() {
 		global $coauthors_plus;
-		if ( is_null( $coauthors_plus ) || ( ! $coauthors_plus instanceof \CoAuthors_Plus ) ) {
+		if ( ! $coauthors_plus instanceof \CoAuthors_Plus ) {
 			return false;
 		}
 
@@ -51,31 +31,9 @@ class Author_Ingestion {
 	}
 
 	/**
-	 * Fired when a post is inserted via the REST API
-	 *
-	 * Checks if there are newspack network author information and ingests it.
-	 *
-	 * This callback is also used when a subscription update is received.
-	 *
-	 * @param WP_Post         $post    Inserted post object.
-	 * @param WP_REST_Request $request Request object.
-	 *
-	 * @return void
-	 */
-	public static function handle_rest_insertion( $post, $request ) {
-
-		$distributed_authors = $request->get_param( 'newspack_network_authors' );
-		if ( empty( $distributed_authors ) ) {
-			return;
-		}
-
-		self::ingest_authors_for_post( $post->ID, $distributed_authors );
-	}
-
-	/**
 	 * Ingest authors for a post distributed to this site
 	 *
-	 * @param int   $post_id             The post ID.
+	 * @param int   $post_id The post ID.
 	 * @param array $distributed_authors The distributed authors array.
 	 *
 	 * @return void
@@ -144,25 +102,5 @@ class Author_Ingestion {
 			Debugger::log( $coauthors );
 			$coauthors_plus->add_coauthors( $post_id, $coauthors );
 		}
-	}
-
-	/**
-	 * Triggered when a post is pulled from a remote site.
-	 *
-	 * @param int                                                 $new_post_id The new post ID that was pulled.
-	 * @param \Distributor\ExternalConnections\ExternalConnection $connection  The Distributor connection pulling the post.
-	 * @param array                                               $post_array  The original post data retrieved via the connection.
-	 *
-	 * @return void
-	 */
-	public static function handle_pull( $new_post_id, $connection, $post_array ) {
-
-		if ( empty( $post_array['newspack_network_authors'] ) ) {
-			return;
-		}
-
-		$distributed_authors = $post_array['newspack_network_authors'];
-
-		self::ingest_authors_for_post( $new_post_id, $distributed_authors );
 	}
 }
