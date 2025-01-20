@@ -463,9 +463,9 @@ class Incoming_Post {
 			'ping_status'    => $post_data['ping_status'],
 		];
 
-		// The default status for a new post is 'draft'.
+		// If there's no post ID, set the status to the default status on create.
 		if ( ! $this->ID ) {
-			$postarr['post_status'] = 'draft';
+			$postarr['post_status'] = $this->payload['status_on_create'];
 		}
 
 		// Insert the post if it's linked or a new post.
