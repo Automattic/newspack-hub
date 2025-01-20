@@ -1,4 +1,4 @@
-/* globals newspack_network_distribute */
+/* globals newspack_network_outgoing_post */
 
 /**
  * WordPress dependencies.
@@ -7,21 +7,20 @@ import apiFetch from '@wordpress/api-fetch';
 import { sprintf, __, _n } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { PluginSidebar } from '@wordpress/editor';
-import { Panel, PanelBody, CheckboxControl, TextControl, Button } from '@wordpress/components';
+import { CheckboxControl, TextControl, Button } from '@wordpress/components';
 import { globe } from '@wordpress/icons';
 import { registerPlugin } from '@wordpress/plugins';
 
 /**
  * Internal dependencies.
  */
-import './style.scss';
+import ContentDistributionPanel from '../content-distribution-panel';
 
-const networkSites = newspack_network_distribute.network_sites;
-const distributedMetaKey = newspack_network_distribute.distributed_meta;
-const postTypeLabel = newspack_network_distribute.post_type_label;
+const networkSites = newspack_network_outgoing_post.network_sites;
+const distributedMetaKey = newspack_network_outgoing_post.distributed_meta;
+const postTypeLabel = newspack_network_outgoing_post.post_type_label;
 
-function Distribute() {
+function OutgoingPost() {
 	const [ search, setSearch ] = useState( '' );
 	const [ isDistributing, setIsDistributing ] = useState( false );
 	const [ distribution, setDistribution ] = useState( [] );
@@ -124,14 +123,9 @@ function Distribute() {
 	}
 
 	return (
-		<PluginSidebar
-			name="newspack-network-distribute"
-			icon={ globe }
-			title={ __( 'Distribute', 'newspack-network' ) }
-			className="newspack-network-distribute"
-		>
-			<Panel>
-				<PanelBody className="distribute-header">
+		<ContentDistributionPanel
+			header={ (
+				<>
 					{ ! distribution.length ? (
 						<p>
 							{ isUnpublished ? (
@@ -164,8 +158,10 @@ function Distribute() {
 							onChange={ setSearch }
 						/>
 					) }
-				</PanelBody>
-				<PanelBody className="distribute-body">
+				</>
+			) }
+			body={ (
+				<>
 					{ networkSites.length > 1 && selectableSites.length !== 0 && sites.length === networkSites.length && (
 						<CheckboxControl
 							name="select-all"
@@ -190,8 +186,10 @@ function Distribute() {
 							} }
 						/>
 					) ) }
-				</PanelBody>
-				<PanelBody className="distribute-footer">
+				</>
+			) }
+			buttons={ (
+				<>
 					{ siteSelection.length > 0 && (
 						<p>
 							{ sprintf(
@@ -232,13 +230,13 @@ function Distribute() {
 							__( 'Distribute', 'newspack-network' )
 						) }
 					</Button>
-				</PanelBody>
-			</Panel>
-		</PluginSidebar>
+				</>
+			) }
+		/>
 	);
 }
 
-registerPlugin( 'newspack-network-distribute', {
-		render: Distribute,
+registerPlugin( 'newspack-network-outgoing-post', {
+		render: OutgoingPost,
 		icon: globe,
 } );

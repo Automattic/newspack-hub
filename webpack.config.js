@@ -11,7 +11,7 @@ module.exports = getBaseWebpackConfig(
 	{
 		entry: {
 			'distribute-panel': path.join( __dirname, 'src', 'content-distribution', 'content-distribution-panel' ),
-			'distribute': path.join( __dirname, 'src', 'content-distribution', 'distribute' ), // TODO. Rename to outgoing-post
+			'outgoing-post': path.join( __dirname, 'src', 'content-distribution', 'outgoing-post' ),
 			'incoming-post': path.join( __dirname, 'src', 'content-distribution', 'incoming-post' ),
 		},
 	}
