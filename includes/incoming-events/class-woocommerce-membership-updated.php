@@ -77,13 +77,13 @@ class Woocommerce_Membership_Updated extends Abstract_Incoming_Event {
 		$user_membership = wc_memberships_get_user_membership( $user->ID, $local_plan_id );
 
 		if ( null === $user_membership ) {
+			// Create a new membership if it doesn't exist and link it to the remote membership.
 			$user_membership = wc_memberships_create_user_membership(
 				[
 					'plan_id' => $local_plan_id,
 					'user_id' => $user->ID,
 				]
 			);
-
 			update_post_meta( $user_membership->get_id(), Memberships_Admin::NETWORK_MANAGED_META_KEY, true );
 			update_post_meta( $user_membership->get_id(), Memberships_Admin::REMOTE_ID_META_KEY, $this->get_membership_id() );
 			update_post_meta( $user_membership->get_id(), Memberships_Admin::SITE_URL_META_KEY, $this->get_site() );
@@ -101,11 +101,22 @@ class Woocommerce_Membership_Updated extends Abstract_Incoming_Event {
 
 		$status     = $this->get_new_status();
 		$is_managed = get_post_meta( $user_membership->get_id(), Memberships_Admin::NETWORK_MANAGED_META_KEY, true );
-		// If the membership is being cancelled or expired, remove the network managed flag.
 		if ( in_array( $status, [ 'cancelled', 'expired' ], true ) && $is_managed ) {
+			// If the membership is being cancelled or expired, and the membership is managed, we remove the managed meta fields.
+			// This is to allow the membership to be re-initiated from another site in the network.
 			delete_post_meta( $user_membership->get_id(), Memberships_Admin::NETWORK_MANAGED_META_KEY );
-			// Otherwise, if the membership is not managed, reset relevant meta.
+			delete_post_meta( $user_membership->get_id(), Memberships_Admin::REMOTE_ID_META_KEY );
+			delete_post_meta( $user_membership->get_id(), Memberships_Admin::SITE_URL_META_KEY );
+			$user_membership->add_note(
+				sprintf(
+					// translators: %s is the site URL.
+					__( 'Membership has been unlinked via Newspack Network. Unlinked from %s', 'newspack-network' ),
+					$this->get_site()
+				)
+			);
+
 		} elseif ( ! $is_managed ) {
+			// If the membership is not managed, it was previously unlinked so we reset the relevant meta fields.
 			update_post_meta( $user_membership->get_id(), Memberships_Admin::NETWORK_MANAGED_META_KEY, true );
 			update_post_meta( $user_membership->get_id(), Memberships_Admin::REMOTE_ID_META_KEY, $this->get_membership_id() );
 			update_post_meta( $user_membership->get_id(), Memberships_Admin::SITE_URL_META_KEY, $this->get_site() );
