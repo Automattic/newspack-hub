@@ -147,6 +147,8 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 			'raw_content',
 			'content',
 			'excerpt',
+			'comment_status',
+			'ping_status',
 			'thumbnail_url',
 			'taxonomy',
 			'post_meta',

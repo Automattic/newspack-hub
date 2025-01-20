@@ -68,7 +68,12 @@ class Outgoing_Post {
 	 * @return string The network post ID.
 	 */
 	public function get_network_post_id() {
-		return md5( $this->post->ID . get_bloginfo( 'url' ) );
+		$site_hash = get_option( 'newspack_network_content_distribution_hash' );
+		if ( ! $site_hash ) {
+			$site_hash = md5( get_bloginfo( 'url' ) );
+			update_option( 'newspack_network_content_distribution_hash', $site_hash );
+		}
+		return md5( $site_hash . $this->post->ID );
 	}
 
 	/**
@@ -185,19 +190,20 @@ class Outgoing_Post {
 			'network_post_id' => $this->get_network_post_id(),
 			'sites'           => $this->get_distribution(),
 			'post_data'       => [
-				'title'         => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'post_status'   => $this->post->post_status,
-				'date_gmt'      => $this->post->post_date_gmt,
-				'modified_gmt'  => $this->post->post_modified_gmt,
-				'slug'          => $this->post->post_name,
-				'post_type'     => $this->post->post_type,
-				'authors'       => Author_Distribution::get_authors_for_distribution( $this->post ),
-				'raw_content'   => $this->post->post_content,
-				'content'       => $this->get_processed_post_content(),
-				'excerpt'       => $this->post->post_excerpt,
-				'taxonomy'      => $this->get_post_taxonomy_terms(),
-				'thumbnail_url' => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
-				'post_meta'     => $this->get_post_meta(),
+				'title'          => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'post_status'    => $this->post->post_status,
+				'date_gmt'       => $this->post->post_date_gmt,
+				'modified_gmt'   => $this->post->post_modified_gmt,
+				'slug'           => $this->post->post_name,
+				'post_type'      => $this->post->post_type,
+				'raw_content'    => $this->post->post_content,
+				'content'        => $this->get_processed_post_content(),
+				'excerpt'        => $this->post->post_excerpt,
+				'comment_status' => $this->post->comment_status,
+				'ping_status'    => $this->post->ping_status,
+				'taxonomy'       => $this->get_post_taxonomy_terms(),
+				'thumbnail_url'  => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
+				'post_meta'      => $this->get_post_meta(),
 			],
 		];
 	}

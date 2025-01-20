@@ -1,0 +1,26 @@
+.newspack-network-content-distribution-panel {
+	height: calc(100% - 47px);
+
+	.components-panel {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.components-panel__body {
+		border: 0;
+	}
+
+	.content-distribution-panel-body {
+		flex: 1 1 100%;
+		overflow-y: auto;
+		padding-top: 0;
+
+	}
+
+	.content-distribution-panel__button-column {
+		.components-button {
+			justify-content: center;
+		}
+	}
+}

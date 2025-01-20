@@ -43,6 +43,26 @@ class Event_Log {
 			return;
 		}
 
+		wp_enqueue_script(
+			'newspack-network-event-log',
+			plugins_url( 'js/event-log.js', __FILE__ ),
+			[],
+			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . '/includes/hub/admin/js/event-log.js' ),
+			[
+				'in_footer' => true,
+			]
+		);
+
+		wp_localize_script(
+			'newspack-network-event-log',
+			'newspackNetworkEventLogLabels',
+			[
+				'copy'    => __( 'Copy to clipboard', 'newspack-network' ),
+				'copying' => __( 'Copying...', 'newspack-network' ),
+				'copied'  => __( 'Copied ✓', 'newspack-network' ),
+			]
+		);
+
 		wp_enqueue_style(
 			'newspack-network-event-log',
 			plugins_url( 'css/event-log.css', __FILE__ ),

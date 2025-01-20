@@ -101,6 +101,21 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Log a message.
+	 *
+	 * @param string $message The message to log.
+	 *
+	 * @return void
+	 */
+	protected function log( $message ) {
+		$prefix = '[Incoming Post]';
+		if ( ! empty( $this->payload ) ) {
+			$prefix .= ' ' . $this->payload['network_post_id'];
+		}
+		Debugger::log( $prefix . ' ' . $message );
+	}
+
+	/**
 	 * Validate a payload.
 	 *
 	 * @param array $payload The payload to validate.
@@ -141,21 +156,21 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Get the post's original site URL.
+	 *
+	 * @return string The post original site URL or an empty string if not found.
+	 */
+	public function get_original_site_url(): string {
+		return $this->payload['site_url'] ?? '';
+	}
+
+	/**
 	 * Get the post original URL.
 	 *
 	 * @return string The post original post URL. Empty string if not found.
 	 */
 	public function get_original_post_url() {
 		return $this->payload['post_url'] ?? '';
-	}
-
-	/**
-	 * Get the post original site URL.
-	 *
-	 * @return string The post original site URL. Empty string if not found.
-	 */
-	public function get_original_site_url() {
-		return $this->payload['site_url'] ?? '';
 	}
 
 	/**
@@ -206,7 +221,7 @@ class Incoming_Post {
 		if ( ! $this->ID ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
 		}
-		update_post_meta( $this->ID, self::UNLINKED_META, (bool) $unlinked );
+		update_post_meta( $this->ID, self::UNLINKED_META, $unlinked ? 1 : 0 );
 
 		// If the post is being re-linked, update content.
 		if ( ! $unlinked ) {
@@ -219,8 +234,8 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	protected function is_unlinked() {
-		return get_post_meta( $this->ID, self::UNLINKED_META, true );
+	protected function is_unlinked(): bool {
+		return (bool) get_post_meta( $this->ID, self::UNLINKED_META, true );
 	}
 
 	/**
@@ -230,7 +245,7 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	public function is_linked() {
+	public function is_linked(): bool {
 		return $this->ID && ! $this->is_unlinked();
 	}
 
@@ -297,7 +312,7 @@ class Incoming_Post {
 
 		$attachment_id = media_sideload_image( $thumbnail_url, $this->ID, '', 'id' );
 		if ( is_wp_error( $attachment_id ) ) {
-			Debugger::log( 'Failed to upload featured image for post ' . $this->ID . ' with message: ' . $attachment_id->get_error_message() );
+			self::log( 'Failed to upload featured image for post ' . $this->ID . ' with message: ' . $attachment_id->get_error_message() );
 			return;
 		}
 
@@ -327,6 +342,7 @@ class Incoming_Post {
 				if ( ! $term ) {
 					$term = wp_insert_term( $term_data['name'], $taxonomy );
 					if ( is_wp_error( $term ) ) {
+						self::log( 'Failed to insert term ' . $term_data['name'] . ' for taxonomy ' . $taxonomy . ' with message: ' . $term->get_error_message() );
 						continue;
 					}
 					$term = get_term_by( 'id', $term['term_id'], $taxonomy, ARRAY_A );
@@ -395,6 +411,7 @@ class Incoming_Post {
 		if ( ! empty( $payload ) ) {
 			$error = $this->update_payload( $payload );
 			if ( is_wp_error( $error ) ) {
+				self::log( 'Failed to update payload: ' . $error->get_error_message() );
 				return $error;
 			}
 		}
@@ -405,20 +422,27 @@ class Incoming_Post {
 		/**
 		 * Do not insert if payload is older than the linked post's stored payload.
 		 */
-		if ( ( $this->get_post_payload()['post_data']['modified_gmt'] ?? 0 ) > $post_data['modified_gmt'] ) {
+		$current_payload = $this->get_post_payload();
+		if (
+			! empty( $current_payload ) &&
+			$current_payload['post_data']['modified_gmt'] > $post_data['modified_gmt']
+		) {
+			self::log( 'Linked post content is newer than the post payload.' );
 			return new WP_Error( 'old_modified_date', __( 'Linked post content is newer than the post payload.', 'newspack-network' ) );
 		}
 
 		$postarr = [
-			'ID'            => $this->ID,
-			'post_date_gmt' => $post_data['date_gmt'],
-			'post_title'    => $post_data['title'],
-			'post_name'     => $post_data['slug'],
-			'post_content'  => use_block_editor_for_post_type( $post_type ) ?
+			'ID'             => $this->ID,
+			'post_date_gmt'  => $post_data['date_gmt'],
+			'post_title'     => $post_data['title'],
+			'post_name'      => $post_data['slug'],
+			'post_content'   => use_block_editor_for_post_type( $post_type ) ?
 				$post_data['raw_content'] :
 				$post_data['content'],
-			'post_excerpt'  => $post_data['excerpt'],
-			'post_type'     => $post_type,
+			'post_excerpt'   => $post_data['excerpt'],
+			'post_type'      => $post_type,
+			'comment_status' => $post_data['comment_status'],
+			'ping_status'    => $post_data['ping_status'],
 		];
 
 		// The default status for a new post is 'draft'.
@@ -440,11 +464,13 @@ class Incoming_Post {
 			$post_id = wp_insert_post( $postarr, true );
 
 			if ( is_wp_error( $post_id ) ) {
+				self::log( 'Failed to insert post with message: ' . $post_id->get_error_message() );
 				return $post_id;
 			}
 
 			// The wp_insert_post() function might return `0` on failure.
 			if ( ! $post_id ) {
+				self::log( 'Failed to insert post.' );
 				return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
 			}
 
