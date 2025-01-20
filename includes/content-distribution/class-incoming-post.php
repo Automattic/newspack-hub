@@ -156,21 +156,21 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Get the post's original site URL.
+	 *
+	 * @return string The post original site URL or an empty string if not found.
+	 */
+	public function get_original_site_url(): string {
+		return $this->payload['site_url'] ?? '';
+	}
+
+	/**
 	 * Get the post original URL.
 	 *
 	 * @return string The post original post URL. Empty string if not found.
 	 */
 	public function get_original_post_url() {
 		return $this->payload['post_url'] ?? '';
-	}
-
-	/**
-	 * Get the post original site URL.
-	 *
-	 * @return string The post original site URL. Empty string if not found.
-	 */
-	public function get_original_site_url() {
-		return $this->payload['site_url'] ?? '';
 	}
 
 	/**
@@ -221,7 +221,7 @@ class Incoming_Post {
 		if ( ! $this->ID ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
 		}
-		update_post_meta( $this->ID, self::UNLINKED_META, (bool) $unlinked );
+		update_post_meta( $this->ID, self::UNLINKED_META, $unlinked ? 1 : 0 );
 
 		// If the post is being re-linked, update content.
 		if ( ! $unlinked ) {
@@ -234,8 +234,8 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	protected function is_unlinked() {
-		return get_post_meta( $this->ID, self::UNLINKED_META, true );
+	protected function is_unlinked(): bool {
+		return (bool) get_post_meta( $this->ID, self::UNLINKED_META, true );
 	}
 
 	/**
@@ -245,7 +245,7 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	public function is_linked() {
+	public function is_linked(): bool {
 		return $this->ID && ! $this->is_unlinked();
 	}
 
@@ -445,9 +445,9 @@ class Incoming_Post {
 			'ping_status'    => $post_data['ping_status'],
 		];
 
-		// The default status for a new post is 'draft'.
+		// If there's no post ID, set the status to the default status on create.
 		if ( ! $this->ID ) {
-			$postarr['post_status'] = 'draft';
+			$postarr['post_status'] = $this->payload['status_on_create'];
 		}
 
 		// Insert the post if it's linked or a new post.

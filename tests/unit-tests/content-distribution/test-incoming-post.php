@@ -438,4 +438,30 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		$this->assertSame( 'closed', get_post_field( 'comment_status', $post_id ) );
 		$this->assertSame( 'closed', get_post_field( 'ping_status', $post_id ) );
 	}
+
+	/**
+	 * Test status on create.
+	 */
+	public function test_status_on_create() {
+		$payload = $this->get_sample_payload();
+
+		$payload['status_on_create'] = 'publish';
+
+		$post_id = $this->incoming_post->insert( $payload );
+
+		// Assert that the post is published.
+		$this->assertSame( 'publish', get_post_status( $post_id ) );
+
+		// Place the post back to draft.
+		wp_update_post(
+			[
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			]
+		);
+
+		// Assert that distributing again will not publish it.
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+	}
 }
