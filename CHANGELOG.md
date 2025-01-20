@@ -1,3 +1,29 @@
+# [2.4.0](https://github.com/Automattic/newspack-network/compare/v2.3.4...v2.4.0) (2025-01-20)
+
+
+### Bug Fixes
+
+* **content-distribution:** post insertion hook and additional meta for incoming post event ([#173](https://github.com/Automattic/newspack-network/issues/173)) ([48df13c](https://github.com/Automattic/newspack-network/commit/48df13c65c06f3edabd88122c5a6816c006b70f6))
+* load text domain on init hook ([#171](https://github.com/Automattic/newspack-network/issues/171)) ([01fb89c](https://github.com/Automattic/newspack-network/commit/01fb89ca5c97da18a3e0eb772e4b20afb24e8db7))
+
+
+### Features
+
+* content distribution - experimental ([#168](https://github.com/Automattic/newspack-network/issues/168)) ([dc837d8](https://github.com/Automattic/newspack-network/commit/dc837d884ab4992a90e99347e363cd61116db770))
+* **content-distribution:** add CLI command for distribute post ([#159](https://github.com/Automattic/newspack-network/issues/159)) ([7a43b86](https://github.com/Automattic/newspack-network/commit/7a43b863cd11eadade73aabd060110c27576c6d4)), closes [#155](https://github.com/Automattic/newspack-network/issues/155) [#156](https://github.com/Automattic/newspack-network/issues/156) [#157](https://github.com/Automattic/newspack-network/issues/157) [#160](https://github.com/Automattic/newspack-network/issues/160) [#165](https://github.com/Automattic/newspack-network/issues/165)
+* **content-distribution:** canonical url ([#177](https://github.com/Automattic/newspack-network/issues/177)) ([5ca60ce](https://github.com/Automattic/newspack-network/commit/5ca60cee132f811c5efadc8d91778410a562880d))
+* **content-distribution:** capability and admin page ([#176](https://github.com/Automattic/newspack-network/issues/176)) ([5285285](https://github.com/Automattic/newspack-network/commit/52852851909b02f2876c737ec351f77ee263ea05))
+* **content-distribution:** control distribution meta and prevent multiple dispatches ([#170](https://github.com/Automattic/newspack-network/issues/170)) ([e76a2dc](https://github.com/Automattic/newspack-network/commit/e76a2dc8d4c097d7e56943f2a904b4841020c62a))
+* **content-distribution:** editor plugin for distribution ([#167](https://github.com/Automattic/newspack-network/issues/167)) ([e10aef4](https://github.com/Automattic/newspack-network/commit/e10aef43ce7842df1c48cafc17037700b7b9f49a))
+* **content-distribution:** handle status changes ([#166](https://github.com/Automattic/newspack-network/issues/166)) ([4af5da1](https://github.com/Automattic/newspack-network/commit/4af5da1b0edbfcdf5330878cceed0349f91cc36e))
+* **content-distribution:** log incoming post errors ([#182](https://github.com/Automattic/newspack-network/issues/182)) ([74c9119](https://github.com/Automattic/newspack-network/commit/74c9119435f32370838fd0b249a2dcec1189ae26))
+* **content-distribution:** posts column ([#178](https://github.com/Automattic/newspack-network/issues/178)) ([8e07640](https://github.com/Automattic/newspack-network/commit/8e076407f6a837201e8773cf88635ee405311a4d))
+* **content-distribution:** reserved taxonomies ([#174](https://github.com/Automattic/newspack-network/issues/174)) ([a2c54d2](https://github.com/Automattic/newspack-network/commit/a2c54d2f702f197b77c27fad7bde7dddaadafd5f))
+* **content-distribution:** sync comment and ping statuses ([#179](https://github.com/Automattic/newspack-network/issues/179)) ([90c5425](https://github.com/Automattic/newspack-network/commit/90c5425a5d5e52172a5de2e26003199112e8dd22))
+* **content-distribution:** sync post meta ([#163](https://github.com/Automattic/newspack-network/issues/163)) ([353a3d8](https://github.com/Automattic/newspack-network/commit/353a3d880077f9060544c8e764f780535d1ba6b8))
+* **event-log:** collapse data ([#180](https://github.com/Automattic/newspack-network/issues/180)) ([956219d](https://github.com/Automattic/newspack-network/commit/956219dad76cd2b020fc96004b45d9075380b514))
+* limit purchase of a network membership ([#169](https://github.com/Automattic/newspack-network/issues/169)) ([deb2683](https://github.com/Automattic/newspack-network/commit/deb268310406d4dfa42caa7b4c32a2927980ce62))
+
 ## [2.3.4](https://github.com/Automattic/newspack-network/compare/v2.3.3...v2.3.4) (2024-12-18)
 
 
