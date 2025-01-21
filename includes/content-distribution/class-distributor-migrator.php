@@ -8,14 +8,9 @@
 namespace Newspack_Network\Content_Distribution;
 
 use Newspack\Data_Events;
-use Newspack_Network\Content_Distribution;
 use Newspack_Network\Utils\Network;
 use WP_Error;
-use WP_Query;
-use WP_Post;
 use InvalidArgumentException;
-use WP_REST_Request;
-use WP_REST_Response;
 
 /**
  * Distributor Migrator Class.
