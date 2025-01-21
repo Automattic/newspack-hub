@@ -24,7 +24,7 @@ class Distributor_Migrator {
 	}
 
 	/**
-	 * Register data event ations.
+	 * Register data event actions.
 	 */
 	public static function register_data_event_actions() {
 		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
