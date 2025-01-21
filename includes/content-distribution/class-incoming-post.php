@@ -496,7 +496,7 @@ class Incoming_Post {
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
 
-			Author_Ingestion::ingest_authors_for_post( $this->ID, $post_data['authors'] );
+			Incoming_Authors::ingest_authors_for_post( $this->ID, $post_data['authors'] );
 
 			// Handle post meta.
 			$this->update_post_meta();

@@ -18,7 +18,7 @@ use WP_Post;
  * Every time a post is distributed, we also send all the information about the author (or authors if CAP is enabled)
  * On the target site, the plugin will create the authors if they don't exist, and override the byline
  */
-class Author_Distribution {
+class Outgoing_Authors {
 
 	/**
 	 * Get the authors of a post to be added to the distribution payload.

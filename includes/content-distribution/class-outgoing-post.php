@@ -194,7 +194,7 @@ class Outgoing_Post {
 			'status_on_create' => $status_on_create,
 			'post_data'        => [
 				'title'          => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'authors'        => Author_Distribution::get_authors_for_distribution( $this->post ),
+				'authors'        => Outgoing_Authors::get_authors_for_distribution( $this->post ),
 				'post_status'    => $this->post->post_status,
 				'date_gmt'       => $this->post->post_date_gmt,
 				'modified_gmt'   => $this->post->post_modified_gmt,

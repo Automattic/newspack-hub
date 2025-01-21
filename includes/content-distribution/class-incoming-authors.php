@@ -14,7 +14,7 @@ use Newspack_Network\Utils\Users as User_Utils;
 /**
  * Class to handle author ingestion for content distribution.
  */
-class Author_Ingestion {
+class Incoming_Authors {
 
 	/**
 	 * Gets the CoAuthors Plus main object, if present
@@ -38,7 +38,7 @@ class Author_Ingestion {
 	 *
 	 * @return void
 	 */
-	public static function ingest_authors_for_post( $post_id, $distributed_authors ) {
+	public static function ingest_authors_for_post( $post_id, $distributed_authors ): void {
 
 		Debugger::log( 'Ingesting authors from distributed post.' );
 

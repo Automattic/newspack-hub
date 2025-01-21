@@ -188,7 +188,7 @@ class Content_Distribution {
 	 *
 	 * @param int $post_id The post ID.
 	 *
-	 * @return @void
+	 * @return void
 	 */
 	public static function handle_post_deleted( $post_id ) {
 		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
