@@ -15,6 +15,7 @@ import { registerPlugin } from '@wordpress/plugins';
  * Internal dependencies.
  */
 import ContentDistributionPanel from '../content-distribution-panel';
+import PostStatus from '../../components/post-status';
 
 const networkSites = newspack_network_outgoing_post.network_sites;
 const distributedMetaKey = newspack_network_outgoing_post.distributed_meta;
@@ -25,6 +26,7 @@ function OutgoingPost() {
 	const [ isDistributing, setIsDistributing ] = useState( false );
 	const [ distribution, setDistribution ] = useState( [] );
 	const [ siteSelection, setSiteSelection ] = useState( [] );
+	const [ statusOnCreate, setStatusOnCreate ] = useState( 'draft' );
 
 	const { postId, postStatus, savedUrls, hasChangedContent, isSavingPost, isCleanNewPost } = useSelect( select => {
 		const {
@@ -94,6 +96,7 @@ function OutgoingPost() {
 			method: 'POST',
 			data: {
 				urls: siteSelection,
+				'status_on_create': statusOnCreate,
 			},
 		} ).then( urls => {
 			setDistribution( urls );
@@ -188,30 +191,34 @@ function OutgoingPost() {
 					) ) }
 				</>
 			) }
-			buttons={ (
+			footer={ (
 				<>
 					{ siteSelection.length > 0 && (
-						<p>
-							{ sprintf(
-								_n(
-									'One network site selected.',
-									'%d network sites selected.',
-									siteSelection.length,
-									'newspack-network'
-								),
-								siteSelection.length
-							) }
+						<p className="selected-sites">
+							<span>
+								{ sprintf(
+									_n(
+										'One network site selected.',
+										'%d network sites selected.',
+										siteSelection.length,
+										'newspack-network'
+									),
+									siteSelection.length
+								) }
+							</span>
+							<a
+								href="javascript:void(0)"
+								onClick={ () => setSiteSelection( [] ) }
+							>
+								Clear
+							</a>
 						</p>
 					) }
-					{ siteSelection.length > 0 && (
-						<Button
-							variant="secondary"
-							disabled={ isDisabled }
-							onClick={ () => setSiteSelection( [] ) }
-						>
-							{ __( 'Clear', 'newspack-network' ) }
-						</Button>
-					) }
+				</>
+			) }
+			buttons={ (
+				<>
+					<PostStatus status={ statusOnCreate } onChange={ setStatusOnCreate } disabled={ isDisabled } />
 					<Button
 						isBusy={ isDistributing }
 						variant="primary"

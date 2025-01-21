@@ -40,7 +40,11 @@
 
 	// This will grey out most – but not the top part with status, trash, etc. That part is not in a panel.
 	#edit-post\:document {
-		.components-panel__body, .editor-post-featured-image {
+		.components-panel__body,
+		.editor-post-featured-image,
+		.editor-post-discussion__panel-dropdown,
+		.editor-post-excerpt__dropdown,
+		.components-dropdown:has( .editor-post-author__panel-toggle ) {
 			@include grey-out-outer;
 
 			* {
