@@ -38,15 +38,18 @@ class Distributor_Migrate_Incoming_Posts extends Abstract_Incoming_Event {
 	protected function process_migration() {
 		$data = (array) $this->get_data();
 
-		Debugger::log( 'Processing distributor_migrate_incoming_posts ' . wp_json_encode( $data['post_ids'] ) );
+		Debugger::log( 'Processing distributor_migrate_incoming_posts ' . wp_json_encode( $data['incoming_posts'] ) );
 
-		foreach ( $data['post_ids'] as $post_id ) {
-			$result = Distributor_Migrator::migrate_incoming_post( $post_id );
+		foreach ( $data['incoming_posts'] as $incoming_post ) {
+			if ( $incoming_post['site_url'] !== untrailingslashit( get_bloginfo( 'url' ) ) ) {
+				continue;
+			}
+			$result = Distributor_Migrator::migrate_incoming_post( $incoming_post['post_id'] );
 			if ( is_wp_error( $result ) ) {
 				Debugger::log(
 					sprintf(
 						'Error processing post ID %d: %s',
-						$post_id,
+						$incoming_post['post_id'],
 						$result->get_error_message()
 					)
 				);

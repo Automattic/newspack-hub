@@ -80,7 +80,7 @@ class Distributor_Migrator {
 			return new WP_Error(
 				'site_url_not_networked',
 				sprintf(
-					// translators: target URL.
+					// translators: original site URL.
 					__( 'Site URL "%s" is not networked.', 'newspack-network' ),
 					$original_site_url
 				)
@@ -218,28 +218,32 @@ class Distributor_Migrator {
 			return new WP_Error( 'invalid_post_ids', __( 'Invalid post IDs.', 'newspack-network' ) );
 		}
 
-		$remote_post_ids = [];
+		$incoming_posts = [];
 
 		$errors = new WP_Error();
 		foreach ( $post_ids as $post_id ) {
 			$subscriptions = get_post_meta( $post_id, 'dt_subscriptions', true );
 			foreach ( $subscriptions as $subscription_id ) { // phpcs:ignore WordPressVIPMinimum.Functions.CheckReturnValue.NonCheckedVariable
+				$remote_post_id = get_post_meta( $subscription_id, 'dt_subscription_remote_post_id', true );
+				$site_url       = get_post_meta( $subscription_id, 'dt_subscription_target_url', true );
 				$migration_result = self::migrate_subscription( $subscription_id, false );
 				if ( is_wp_error( $migration_result ) ) {
 					$errors->add( $migration_result->get_error_code(), $migration_result->get_error_message() );
 					continue;
 				}
-				$remote_post_id = get_post_meta( $subscription_id, 'dt_subscription_remote_post_id', true );
-				$remote_post_ids[] = $remote_post_id;
+				$incoming_posts[] = [
+					'site_url' => self::get_network_url( $site_url ),
+					'post_id'  => $remote_post_id,
+				];
 			}
 		}
 
-		Data_Events::dispatch(
-			'newspack_network_distributor_migrate_incoming_posts',
-			[
-				'post_ids' => $remote_post_ids,
-			]
-		);
+		if ( ! empty( $incoming_posts ) ) {
+			Data_Events::dispatch(
+				'newspack_network_distributor_migrate_incoming_posts',
+				[ 'incoming_posts' => $incoming_posts ]
+			);
+		}
 
 		if ( $errors->has_errors() ) {
 			return $errors;
@@ -377,7 +381,12 @@ class Distributor_Migrator {
 			Data_Events::dispatch(
 				'newspack_network_distributor_migrate_incoming_posts',
 				[
-					'post_ids' => [ $remote_post_id ],
+					'incoming_posts' => [
+						[
+							'site_url' => $network_url,
+							'post_id'  => $remote_post_id,
+						],
+					],
 				]
 			);
 		}
