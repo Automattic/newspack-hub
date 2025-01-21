@@ -229,7 +229,7 @@ class CLI {
 				WP_CLI::line( 'Distributor plugin is deactivated and deleted.' );
 			}
 		} else {
-			$result = Distributor_Migrator::migrate_post( $post_id );
+			$result = Distributor_Migrator::migrate_outgoing_post( $post_id );
 			if ( is_wp_error( $result ) ) {
 				WP_CLI::error( $result->get_error_message() );
 			}
