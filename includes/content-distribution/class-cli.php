@@ -215,7 +215,7 @@ class CLI {
 					if ( $strict ) {
 						WP_CLI::error( $message );
 					} else {
-						$errors->add( $result );
+						$errors->add( $result->get_error_code(), $result->get_error_message() );
 						WP_CLI::line( $message );
 					}
 				} else {
