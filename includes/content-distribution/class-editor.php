@@ -87,7 +87,6 @@ class Editor {
 	 * @return void
 	 */
 	private static function enqueue_block_editor_assets_for_incoming_post( WP_Post $post ): void {
-
 		$incoming = new Incoming_Post( $post->ID );
 
 		wp_enqueue_script(
@@ -125,24 +124,24 @@ class Editor {
 	 */
 	private static function enqueue_block_editor_assets_for_outgoing_post( WP_Post $post ): void {
 		wp_enqueue_script(
-			'newspack-network-distribute',
-			plugins_url( '../../dist/distribute.js', __FILE__ ),
+			'newspack-network-outgoing-post',
+			plugins_url( '../../dist/outgoing-post.js', __FILE__ ),
 			[],
-			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/distribute.js' ),
+			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/outgoing-post.js' ),
 			true
 		);
 		wp_register_style(
-			'newspack-network-distribute',
-			plugins_url( '../../dist/distribute.css', __FILE__ ),
+			'newspack-network-outgoing-post',
+			plugins_url( '../../dist/outgoing-post.css', __FILE__ ),
 			[],
-			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/distribute.css' ),
+			filemtime( NEWSPACK_NETWORK_PLUGIN_DIR . 'dist/outgoing-post.css' ),
 		);
-		wp_style_add_data( 'newspack-network-distribute', 'rtl', 'replace' );
-		wp_enqueue_style( 'newspack-network-distribute' );
+		wp_style_add_data( 'newspack-network-outgoing-post', 'rtl', 'replace' );
+		wp_enqueue_style( 'newspack-network-outgoing-post' );
 
 		wp_localize_script(
-			'newspack-network-distribute',
-			'newspack_network_distribute',
+			'newspack-network-outgoing-post',
+			'newspack_network_outgoing_post',
 			[
 				'network_sites'    => Network::get_networked_urls(),
 				'distributed_meta' => Outgoing_Post::DISTRIBUTED_POST_META,

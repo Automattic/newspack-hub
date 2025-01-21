@@ -28,16 +28,23 @@
 	}
 
 	.editor-sidebar:not(#newspack-network-incoming-post\:newspack-network-content-distribution-panel, #edit-post\:document) {
-		@include grey-out-outer;
 
 		.components-panel {
-			@include grey-out-inner;
+			@include grey-out-outer;
+
+			* {
+				@include grey-out-inner;
+			}
 		}
 	}
 
 	// This will grey out most – but not the top part with status, trash, etc. That part is not in a panel.
 	#edit-post\:document {
-		.components-panel__body {
+		.components-panel__body,
+		.editor-post-featured-image,
+		.editor-post-discussion__panel-dropdown,
+		.editor-post-excerpt__dropdown,
+		.components-dropdown:has( .editor-post-author__panel-toggle ) {
 			@include grey-out-outer;
 
 			* {

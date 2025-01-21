@@ -7,7 +7,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { __, sprintf } from '@wordpress/i18n';
 import { useEffect, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { Button } from '@wordpress/components';
+import { Button, __experimentalConfirmDialog as ConfirmDialog } from '@wordpress/components';
 import { globe } from '@wordpress/icons';
 import { registerPlugin } from '@wordpress/plugins';
 
@@ -28,6 +28,7 @@ function IncomingPost() {
 	const [ isUnLinkedToggling, setIsUnLinkedToggling ] = useState( false );
 	const [ isUnLinked, setIsUnLinked ] = useState( false );
 	const [ hasInitializedSidebar, setHasInitializedSidebar ] = useState( false );
+	const [ showConfirmDialog, setShowConfirmDialog ] = useState( false );
 
 	const { postId, areMetaBoxesInitialized } = useSelect( select => {
 		const {
@@ -79,7 +80,7 @@ function IncomingPost() {
 	}, [ isUnLinked ] );
 
 	const toggleUnlinkedState = async ( unlinked ) => {
-		apiFetch( {
+		return apiFetch( {
 			path: `newspack-network/v1/content-distribution/unlink/${ postId }`,
 			method: 'POST',
 			data: {
@@ -103,6 +104,7 @@ function IncomingPost() {
 				toggleUnlinkedState( unlinked )
 					.then( () => {
 						setIsUnLinkedToggling( false );
+						setIsUnLinked( false );
 						window.location.reload();
 					} ); // Reload to get the origin post content.
 			} );
@@ -121,38 +123,56 @@ function IncomingPost() {
 	};
 
 	return (
-		<ContentDistributionPanel
-			header={
-				isUnLinked ? __(
-						'This post has been unlinked from the origin post. Edits to the origin post will not update this version.',
-						'newspack-network'
-					)
-					: __(
-						'This post is linked to the origin post. Edits to the origin post will update this version.',
-						'newspack-network'
-					)
-			}
-			buttons={
-				<>
-					<Button
-						variant="secondary"
-						target="_blank"
-						href={ originalUrl }
-					>
-						{ __( 'View origin post', 'newspack-network' ) }
-					</Button>
-					<Button
-						variant={ isUnLinked ? 'primary' : 'secondary' }
-						isDestructive={ !isUnLinked }
-						disabled={ isUnLinkedToggling }
-						onClick={ () => {
-							toggleUnlinkedClicked( !isUnLinked );
-						} }
-					>
-						{ isUnLinkedToggling ? (isUnLinked ? __( 'Relinking...', 'newspack-network' ) : __( 'Unlinking...', 'newspack-network' )) : (!isUnLinked ? __( 'Unlink from origin post', 'newspack-network' ) : __( 'Relink to origin post', 'newspack-network' )) }
-					</Button>
-				</>
-			}/>
+		<>
+			<ContentDistributionPanel
+				header={
+					isUnLinked ? __(
+							'This post has been unlinked from its origin. Edits to the origin post will not update this version.',
+							'newspack-network'
+						)
+						: __(
+							'This post is linked to its origin. Edits to the origin post will update this version.',
+							'newspack-network'
+						)
+				}
+				buttons={
+					<>
+						<Button
+							variant="secondary"
+							target="_blank"
+							href={ originalUrl }
+						>
+							{ __( 'View origin post', 'newspack-network' ) }
+						</Button>
+						<Button
+							variant={ isUnLinked ? 'primary' : 'secondary' }
+							isDestructive={ !isUnLinked }
+							disabled={ isUnLinkedToggling }
+							onClick={ () => {
+								setShowConfirmDialog( true );
+							} }
+						>
+							{ isUnLinkedToggling ? (isUnLinked ? __( 'Relinking...', 'newspack-network' ) : __( 'Unlinking...', 'newspack-network' )) : (!isUnLinked ? __( 'Unlink from origin post', 'newspack-network' ) : __( 'Relink to origin post', 'newspack-network' )) }
+						</Button>
+					</>
+				}
+			/>
+			<ConfirmDialog
+				isOpen={ showConfirmDialog }
+				onConfirm={ () => {
+					toggleUnlinkedClicked( !isUnLinked );
+					setShowConfirmDialog( false );
+				} }
+				onCancel={ () => setShowConfirmDialog( false ) }
+				confirmButtonText={ isUnLinked ? __( 'Relink', 'newspack-network' ) : __( 'Unlink', 'newspack-network' ) }
+				size="small"
+			>
+				{ isUnLinked ?
+					__( 'Are you sure you want to relink this post to its origin? Any changes you\'ve made will be lost.', 'newspack-network' ) :
+					__( 'Are you sure you want to unlink this post from its origin?', 'newspack-network' )
+				}
+			</ConfirmDialog>
+		</>
 	);
 }
 
