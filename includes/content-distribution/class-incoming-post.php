@@ -103,16 +103,34 @@ class Incoming_Post {
 	/**
 	 * Log a message.
 	 *
+	 * If "newspack_log" is available, we'll use it. Otherwise, we'll fallback to
+	 * the Network's debugger.
+	 *
 	 * @param string $message The message to log.
+	 * @param string $type    The log type. Either 'error' or 'debug'.
+	 *                        Default is 'error'.
 	 *
 	 * @return void
 	 */
-	protected function log( $message ) {
-		$prefix = '[Incoming Post]';
-		if ( ! empty( $this->payload ) ) {
-			$prefix .= ' ' . $this->payload['network_post_id'];
+	protected function log( $message, $type = 'error' ) {
+		if ( method_exists( 'Newspack\Logger', 'newspack_log' ) ) {
+			\Newspack\Logger::newspack_log(
+				'newspack_network_incoming_post',
+				$message,
+				[
+					'network_post_id' => $this->network_post_id,
+					'post_id'         => $this->ID,
+					'payload'         => $this->payload,
+				],
+				$type
+			);
+		} else {
+			$prefix = '[Incoming Post]';
+			if ( ! empty( $this->payload ) ) {
+				$prefix .= ' ' . $this->payload['network_post_id'];
+			}
+			Debugger::log( $prefix . ' ' . $message );
 		}
-		Debugger::log( $prefix . ' ' . $message );
 	}
 
 	/**
