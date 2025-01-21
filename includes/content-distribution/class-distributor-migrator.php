@@ -264,7 +264,7 @@ class Distributor_Migrator {
 
 		$outgoing_post = null;
 		foreach ( $subscriptions as $subscription_id ) { // phpcs:ignore WordPressVIPMinimum.Functions.CheckReturnValue.NonCheckedVariable
-			$migration_result = self::migrate_subscription( $subscription_id, $migrate_incoming_post );
+			$migration_result = self::migrate_subscription( $subscription_id, $migrate_incoming_posts );
 			if ( is_wp_error( $migration_result ) ) {
 				return $migration_result;
 			}
