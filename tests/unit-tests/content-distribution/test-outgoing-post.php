@@ -9,6 +9,7 @@ namespace Test\Content_Distribution;
 
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack_Network\Hub\Node as Hub_Node;
+use WP_User;
 
 /**
  * Test the Outgoing_Post class.
@@ -39,7 +40,12 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 	 */
 	protected $outgoing_post;
 
-	private $some_editor;
+	/**
+	 * An editor user.
+	 *
+	 * @var WP_User
+	 */
+	private WP_User $some_editor;
 
 	/**
 	 * Set up.
@@ -51,7 +57,12 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 
 		// "Mock" the network node(s).
 		update_option( Hub_Node::HUB_NODES_SYNCED_OPTION, $this->network );
-		$post                = $this->factory->post->create_and_get( [ 'post_type' => 'post', 'post_author' => $this->some_editor->ID ] );
+		$post                = $this->factory->post->create_and_get(
+			[
+				'post_type'   => 'post',
+				'post_author' => $this->some_editor->ID,
+			]
+		);
 		$this->outgoing_post = new Outgoing_Post( $post );
 		$this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
 	}
