@@ -33,12 +33,41 @@ class Distributor_Migrate_Incoming_Posts extends Abstract_Incoming_Event {
 	}
 
 	/**
+	 * Log a message.
+	 *
+	 * If "newspack_log" is available, we'll use it. Otherwise, we'll fallback to
+	 * the Network's debugger.
+	 *
+	 * @param string $message The message to log.
+	 * @param string $type    The log type. Either 'error' or 'debug'.
+	 *                        Default is 'error'.
+	 *
+	 * @return void
+	 */
+	protected function log( $message, $type = 'error' ) {
+		if ( method_exists( 'Newspack\Logger', 'newspack_log' ) ) {
+			\Newspack\Logger::newspack_log(
+				'distributor_migrate_incoming_posts',
+				$message,
+				(array) $this->get_data(),
+				$type
+			);
+		} else {
+			$prefix = '[distributor_migrate_incoming_posts]';
+			if ( ! empty( $this->payload ) ) {
+				$prefix .= ' ' . $this->payload['network_post_id'];
+			}
+			Debugger::log( $prefix . ' ' . $message );
+		}
+	}
+
+	/**
 	 * Process incoming post migration.
 	 */
 	protected function process_migration() {
 		$data = (array) $this->get_data();
 
-		Debugger::log( 'Processing distributor_migrate_incoming_posts ' . wp_json_encode( $data['incoming_posts'] ) );
+		self::log( 'Processing incoming posts migration', 'debug' );
 
 		foreach ( $data['incoming_posts'] as $incoming_post ) {
 			if ( $incoming_post['site_url'] !== untrailingslashit( get_bloginfo( 'url' ) ) ) {
@@ -46,7 +75,7 @@ class Distributor_Migrate_Incoming_Posts extends Abstract_Incoming_Event {
 			}
 			$result = Distributor_Migrator::migrate_incoming_post( $incoming_post['post_id'] );
 			if ( is_wp_error( $result ) ) {
-				Debugger::log(
+				self::log(
 					sprintf(
 						'Error processing post ID %d: %s',
 						$incoming_post['post_id'],
