@@ -110,7 +110,7 @@ class Distributor_Migrator {
 		$payload['post_id']         = $original_post_id;
 		$payload['post_url']        = get_post_meta( $post_id, 'dt_original_post_url', true );
 		$payload['sites']           = [ get_bloginfo( 'url' ) ]; // This can contain other sites, but we just care about the current site at this moment.
-		$payload['network_post_id'] = md5( $network_url . $original_post_id );
+		$payload['network_post_id'] = md5( md5( $network_url ) . $original_post_id );
 
 		// Delete Distributor meta from the payload.
 		foreach ( $distributor_meta as $meta_key ) {
