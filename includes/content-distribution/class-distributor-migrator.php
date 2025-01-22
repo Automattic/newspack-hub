@@ -55,13 +55,13 @@ class Distributor_Migrator {
 			return $caps;
 		}
 
-		$post_id = $args[0];
-		if ( ! Content_Distribution::is_post_distributed( $post_id ) ) {
+		$locked = get_transient( self::MIGRATION_LOCK_TRANSIENT_NAME );
+		if ( ! $locked ) {
 			return $caps;
 		}
 
-		$locked = get_transient( self::MIGRATION_LOCK_TRANSIENT_NAME );
-		if ( ! $locked ) {
+		$post_id = $args[0];
+		if ( ! Content_Distribution::is_post_distributed( $post_id ) ) {
 			return $caps;
 		}
 
