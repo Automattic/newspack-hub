@@ -178,6 +178,23 @@ class Outgoing_Post {
 	}
 
 	/**
+	 * Get the payload hash.
+	 *
+	 * @param array|null $payload Optional payload to hash.
+	 *
+	 * @return string The payload hash.
+	 */
+	public function get_payload_hash( $payload = null ) {
+		if ( empty( $payload ) ) {
+			$payload = $this->get_payload();
+		}
+		unset( $payload['status_on_create'] );
+		unset( $payload['post_data']['date_gmt'] );
+		unset( $payload['post_data']['modified_gmt'] );
+		return md5( wp_json_encode( $payload ) );
+	}
+
+	/**
 	 * Get the post payload for distribution.
 	 *
 	 * @param string $status_on_create The post status when creating the post.

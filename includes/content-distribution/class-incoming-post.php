@@ -272,7 +272,7 @@ class Incoming_Post {
 	 *
 	 * @return void
 	 */
-	protected function update_post_meta() {
+	protected function update_meta() {
 		$data = $this->payload['post_data']['post_meta'];
 
 		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
@@ -297,8 +297,12 @@ class Incoming_Post {
 				if ( 1 === count( $meta_value ) ) {
 					update_post_meta( $this->ID, $meta_key, $meta_value[0] );
 				} else {
-					foreach ( $meta_value as $value ) {
-						add_post_meta( $this->ID, $meta_key, $value );
+					$value = get_post_meta( $this->ID, $meta_key, false );
+					if ( $value !== $meta_value ) {
+						delete_post_meta( $this->ID, $meta_key );
+						foreach ( $meta_value as $item ) {
+							add_post_meta( $this->ID, $meta_key, $item );
+						}
 					}
 				}
 			}
@@ -499,7 +503,7 @@ class Incoming_Post {
 			Incoming_Authors::ingest_authors_for_post( $this->ID, $post_data['authors'] );
 
 			// Handle post meta.
-			$this->update_post_meta();
+			$this->update_meta();
 
 			// Handle thumbnail.
 			$thumbnail_url = $post_data['thumbnail_url'];
