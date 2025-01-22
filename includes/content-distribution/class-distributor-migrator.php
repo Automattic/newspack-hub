@@ -7,6 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
+use Newspack_Network\Content_Distribution;
 use Newspack\Data_Events;
 use Newspack_Network\Utils\Network;
 use WP_Error;
@@ -16,11 +17,16 @@ use InvalidArgumentException;
  * Distributor Migrator Class.
  */
 class Distributor_Migrator {
+
+	const MIGRATION_LOCK_TRANSIENT_NAME = 'newspack_network_distributor_migration_lock';
+
 	/**
 	 * Initialize hooks.
 	 */
 	public static function init() {
 		add_action( 'init', [ __CLASS__, 'register_data_event_actions' ] );
+		add_filter( 'map_meta_cap', [ __CLASS__, 'filter_migration_lock_cap' ], 10, 4 );
+		add_action( 'admin_notices', [ __CLASS__, 'migration_lock_notice' ] );
 	}
 
 	/**
@@ -31,6 +37,52 @@ class Distributor_Migrator {
 			return;
 		}
 		Data_Events::register_action( 'newspack_network_distributor_migrate_incoming_posts' );
+	}
+
+	/**
+	 * Filter capabilities to implement the migration lock.
+	 *
+	 * @param string[] $caps    Primitive capabilities required of the user.
+	 * @param string   $cap     Capability being checked.
+	 * @param int      $user_id The user ID.
+	 * @param array    $args    Adds context to the capability check, typically
+	 *                          starting with an object ID.
+	 *
+	 * @return string[] Primitive capabilities required of the user.
+	 */
+	public static function filter_migration_lock_cap( $caps, $cap, $user_id, $args ) {
+		if ( 'edit_post' !== $cap ) {
+			return $caps;
+		}
+
+		$post_id = $args[0];
+		if ( ! Content_Distribution::is_post_distributed( $post_id ) ) {
+			return $caps;
+		}
+
+		$locked = get_transient( self::MIGRATION_LOCK_TRANSIENT_NAME );
+		if ( ! $locked ) {
+			return $caps;
+		}
+
+		$caps[] = 'do_not_allow';
+
+		return $caps;
+	}
+
+	/**
+	 * Render the migration lock notice.
+	 */
+	public static function migration_lock_notice() {
+		$locked = get_transient( self::MIGRATION_LOCK_TRANSIENT_NAME );
+		if ( ! $locked ) {
+			return;
+		}
+		?>
+		<div class="notice notice-warning">
+			<p><?php _e( 'Editing distributed posts is temporarily disabled due to a recent migration. Editing should be restored in a few minutes.', 'newspack-network' ); ?></p>
+		</div>
+		<?php
 	}
 
 	/**
@@ -209,6 +261,20 @@ class Distributor_Migrator {
 	}
 
 	/**
+	 * Dispatch the migration of the incoming posts.
+	 *
+	 * @param array $incoming_posts Array of incoming posts to migrate.
+	 */
+	protected static function dispatch_incoming_posts_migration( $incoming_posts ) {
+		Data_Events::dispatch(
+			'newspack_network_distributor_migrate_incoming_posts',
+			[ 'incoming_posts' => $incoming_posts ]
+		);
+		// Lock the editing of the migrated posts for 10 minutes.
+		set_transient( self::MIGRATION_LOCK_TRANSIENT_NAME, 1, 10 * MINUTE_IN_SECONDS );
+	}
+
+	/**
 	 * Migrate batch of posts from Distributor to Newspack Network Content Distribution.
 	 *
 	 * @param int[] $post_ids The IDs of the posts to migrate.
@@ -245,10 +311,7 @@ class Distributor_Migrator {
 		}
 
 		if ( ! empty( $incoming_posts ) ) {
-			Data_Events::dispatch(
-				'newspack_network_distributor_migrate_incoming_posts',
-				[ 'incoming_posts' => $incoming_posts ]
-			);
+			self::dispatch_incoming_posts_migration( $incoming_posts );
 		}
 
 		if ( $errors->has_errors() ) {
@@ -291,7 +354,7 @@ class Distributor_Migrator {
 	 *
 	 * @return true|WP_Error True if the subscription can be migrated, WP_Error on failure.
 	 */
-	public static function can_migrate_subscription( $subscription_id ) {
+	protected static function can_migrate_subscription( $subscription_id ) {
 		$subscription = get_post( $subscription_id );
 		if ( ! $subscription ) {
 			return new WP_Error( 'subscription_not_found', __( 'Subscription not found.', 'newspack-network' ) );
@@ -331,7 +394,7 @@ class Distributor_Migrator {
 	 *
 	 * @return Outgoing_Post|WP_Error Outgoing_Post on success, WP_Error on failure.
 	 */
-	public static function migrate_subscription( $subscription_id, $migrate_incoming_post = true ) {
+	protected static function migrate_subscription( $subscription_id, $migrate_incoming_post = true ) {
 		$can_migrate = self::can_migrate_subscription( $subscription_id );
 		if ( is_wp_error( $can_migrate ) ) {
 			return $can_migrate;
@@ -384,14 +447,11 @@ class Distributor_Migrator {
 		wp_delete_post( $subscription_id );
 
 		if ( $migrate_incoming_post ) {
-			Data_Events::dispatch(
-				'newspack_network_distributor_migrate_incoming_posts',
+			self::dispatch_incoming_posts_migration(
 				[
-					'incoming_posts' => [
-						[
-							'site_url' => $network_url,
-							'post_id'  => $remote_post_id,
-						],
+					[
+						'site_url' => $network_url,
+						'post_id'  => $remote_post_id,
 					],
 				]
 			);
