@@ -22,6 +22,9 @@ use WP_Post;
  * Main class for content distribution
  */
 class Content_Distribution {
+
+	const PAYLOAD_HASH_META = '_newspack_network_payload_hash';
+
 	/**
 	 * Queued network post updates.
 	 *
@@ -78,6 +81,9 @@ class Content_Distribution {
 	 * Distribute queued posts.
 	 */
 	public static function distribute_queued_posts() {
+		if ( empty( self::$queued_post_updates ) ) {
+			return;
+		}
 		$post_ids = array_unique( self::$queued_post_updates );
 		foreach ( $post_ids as $post_id ) {
 			$post = get_post( $post_id );
@@ -86,6 +92,7 @@ class Content_Distribution {
 			}
 			self::distribute_post( $post );
 		}
+		self::$queued_post_updates = [];
 	}
 
 	/**
@@ -176,6 +183,9 @@ class Content_Distribution {
 	public static function handle_post_updated( $post ) {
 		$post = get_post( $post );
 		if ( ! $post ) {
+			return;
+		}
+		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $post->ID ) ) {
 			return;
 		}
 		if ( ! self::is_post_distributed( $post ) ) {
@@ -269,6 +279,7 @@ class Content_Distribution {
 		return array_merge(
 			$reserved_keys,
 			[
+				self::PAYLOAD_HASH_META,
 				Outgoing_Post::DISTRIBUTED_POST_META,
 				Incoming_Post::NETWORK_POST_ID_META,
 				Incoming_Post::PAYLOAD_META,
@@ -361,7 +372,14 @@ class Content_Distribution {
 			$distributed_post = self::get_distributed_post( $post );
 		}
 		if ( $distributed_post ) {
-			Data_Events::dispatch( 'network_post_updated', $distributed_post->get_payload( $status_on_create ) );
+			$payload      = $distributed_post->get_payload( $status_on_create );
+			$payload_hash = $distributed_post->get_payload_hash( $payload );
+			$post         = $distributed_post->get_post();
+			if ( get_post_meta( $post->ID, self::PAYLOAD_HASH_META, true ) === $payload_hash ) {
+				return;
+			}
+			Data_Events::dispatch( 'network_post_updated', $payload );
+			update_post_meta( $post->ID, self::PAYLOAD_HASH_META, $payload_hash );
 		}
 	}
 }

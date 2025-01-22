@@ -311,6 +311,23 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Test adding and deleting post meta.
+	 */
+	public function test_add_and_delete_multiple_post_meta() {
+		$post_id = $this->incoming_post->insert();
+
+		$payload = $this->get_sample_payload();
+
+		$payload['post_data']['post_meta']['multiple'] = [ 'value 2', 'value 3' ];
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( [ 'value 2', 'value 3' ], get_post_meta( $post_id, 'multiple' ) );
+
+		$payload['post_data']['post_meta']['multiple'] = [ 'value 3', 'value 3' ];
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( [ 'value 3', 'value 3' ], get_post_meta( $post_id, 'multiple' ) );
+	}
+
+	/**
 	 * Test status changes.
 	 */
 	public function test_status_changes() {
