@@ -470,6 +470,8 @@ class Incoming_Post {
 		// If there's no post ID, set the status to the default status on create.
 		if ( ! $this->ID ) {
 			$postarr['post_status'] = $this->payload['status_on_create'];
+		} else {
+			$postarr['post_status'] = $this->post->post_status;
 		}
 
 		// Insert the post if it's linked or a new post.
