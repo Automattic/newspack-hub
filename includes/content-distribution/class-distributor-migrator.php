@@ -87,6 +87,20 @@ class Distributor_Migrator {
 			);
 		}
 
+		$distributor_meta = [
+			'dt_full_connection',
+			'dt_original_post_id',
+			'dt_original_post_url',
+			'dt_original_site_name',
+			'dt_original_site_url',
+			'dt_original_source_id',
+			'dt_subscription_signature',
+			'dt_syndicate_time',
+			'dt_unlinked',
+			'dt_subscriptions',
+			'dt_connection_map',
+		];
+
 		// Instantiate an Outgoing_Post to configure its origin.
 		$outgoing_post = new Outgoing_Post( $post_id );
 		$payload       = $outgoing_post->get_payload();
@@ -97,6 +111,11 @@ class Distributor_Migrator {
 		$payload['post_url']        = get_post_meta( $post_id, 'dt_original_post_url', true );
 		$payload['sites']           = [ get_bloginfo( 'url' ) ]; // This can contain other sites, but we just care about the current site at this moment.
 		$payload['network_post_id'] = md5( $network_url . $original_post_id );
+
+		// Delete Distributor meta from the payload.
+		foreach ( $distributor_meta as $meta_key ) {
+			unset( $payload['post_data']['post_meta'][ $meta_key ] );
+		}
 
 		// Store payload for insertion.
 		update_post_meta( $post_id, Incoming_Post::PAYLOAD_META, $payload );
@@ -118,20 +137,7 @@ class Distributor_Migrator {
 			return $insert;
 		}
 
-		// Clear Distributor meta.
-		$distributor_meta = [
-			'dt_full_connection',
-			'dt_original_post_id',
-			'dt_original_post_url',
-			'dt_original_site_name',
-			'dt_original_site_url',
-			'dt_original_source_id',
-			'dt_subscription_signature',
-			'dt_syndicate_time',
-			'dt_unlinked',
-			'dt_subscriptions',
-			'dt_connection_map',
-		];
+		// Delete Distributor meta from the post.
 		foreach ( $distributor_meta as $meta_key ) {
 			delete_post_meta( $post_id, $meta_key );
 		}
