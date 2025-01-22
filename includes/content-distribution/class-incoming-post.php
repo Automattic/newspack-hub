@@ -438,6 +438,11 @@ class Incoming_Post {
 			}
 		}
 
+		// Make sure we have the latest post data before continuing.
+		if ( $this->ID ) {
+			$this->post = get_post( $this->ID );
+		}
+
 		$post_data = $this->payload['post_data'];
 		$post_type = $post_data['post_type'];
 
