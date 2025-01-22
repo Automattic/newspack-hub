@@ -103,7 +103,7 @@ class Distributor_Migrator {
 
 		// Instantiate an Outgoing_Post to configure its origin.
 		$outgoing_post = new Outgoing_Post( $post_id );
-		$payload       = $outgoing_post->get_payload();
+		$payload       = $outgoing_post->get_payload( $post->post_status );
 
 		// Modify payload to match the origin.
 		$payload['site_url']        = $network_url;
