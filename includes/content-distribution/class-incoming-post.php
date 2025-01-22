@@ -485,7 +485,11 @@ class Incoming_Post {
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
-			$post_id = wp_insert_post( $postarr, true );
+			if ( $this->ID ) {
+				$post_id = wp_update_post( $postarr, true );
+			} else {
+				$post_id = wp_insert_post( $postarr, true );
+			}
 
 			if ( is_wp_error( $post_id ) ) {
 				self::log( 'Failed to insert post with message: ' . $post_id->get_error_message() );
