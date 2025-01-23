@@ -7,7 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Utils\Network;
 use WP_CLI;
 use WP_CLI\ExitException;
@@ -49,7 +49,7 @@ class CLI {
 							__( 'The ID of the post to distribute. Supported post types are: %s', 'newspack-network' ),
 							implode(
 								', ',
-								Content_Distribution::get_distributed_post_types()
+								Content_Distribution_Class::get_distributed_post_types()
 							)
 						),
 						'optional'    => false,
@@ -137,13 +137,13 @@ class CLI {
 		}
 
 		try {
-			$outgoing_post = Content_Distribution::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
+			$outgoing_post = Content_Distribution_Class::get_distributed_post( $post_id ) ?? new Outgoing_Post( $post_id );
 			$sites = $outgoing_post->set_distribution( $sites );
 			if ( is_wp_error( $sites ) ) {
 				WP_CLI::error( $sites->get_error_message() );
 			}
 
-			Content_Distribution::distribute_post( $outgoing_post, $assoc_args['status_on_create'] ?? 'draft' );
+			Content_Distribution_Class::distribute_post( $outgoing_post, $assoc_args['status_on_create'] ?? 'draft' );
 			WP_CLI::success( sprintf( 'Post with ID %d is distributed to %d sites: %s', $post_id, count( $sites ), implode( ', ', $sites ) ) );
 
 		} catch ( \Exception $e ) {

@@ -8,7 +8,7 @@
 namespace Newspack_Network\Content_Distribution;
 
 use Newspack_Network\Debugger;
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use WP_Post;
 use WP_Error;
 
@@ -199,7 +199,7 @@ class Incoming_Post {
 	protected function query_post() {
 		$posts = get_posts(
 			[
-				'post_type'      => Content_Distribution::get_distributed_post_types(),
+				'post_type'      => Content_Distribution_Class::get_distributed_post_types(),
 				'post_status'    => [ 'publish', 'pending', 'draft', 'auto-draft', 'future', 'private', 'inherit', 'trash' ],
 				'posts_per_page' => 1,
 				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
@@ -275,7 +275,7 @@ class Incoming_Post {
 	protected function update_meta() {
 		$data = $this->payload['post_data']['post_meta'];
 
-		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
+		$reserved_keys = Content_Distribution_Class::get_reserved_post_meta_keys();
 
 		// Clear existing post meta that are not in the payload.
 		$post_meta = get_post_meta( $this->ID );
@@ -349,7 +349,7 @@ class Incoming_Post {
 	 * @return void
 	 */
 	protected function update_taxonomy_terms() {
-		$reserved_taxonomies = Content_Distribution::get_reserved_taxonomies();
+		$reserved_taxonomies = Content_Distribution_Class::get_reserved_taxonomies();
 		$data                = $this->payload['post_data']['taxonomy'];
 		foreach ( $data as $taxonomy => $terms ) {
 			if ( in_array( $taxonomy, $reserved_taxonomies, true ) ) {
