@@ -31,6 +31,7 @@ function get_sample_payload( $origin = '', $destination = '' ) {
 		'status_on_create' => 'draft',
 		'post_data'        => [
 			'title'          => 'Title',
+			'authors'        => [],
 			'post_status'    => 'publish',
 			'date_gmt'       => '2021-01-01 00:00:00',
 			'modified_gmt'   => '2021-01-01 00:00:00',

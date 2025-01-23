@@ -7,10 +7,10 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Debugger;
 use Newspack_Network\Content_Distribution;
-use WP_Post;
+use Newspack_Network\Debugger;
 use WP_Error;
+use WP_Post;
 
 /**
  * Incoming Post Class.
@@ -510,6 +510,8 @@ class Incoming_Post {
 			// Update the object.
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
+
+			Author_Ingestion::ingest_authors_for_post( $this->ID, $post_data['authors'] );
 
 			// Handle post meta.
 			$this->update_meta();
