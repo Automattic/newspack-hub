@@ -103,16 +103,34 @@ class Incoming_Post {
 	/**
 	 * Log a message.
 	 *
+	 * If "newspack_log" is available, we'll use it. Otherwise, we'll fallback to
+	 * the Network's debugger.
+	 *
 	 * @param string $message The message to log.
+	 * @param string $type    The log type. Either 'error' or 'debug'.
+	 *                        Default is 'error'.
 	 *
 	 * @return void
 	 */
-	protected function log( $message ) {
-		$prefix = '[Incoming Post]';
-		if ( ! empty( $this->payload ) ) {
-			$prefix .= ' ' . $this->payload['network_post_id'];
+	protected function log( $message, $type = 'error' ) {
+		if ( method_exists( 'Newspack\Logger', 'newspack_log' ) ) {
+			\Newspack\Logger::newspack_log(
+				'newspack_network_incoming_post',
+				$message,
+				[
+					'network_post_id' => $this->network_post_id,
+					'post_id'         => $this->ID,
+					'payload'         => $this->payload,
+				],
+				$type
+			);
+		} else {
+			$prefix = '[Incoming Post]';
+			if ( ! empty( $this->payload ) ) {
+				$prefix .= ' ' . $this->payload['network_post_id'];
+			}
+			Debugger::log( $prefix . ' ' . $message );
 		}
-		Debugger::log( $prefix . ' ' . $message );
 	}
 
 	/**
@@ -156,21 +174,21 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Get the post's original site URL.
+	 *
+	 * @return string The post original site URL or an empty string if not found.
+	 */
+	public function get_original_site_url(): string {
+		return $this->payload['site_url'] ?? '';
+	}
+
+	/**
 	 * Get the post original URL.
 	 *
 	 * @return string The post original post URL. Empty string if not found.
 	 */
 	public function get_original_post_url() {
 		return $this->payload['post_url'] ?? '';
-	}
-
-	/**
-	 * Get the post original site URL.
-	 *
-	 * @return string The post original site URL. Empty string if not found.
-	 */
-	public function get_original_site_url() {
-		return $this->payload['site_url'] ?? '';
 	}
 
 	/**
@@ -221,7 +239,7 @@ class Incoming_Post {
 		if ( ! $this->ID ) {
 			return new WP_Error( 'invalid_post', __( 'Invalid post.', 'newspack-network' ) );
 		}
-		update_post_meta( $this->ID, self::UNLINKED_META, (bool) $unlinked );
+		update_post_meta( $this->ID, self::UNLINKED_META, $unlinked ? 1 : 0 );
 
 		// If the post is being re-linked, update content.
 		if ( ! $unlinked ) {
@@ -234,8 +252,8 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	protected function is_unlinked() {
-		return get_post_meta( $this->ID, self::UNLINKED_META, true );
+	protected function is_unlinked(): bool {
+		return (bool) get_post_meta( $this->ID, self::UNLINKED_META, true );
 	}
 
 	/**
@@ -245,7 +263,7 @@ class Incoming_Post {
 	 *
 	 * @return bool
 	 */
-	public function is_linked() {
+	public function is_linked(): bool {
 		return $this->ID && ! $this->is_unlinked();
 	}
 
@@ -254,7 +272,7 @@ class Incoming_Post {
 	 *
 	 * @return void
 	 */
-	protected function update_post_meta() {
+	protected function update_meta() {
 		$data = $this->payload['post_data']['post_meta'];
 
 		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
@@ -279,8 +297,12 @@ class Incoming_Post {
 				if ( 1 === count( $meta_value ) ) {
 					update_post_meta( $this->ID, $meta_key, $meta_value[0] );
 				} else {
-					foreach ( $meta_value as $value ) {
-						add_post_meta( $this->ID, $meta_key, $value );
+					$value = get_post_meta( $this->ID, $meta_key, false );
+					if ( $value !== $meta_value ) {
+						delete_post_meta( $this->ID, $meta_key );
+						foreach ( $meta_value as $item ) {
+							add_post_meta( $this->ID, $meta_key, $item );
+						}
 					}
 				}
 			}
@@ -416,6 +438,11 @@ class Incoming_Post {
 			}
 		}
 
+		// Make sure we have the latest post data before continuing.
+		if ( $this->ID ) {
+			$this->post = get_post( $this->ID );
+		}
+
 		$post_data = $this->payload['post_data'];
 		$post_type = $post_data['post_type'];
 
@@ -445,9 +472,11 @@ class Incoming_Post {
 			'ping_status'    => $post_data['ping_status'],
 		];
 
-		// The default status for a new post is 'draft'.
+		// If there's no post ID, set the status to the default status on create.
 		if ( ! $this->ID ) {
-			$postarr['post_status'] = 'draft';
+			$postarr['post_status'] = $this->payload['status_on_create'];
+		} else {
+			$postarr['post_status'] = $this->post->post_status;
 		}
 
 		// Insert the post if it's linked or a new post.
@@ -461,7 +490,11 @@ class Incoming_Post {
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
-			$post_id = wp_insert_post( $postarr, true );
+			if ( $this->ID ) {
+				$post_id = wp_update_post( $postarr, true );
+			} else {
+				$post_id = wp_insert_post( $postarr, true );
+			}
 
 			if ( is_wp_error( $post_id ) ) {
 				self::log( 'Failed to insert post with message: ' . $post_id->get_error_message() );
@@ -479,7 +512,7 @@ class Incoming_Post {
 			$this->post = get_post( $this->ID );
 
 			// Handle post meta.
-			$this->update_post_meta();
+			$this->update_meta();
 
 			// Handle thumbnail.
 			$thumbnail_url = $post_data['thumbnail_url'];

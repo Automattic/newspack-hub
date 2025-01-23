@@ -59,7 +59,7 @@ class User_Manual_Sync {
 
 		return [
 			'email'      => $user_data->user_email,
-			'role'       => array_shift( $user_data->roles ),
+			'role'       => $user_data->roles,
 			'user_id'    => $user_data->ID,
 			'meta'       => $synced_metadata,
 			'prop'       => $synced_props,
