@@ -438,6 +438,11 @@ class Incoming_Post {
 			}
 		}
 
+		// Make sure we have the latest post data before continuing.
+		if ( $this->ID ) {
+			$this->post = get_post( $this->ID );
+		}
+
 		$post_data = $this->payload['post_data'];
 		$post_type = $post_data['post_type'];
 
@@ -470,6 +475,8 @@ class Incoming_Post {
 		// If there's no post ID, set the status to the default status on create.
 		if ( ! $this->ID ) {
 			$postarr['post_status'] = $this->payload['status_on_create'];
+		} else {
+			$postarr['post_status'] = $this->post->post_status;
 		}
 
 		// Insert the post if it's linked or a new post.
@@ -483,7 +490,11 @@ class Incoming_Post {
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
-			$post_id = wp_insert_post( $postarr, true );
+			if ( $this->ID ) {
+				$post_id = wp_update_post( $postarr, true );
+			} else {
+				$post_id = wp_insert_post( $postarr, true );
+			}
 
 			if ( is_wp_error( $post_id ) ) {
 				self::log( 'Failed to insert post with message: ' . $post_id->get_error_message() );
