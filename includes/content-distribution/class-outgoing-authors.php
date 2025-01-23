@@ -23,32 +23,19 @@ class Outgoing_Authors {
 	/**
 	 * Get the authors of a post to be added to the distribution payload.
 	 *
-	 * @param \WP_Post $post The post object.
+	 * @param WP_Post $post The post object.
 	 *
 	 * @return array An array of authors.
 	 */
-	public static function get_authors_for_distribution( $post ): array {
-		$author = self::get_wp_user_for_distribution( $post->post_author );
+	public static function get_authors_for_distribution( WP_Post $post ): array {
 
 		if ( ! function_exists( 'get_coauthors' ) ) {
-			if ( is_wp_error( $author ) ) {
-				Debugger::log( 'Error getting author ' . $post->post_author . ' for distribution on post ' . $post->ID . ': ' . $author->get_error_message() );
-
-				return [];
-			}
-
-			return [ $author ];
+			return self::get_wp_user_from_post_author( $post );
 		}
 
 		$co_authors = get_coauthors( $post->ID );
 		if ( empty( $co_authors ) ) {
-			if ( is_wp_error( $author ) ) {
-				Debugger::log( 'Error getting author ' . $post->post_author . ' for distribution on post ' . $post->ID . ': ' . $author->get_error_message() );
-
-				return [];
-			}
-
-			return [ $author ];
+			return self::get_wp_user_from_post_author( $post );
 		}
 
 		$authors = [];
@@ -70,6 +57,21 @@ class Outgoing_Authors {
 		}
 
 		return $authors;
+	}
+
+	private static function get_wp_user_from_post_author( $post ) {
+		if ( ! $post->post_author ) {
+			return [];
+		}
+
+		$author = self::get_wp_user_for_distribution( $post->post_author );
+		if ( is_wp_error( $author ) ) {
+			Debugger::log( 'Error getting author with id:' . $post->post_author . ' for distribution on post ' . $post->ID . ': ' . $author->get_error_message() );
+
+			return [];
+		}
+
+		return [ $author ];
 	}
 
 	/**
