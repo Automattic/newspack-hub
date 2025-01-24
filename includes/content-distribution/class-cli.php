@@ -108,6 +108,12 @@ class CLI {
 						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all posts. This will only take effect if all posts were able to migrate.', 'newspack-network' ),
 						'optional'    => true,
 					],
+					[
+						'type'        => 'flag',
+						'name'        => 'dry-run',
+						'description' => __( 'Whether to run the migration in dry-run mode.', 'newspack-network' ),
+						'optional'    => true,
+					],
 				],
 			]
 		);
@@ -165,6 +171,8 @@ class CLI {
 			WP_CLI::error( 'Post ID must be a number.' );
 		}
 
+		$dry_run = isset( $assoc_args['dry-run'] );
+
 		if ( is_numeric( $post_id ) && isset( $assoc_args['all'] ) ) {
 			WP_CLI::error( 'The --all flag cannot be used with a post ID.' );
 		}
@@ -209,32 +217,42 @@ class CLI {
 			$batches    = array_chunk( $post_ids, $batch_size );
 
 			foreach ( $batches as $i => $batch ) {
-				$result = Distributor_Migrator::migrate_outgoing_posts( $batch );
-				if ( is_wp_error( $result ) ) {
-					$message = sprintf( '(%d/%d) Error migrating batch: %s', $i + 1, count( $batches ), $result->get_error_message() );
-					if ( $strict ) {
-						WP_CLI::error( $message );
+				if ( ! $dry_run ) {
+					$result = Distributor_Migrator::migrate_outgoing_posts( $batch );
+					if ( is_wp_error( $result ) ) {
+						$message = sprintf( '(%d/%d) Error migrating batch: %s', $i + 1, count( $batches ), $result->get_error_message() );
+						if ( $strict ) {
+							WP_CLI::error( $message );
+						} else {
+							$errors->add( $result->get_error_code(), $result->get_error_message() );
+							WP_CLI::line( $message );
+						}
 					} else {
-						$errors->add( $result->get_error_code(), $result->get_error_message() );
-						WP_CLI::line( $message );
+						WP_CLI::line( sprintf( '(%d/%d) Batch migrated.', $i + 1, count( $batches ) ) );
 					}
 				} else {
-					WP_CLI::line( sprintf( '(%d/%d) Batch migrated.', $i + 1, count( $batches ) ) );
+					WP_CLI::line( sprintf( '(%d/%d) Batch would be migrated.', $i + 1, count( $batches ) ) );
 				}
 			}
 
-			if ( isset( $assoc_args['delete'] ) && ! $errors->has_errors() ) {
+			if ( ! $dry_run && isset( $assoc_args['delete'] ) && ! $errors->has_errors() ) {
 				deactivate_plugins( [ 'distributor/distributor.php' ] );
 				delete_plugins( [ 'distributor/distributor.php' ] );
 				WP_CLI::line( 'Distributor plugin is deactivated and deleted.' );
 			}
 		} else {
-			$result = Distributor_Migrator::migrate_outgoing_post( $post_id );
-			if ( is_wp_error( $result ) ) {
-				WP_CLI::error( $result->get_error_message() );
+			$can_migrate = Distributor_Migrator::can_migrate_outgoing_post( $post_id );
+			if ( is_wp_error( $can_migrate ) ) {
+				WP_CLI::error( $can_migrate->get_error_message() );
+			}
+			if ( ! $dry_run ) {
+				$result = Distributor_Migrator::migrate_outgoing_post( $post_id );
+				if ( is_wp_error( $result ) ) {
+					WP_CLI::error( $result->get_error_message() );
+				}
 			}
 		}
 
-		WP_CLI::success( 'Migration completed.' );
+		WP_CLI::success( 'Migration completed.' . ( $dry_run ? ' (Dry-run)' : '' ) );
 	}
 }
