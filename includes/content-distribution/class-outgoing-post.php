@@ -202,6 +202,10 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload( $status_on_create = 'draft' ) {
+		$post_author = 0;
+		if ( $this->post->post_author ) {
+			$post_author = Outgoing_Author::get_wp_user_for_distribution( $this->post->post_author );
+		}
 		return [
 			'site_url'         => get_bloginfo( 'url' ),
 			'post_id'          => $this->post->ID,
@@ -211,9 +215,7 @@ class Outgoing_Post {
 			'status_on_create' => $status_on_create,
 			'post_data'        => [
 				'title'          => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				// TODO: Refactor the get_authors_for_distribution function to live in this one to avoid confusion.
-				'author'    => Outgoing_Authors::get_authors_for_distribution( $this->post ), // TODO: name it clearly for ONE author. Not CAP. But alwaays set the "vanilla" author.
-				// Listen to set_post_terms, add a postmeta to the post with the distributable authors. (and ingest cleverly later)
+				'author'         => $post_author,
 				'post_status'    => $this->post->post_status,
 				'date_gmt'       => $this->post->post_date_gmt,
 				'modified_gmt'   => $this->post->post_modified_gmt,

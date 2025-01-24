@@ -7,6 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
+use Newspack_Network\Content_Distribution;
 use Newspack_Network\Debugger;
 use Newspack_Network\User_Update_Watcher;
 use Newspack_Network\Utils\Users as User_Utils;
@@ -14,21 +15,7 @@ use Newspack_Network\Utils\Users as User_Utils;
 /**
  * Class to handle author ingestion for content distribution.
  */
-class Incoming_Authors {
-
-	/**
-	 * Gets the CoAuthors Plus main object, if present
-	 *
-	 * @return false|\CoAuthors_Plus
-	 */
-	public static function get_coauthors_plus() {
-		global $coauthors_plus;
-		if ( ! $coauthors_plus instanceof \CoAuthors_Plus ) {
-			return false;
-		}
-
-		return $coauthors_plus;
-	}
+class Incoming_Cap {
 
 	/**
 	 * Ingest authors for a post distributed to this site
@@ -38,15 +25,18 @@ class Incoming_Authors {
 	 *
 	 * @return void
 	 */
-	public static function ingest_authors_for_post( $post_id, $distributed_authors ): void {
+	public static function ingest_cap_authors_for_post( $post_id, $distributed_authors ): void {
+		update_post_meta( $post_id, 'newspack_network_cap_authors', $distributed_authors );
+
+		if (empty($distributed_authors)) {
+			return;
+		}
 
 		Debugger::log( 'Ingesting authors from distributed post.' );
 
 		User_Update_Watcher::$enabled = false;
 
-		update_post_meta( $post_id, 'newspack_network_authors', $distributed_authors );
-
-		$coauthors_plus = self::get_coauthors_plus();
+		global $coauthors_plus;
 		$coauthors      = [];
 
 		foreach ( $distributed_authors as $author ) {

@@ -61,6 +61,16 @@ class Content_Distribution {
 		Editor::init();
 		Canonical_Url::init();
 		Distributor_Migrator::init();
+
+		if ( Site_Role::is_hub() ) {
+			if ( self::is_co_authors_plus_active() ) {
+				Outgoing_Cap::init();
+			}
+		} elseif ( Site_Role::is_node() ) {
+			if ( self::is_co_authors_plus_active() ) {
+				Outgoing_Cap::init();
+			}
+		}
 	}
 
 	/**
@@ -382,4 +392,16 @@ class Content_Distribution {
 			update_post_meta( $post->ID, self::PAYLOAD_HASH_META, $payload_hash );
 		}
 	}
+
+	/**
+	 * Helper to check if Co-Authors Plus is active.
+	 *
+	 * @return bool Whether Co-Authors Plus is active.
+	 */
+	public static function is_co_authors_plus_active(): bool {
+		global $coauthors_plus;
+
+		return $coauthors_plus instanceof \CoAuthors_Plus;
+	}
+
 }

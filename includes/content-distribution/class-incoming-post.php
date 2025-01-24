@@ -511,7 +511,10 @@ class Incoming_Post {
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
 
-			Incoming_Authors::ingest_authors_for_post( $this->ID, $post_data['author_list'] );
+			Incoming_Author::ingest_authors_for_post( $this->ID, $post_data['author'] );
+			if ( Content_Distribution::is_co_authors_plus_active() ) {
+				Incoming_Cap::ingest_cap_authors_for_post( $this->ID, $post_data['post_meta']['newspack_network_cap_authors'] ?? [] );
+			}
 
 			// Handle post meta.
 			$this->update_meta();
