@@ -7,7 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Utils\Network;
 use WP_Error;
 use WP_Post;
@@ -45,7 +45,7 @@ class Outgoing_Post {
 			throw new \InvalidArgumentException( esc_html( __( 'Only published post are allowed to be distributed.', 'newspack-network' ) ) );
 		}
 
-		if ( ! in_array( $post->post_type, Content_Distribution::get_distributed_post_types() ) ) {
+		if ( ! in_array( $post->post_type, Content_Distribution_Class::get_distributed_post_types() ) ) {
 			/* translators: unsupported post type for content distribution */
 			throw new \InvalidArgumentException( esc_html( sprintf( __( 'Post type %s is not supported as a distributed outgoing post.', 'newspack-network' ), $post->post_type ) ) );
 		}
@@ -147,7 +147,7 @@ class Outgoing_Post {
 	 * @return bool
 	 */
 	public function is_distributed( $site_url = null ) {
-		$distributed_post_types = Content_Distribution::get_distributed_post_types();
+		$distributed_post_types = Content_Distribution_Class::get_distributed_post_types();
 		if ( ! in_array( $this->post->post_type, $distributed_post_types, true ) ) {
 			return false;
 		}
@@ -256,7 +256,7 @@ class Outgoing_Post {
 	 * @return array The taxonomy term data.
 	 */
 	protected function get_post_taxonomy_terms() {
-		$reserved_taxonomies = Content_Distribution::get_reserved_taxonomies();
+		$reserved_taxonomies = Content_Distribution_Class::get_reserved_taxonomies();
 		$taxonomies          = get_object_taxonomies( $this->post->post_type, 'objects' );
 		$data                = [];
 		foreach ( $taxonomies as $taxonomy ) {
@@ -289,7 +289,7 @@ class Outgoing_Post {
 	 * @return array The post meta data.
 	 */
 	protected function get_post_meta() {
-		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
+		$reserved_keys = Content_Distribution_Class::get_reserved_post_meta_keys();
 
 		$meta = get_post_meta( $this->post->ID );
 

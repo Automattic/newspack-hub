@@ -7,7 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 
 /**
  * Class to filter the canonical URLs for distributed content.
@@ -33,7 +33,7 @@ class Canonical_Url {
 	 * @return string
 	 */
 	public static function filter_canonical_url( $canonical_url, $post ) {
-		if ( ! Content_Distribution::is_post_incoming( $post ) ) {
+		if ( ! Content_Distribution_Class::is_post_incoming( $post ) ) {
 			return $canonical_url;
 		}
 

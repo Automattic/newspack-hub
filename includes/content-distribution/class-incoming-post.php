@@ -7,7 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Debugger;
 use WP_Error;
 use WP_Post;
@@ -199,7 +199,7 @@ class Incoming_Post {
 	protected function query_post() {
 		$posts = get_posts(
 			[
-				'post_type'      => Content_Distribution::get_distributed_post_types(),
+				'post_type'      => Content_Distribution_Class::get_distributed_post_types(),
 				'post_status'    => [ 'publish', 'pending', 'draft', 'auto-draft', 'future', 'private', 'inherit', 'trash' ],
 				'posts_per_page' => 1,
 				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
@@ -275,7 +275,7 @@ class Incoming_Post {
 	protected function update_meta() {
 		$data = $this->payload['post_data']['post_meta'];
 
-		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
+		$reserved_keys = Content_Distribution_Class::get_reserved_post_meta_keys();
 
 		// Clear existing post meta that are not in the payload.
 		$post_meta = get_post_meta( $this->ID );
@@ -349,7 +349,7 @@ class Incoming_Post {
 	 * @return void
 	 */
 	protected function update_taxonomy_terms() {
-		$reserved_taxonomies = Content_Distribution::get_reserved_taxonomies();
+		$reserved_taxonomies = Content_Distribution_Class::get_reserved_taxonomies();
 		$data                = $this->payload['post_data']['taxonomy'];
 		foreach ( $data as $taxonomy => $terms ) {
 			if ( in_array( $taxonomy, $reserved_taxonomies, true ) ) {
@@ -512,7 +512,7 @@ class Incoming_Post {
 			$this->post = get_post( $this->ID );
 
 			Incoming_Author::ingest_authors_for_post( $this->ID, $post_data['author'] );
-			if ( Content_Distribution::is_co_authors_plus_active() ) {
+			if ( Content_Distribution_Class::is_co_authors_plus_active() ) {
 				Incoming_Cap::ingest_cap_authors_for_post( $this->ID, $post_data['post_meta']['newspack_network_cap_authors'] ?? [] );
 			}
 
