@@ -46,11 +46,19 @@ class Cap_Authors {
 		return $coauthors_plus instanceof \CoAuthors_Plus && function_exists( 'get_coauthors' );
 	}
 
-
 	/**
 	 * Action callback.
 	 *
 	 * Add a postmeta entry with the Co-Authors Plus authors for outgoing posts.
+	 *
+	 * @param int    $object_id The object ID.
+	 * @param array  $terms The terms.
+	 * @param array  $tt_ids The term taxonomy IDs.
+	 * @param string $taxonomy The taxonomy.
+	 * @param bool   $append Whether to append.
+	 * @param array  $old_tt_ids The old term taxonomy IDs.
+	 *
+	 * @return void
 	 */
 	public static function handle_cap_author_change( $object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ): void {
 		if ( 'author' !== $taxonomy ) { // Co-Authors Plus author taxonomy.
@@ -76,6 +84,13 @@ class Cap_Authors {
 		}
 	}
 
+	/**
+	 * Get the Co-Authors Plus authors for distribution.
+	 *
+	 * @param WP_Post $post Post to get authors for.
+	 *
+	 * @return array Array of authors in distributable format.
+	 */
 	private static function get_cap_authors_for_distribution( WP_Post $post ): array {
 
 		$co_authors = get_coauthors( $post->ID );
@@ -118,7 +133,7 @@ class Cap_Authors {
 			return;
 		}
 
-		$cap_authors = reset( $cap_authors ); // It comes as a multiple. TODO
+		$cap_authors = reset( $cap_authors );
 
 		Debugger::log( 'Ingesting authors from networked post.' );
 		User_Update_Watcher::$enabled = false;
@@ -133,7 +148,6 @@ class Cap_Authors {
 					continue;
 				}
 				$coauthors[] = $user->user_nicename;
-				continue;
 			} elseif ( 'guest-author' === ( $author['type'] ?? '' ) ) {
 				// TODO. How do I get actual guest users enabled?
 			}

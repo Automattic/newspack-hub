@@ -8,6 +8,7 @@
 namespace Test\Content_Distribution;
 
 use Newspack_Network\Content_Distribution\Incoming_Post;
+use Newspack_Network\Content_Distribution\Outgoing_Author;
 
 /**
  * Test the Incoming_Post class.
@@ -26,6 +27,8 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	 * @var string
 	 */
 	protected $node_2 = 'https://node2.test';
+
+	protected $some_editor;
 
 	/**
 	 * A linked post.
@@ -50,6 +53,8 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		// Set the site URL for the node that receives posts.
 		update_option( 'siteurl', $this->node_2 );
 		update_option( 'home', $this->node_2 );
+
+		$this->some_editor = $this->factory->user->create_and_get( [ 'role' => 'editor' ] );
 
 		$this->incoming_post = new Incoming_Post( $this->get_sample_payload() );
 	}

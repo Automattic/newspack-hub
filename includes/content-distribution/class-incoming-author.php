@@ -25,6 +25,9 @@ class Incoming_Author {
 	 * @return void
 	 */
 	public static function ingest_author_for_post( int $post_id, array $author ): void {
+		if ( empty( $author ) ) {
+			return;
+		}
 		$author = self::get_wp_user_author( $post_id, $author );
 		wp_update_post(
 			[

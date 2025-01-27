@@ -202,7 +202,7 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload( $status_on_create = 'draft' ) {
-		$post_author = 0;
+		$post_author = [];
 		if ( $this->post->post_author ) {
 			$post_author = Outgoing_Author::get_wp_user_for_distribution( $this->post->post_author );
 		}

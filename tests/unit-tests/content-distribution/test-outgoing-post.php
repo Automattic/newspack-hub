@@ -7,6 +7,8 @@
 
 namespace Test\Content_Distribution;
 
+use Newspack_Network\Content_Distribution\Incoming_Author;
+use Newspack_Network\Content_Distribution\Outgoing_Author;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack_Network\Hub\Node as Hub_Node;
 use WP_User;
@@ -163,7 +165,7 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 			'thumbnail_url',
 			'taxonomy',
 			'post_meta',
-			'authors',
+			'author',
 		];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $payload['post_data'] ), $post_data_keys ) );
@@ -174,8 +176,8 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 	 */
 	public function test_authors_data(): void {
 		$payload = $this->outgoing_post->get_payload();
-		$this->assertNotEmpty( $payload['post_data']['authors'][0] );
-		$this->assertEquals( $this->some_editor->ID, $payload['post_data']['authors'][0]['ID'] );
+		$this->assertNotEmpty( $payload['post_data']['author'] );
+		$this->assertEquals( $this->some_editor->user_email, $payload['post_data']['author']['user_email'] );
 	}
 
 	/**
