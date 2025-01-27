@@ -7,7 +7,6 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Debugger;
 use Newspack_Network\User_Update_Watcher;
 use WP_Error;
 use WP_Post;
@@ -58,5 +57,4 @@ class Outgoing_Author {
 
 		return $author;
 	}
-
 }

@@ -8,6 +8,7 @@
 namespace Newspack_Network;
 
 use Newspack\Data_Events;
+use Newspack_Network\Content_Distribution\Cap_Authors;
 use Newspack_Network\Content_Distribution\CLI;
 use Newspack_Network\Content_Distribution\Admin;
 use Newspack_Network\Content_Distribution\API;
@@ -61,16 +62,7 @@ class Content_Distribution {
 		Editor::init();
 		Canonical_Url::init();
 		Distributor_Migrator::init();
-
-		if ( Site_Role::is_hub() ) {
-			if ( self::is_co_authors_plus_active() ) {
-				Outgoing_Cap::init();
-			}
-		} elseif ( Site_Role::is_node() ) {
-			if ( self::is_co_authors_plus_active() ) {
-				Outgoing_Cap::init();
-			}
-		}
+		Cap_Authors::init();
 	}
 
 	/**
