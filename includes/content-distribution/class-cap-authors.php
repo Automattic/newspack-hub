@@ -18,12 +18,9 @@ use WP_Post;
 class Cap_Authors {
 
 	/**
-	 * Meta key for Co-Authors Plus authors for networked posts.
+	 * TODO
 	 */
-	const CAP_AUTHORS_TRANSFER_META_KEY = 'newspack_network_cap_authors_transfer';
-
-	// TODO. Explain the difference here
-	const CAP_GUEST_AUTHORS_META_KEY = 'newspack_network_cap_guest_authors';
+	const AUTHOR_LIST_META_KEY = 'newspack_network_author_list';
 
 	/**
 	 * Get things going.
@@ -34,16 +31,9 @@ class Cap_Authors {
 		if ( ! self::is_co_authors_plus_active() ) {
 			return;
 		}
+		Cap_Authors_Filters::init();
 
 		add_action( 'set_object_terms', [ __CLASS__, 'handle_cap_author_change' ], 10, 6 );
-		add_filter('newspack_network_content_distribution_reserved_post_meta_keys', [ __CLASS__, 'add_ignored_postmeta_keys' ], 10, 2 );
-	}
-
-	public static function add_ignored_postmeta_keys( $keys ) {
-		if (! in_array(self::CAP_GUEST_AUTHORS_META_KEY, $keys)) {
-			$keys[] = self::CAP_GUEST_AUTHORS_META_KEY;
-		}
-		return $keys;
 	}
 
 	/**
@@ -84,11 +74,12 @@ class Cap_Authors {
 		try {
 			$outgoing_post = new Outgoing_Post( $object_id );
 			if ( ! $outgoing_post->is_distributed() ) {
+				// TODO. This is problematic I think.
 				return;
 			}
 
 			$cap_authors = self::get_cap_authors_for_distribution( $outgoing_post->get_post() );
-			update_post_meta( $object_id, self::CAP_AUTHORS_TRANSFER_META_KEY, $cap_authors );
+			update_post_meta( $object_id, self::AUTHOR_LIST_META_KEY, $cap_authors );
 
 		} catch ( \InvalidArgumentException ) {
 			return;
@@ -163,16 +154,11 @@ class Cap_Authors {
 					$coauthors[] = $user->user_nicename;
 					break;
 				case 'guest_author':
+					// Do nothing here. We get the guest authors from the meta data on post views. See Cap_Authors_Filters.
 					break;
 				default:
 					Debugger::log( sprintf( 'Error ingesting author: Invalid author type "%s"', $author_type ) );
 			}
-		}
-
-		if ( ! empty( $guest_authors ) ) {
-			update_post_meta( $post_id, self::CAP_GUEST_AUTHORS_META_KEY, $guest_authors );
-		} else {
-			delete_post_meta( $post_id, self::CAP_GUEST_AUTHORS_META_KEY );
 		}
 
 		global $coauthors_plus;
@@ -205,7 +191,7 @@ class Cap_Authors {
 			$author['avatar_img_tag'] = $author_avatar;
 		}
 
-		return array_filter( $author );
+		return $author;
 	}
 
 }

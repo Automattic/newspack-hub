@@ -256,11 +256,11 @@ class Outgoing_Post {
 	 * @return array The taxonomy term data.
 	 */
 	protected function get_post_taxonomy_terms() {
-		$reserved_taxonomies = Content_Distribution_Class::get_reserved_taxonomies();
-		$taxonomies          = get_object_taxonomies( $this->post->post_type, 'objects' );
+		$ignored_taxonomies = Content_Distribution_Class::get_ignored_taxonomies();
+		$taxonomies         = get_object_taxonomies( $this->post->post_type, 'objects' );
 		$data                = [];
 		foreach ( $taxonomies as $taxonomy ) {
-			if ( in_array( $taxonomy->name, $reserved_taxonomies, true ) ) {
+			if ( in_array( $taxonomy->name, $ignored_taxonomies, true ) ) {
 				continue;
 			}
 			if ( ! $taxonomy->public ) {
@@ -289,7 +289,7 @@ class Outgoing_Post {
 	 * @return array The post meta data.
 	 */
 	protected function get_post_meta() {
-		$reserved_keys = Content_Distribution_Class::get_reserved_post_meta_keys();
+		$ignored_keys = Content_Distribution_Class::get_ignored_post_meta_keys();
 
 		$meta = get_post_meta( $this->post->ID );
 
@@ -299,9 +299,9 @@ class Outgoing_Post {
 
 		$meta = array_filter(
 			$meta,
-			function( $value, $key ) use ( $reserved_keys ) {
-				// Filter out reserved keys.
-				return ! in_array( $key, $reserved_keys, true );
+			function( $value, $key ) use ( $ignored_keys ) {
+				// Filter out ignored keys.
+				return ! in_array( $key, $ignored_keys, true );
 			},
 			ARRAY_FILTER_USE_BOTH
 		);
