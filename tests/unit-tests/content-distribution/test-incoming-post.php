@@ -509,7 +509,7 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	 * Test partial post pyload update on instantiating.
 	 */
 	public function test_partial_payload_instantiating() {
-		$this->incoming_post->insert();
+		$post_id = $this->incoming_post->insert();
 
 		// Make the payload a partial.
 		$payload              = $this->get_sample_payload();
