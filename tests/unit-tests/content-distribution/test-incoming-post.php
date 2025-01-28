@@ -483,14 +483,13 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Test partial post payload update.
+	 * Test partial post payload on insert.
 	 */
 	public function test_partial_payload_insert() {
-		$payload = $this->get_sample_payload();
+		$post_id = $this->incoming_post->insert();
 
-		$post_id = $this->incoming_post->insert( $payload );
-
-		// Update the post payload with a partial update.
+		// Make the payload a partial.
+		$payload              = $this->get_sample_payload();
 		$payload['partial']   = true;
 		$payload['post_data'] = [
 			'title'        => 'Updated Title',
@@ -506,9 +505,9 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Test partial post pyload update on instantiating.
+	 * Test partial post payload on instantiation.
 	 */
-	public function test_partial_payload_instantiating() {
+	public function test_partial_payload_instantiation() {
 		$post_id = $this->incoming_post->insert();
 
 		// Make the payload a partial.
