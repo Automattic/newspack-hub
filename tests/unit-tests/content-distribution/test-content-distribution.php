@@ -81,12 +81,12 @@ class TestContentDistribution extends \WP_UnitTestCase {
 		// Queue full post for distribution.
 		Content_Distribution_Class::queue_post_distribution( $post_id );
 		$queue = Content_Distribution_Class::get_queued_distributions();
-		$this->assertArrayHasKey( $post_id, $queue );
+		// Assert that the post is queued for full distribution (= true).
 		$this->assertTrue( $queue[ $post_id ] );
 
 		// Queue another attribute for distribution.
-		$queue = Content_Distribution_Class::get_queued_distributions( $post_id, 'taxonomy' );
-		$this->assertArrayHasKey( $post_id, $queue );
+		Content_Distribution_Class::queue_post_distribution( $post_id, 'post_meta' );
+		$queue = Content_Distribution_Class::get_queued_distributions();
 		// Assert that the post is still queued for full distribution.
 		$this->assertTrue( $queue[ $post_id ] );
 	}
