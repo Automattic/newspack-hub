@@ -205,7 +205,7 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 		$partial_payload = $this->outgoing_post->get_partial_payload( 'post_meta' );
 
 		$payload = $this->outgoing_post->get_payload();
-		$this->assertTrue( $payload['partial'] );
+		$this->assertTrue( $partial_payload['partial'] );
 		$this->assertSame( $payload['network_post_id'], $partial_payload['network_post_id'] );
 		$this->assertSame( $payload['post_data']['post_meta'], $partial_payload['post_data']['post_meta'] );
 		$this->assertSame( $payload['post_data']['date_gmt'], $partial_payload['post_data']['date_gmt'] );
@@ -222,7 +222,7 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 		$partial_payload = $this->outgoing_post->get_partial_payload( [ 'post_meta', 'taxonomy' ] );
 
 		$payload = $this->outgoing_post->get_payload();
-		$this->assertTrue( $payload['partial'] );
+		$this->assertTrue( $partial_payload['partial'] );
 		$this->assertSame( $payload['network_post_id'], $partial_payload['network_post_id'] );
 		$this->assertSame( $payload['post_data']['post_meta'], $partial_payload['post_data']['post_meta'] );
 		$this->assertSame( $payload['post_data']['taxonomy'], $partial_payload['post_data']['taxonomy'] );
