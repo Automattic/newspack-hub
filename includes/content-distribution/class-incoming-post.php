@@ -87,29 +87,26 @@ class Incoming_Post {
 			throw new \InvalidArgumentException( esc_html( $error->get_error_message() ) );
 		}
 
+		$this->payload         = $payload;
+		$this->network_post_id = $payload['network_post_id'];
+
 		if ( ! $post ) {
 			$post = $this->query_post();
 		}
 
 		if ( $post ) {
-			$this->ID      = $post->ID;
-			$this->post    = $post;
+			$this->ID   = $post->ID;
+			$this->post = $post;
 		}
 
 		// Handle partial payload.
 		if ( ! empty( $payload['partial'] ) ) {
-			if ( ! $this->ID ) {
-				throw new \InvalidArgumentException( esc_html( __( 'Partial payload requires an existing post.', 'newspack-network' ) ) );
+			$payload = $this->get_payload_from_partial( $payload );
+			if ( is_wp_error( $payload ) ) {
+				throw new \InvalidArgumentException( esc_html( $payload->get_error_message() ) );
 			}
-
-			$current_post_data    = $this->get_post_payload()['post_data'];
-			$payload['post_data'] = array_merge( $current_post_data, $payload['post_data'] );
-
-			unset( $payload['partial'] );
+			$this->payload = $payload;
 		}
-
-		$this->payload         = $payload;
-		$this->network_post_id = $payload['network_post_id'];
 	}
 
 	/**
@@ -183,6 +180,31 @@ class Incoming_Post {
 			return [];
 		}
 		return get_post_meta( $this->ID, self::PAYLOAD_META, true );
+	}
+
+	/**
+	 * Get payload from partial.
+	 *
+	 * @param array $payload The partial payload.
+	 *
+	 * @return array|WP_Error The full payload or WP_Error on failure.
+	 */
+	protected function get_payload_from_partial( $payload ) {
+		if ( ! $this->ID ) {
+			return new WP_Error( 'missing_post', __( 'Partial payload requires an existing post.', 'newspack-network' ) );
+		}
+
+		$current_payload       = $this->get_post_payload();
+		$current_payload_error = self::get_payload_error( $current_payload );
+		if ( is_wp_error( $current_payload_error ) ) {
+			return $current_payload_error->get_error_message();
+		}
+
+		$payload['post_data'] = array_merge( $current_payload['post_data'], $payload['post_data'] );
+
+		unset( $payload['partial'] );
+
+		return $payload;
 	}
 
 	/**
@@ -406,22 +428,17 @@ class Incoming_Post {
 			return $error;
 		}
 
-		/**
-		 * Handle partial payload
-		 */
-		if ( ! empty( $payload['partial'] ) ) {
-			$current_payload = $this->get_post_payload();
-			if ( ! $this->ID ) {
-				self::log( 'Partial payload requires an existing post.' );
-				return new WP_Error( 'partial_payload', __( 'Partial payload requires an existing post.', 'newspack-network' ) );
-			}
-			$payload['post_data'] = array_merge( $current_payload['post_data'], $payload['post_data'] );
-			unset( $payload['partial'] );
-		}
-
 		// Do not update if network post ID mismatches.
 		if ( $this->network_post_id !== $payload['network_post_id'] ) {
 			return new WP_Error( 'mismatched_post_id', __( 'Mismatched post ID.', 'newspack-network' ) );
+		}
+
+		// Handle partial payload.
+		if ( ! empty( $payload['partial'] ) ) {
+			$payload = $this->get_payload_from_partial( $payload );
+			if ( is_wp_error( $payload ) ) {
+				return $payload;
+			}
 		}
 
 		$this->payload = $payload;

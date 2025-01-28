@@ -424,7 +424,7 @@ class Content_Distribution {
 	 * Trigger a partial post distribution.
 	 *
 	 * @param WP_Post|Outgoing_Post|int $post           The post object or ID.
-	 * @param string[]                  $post_data_keys The post data key to update.
+	 * @param string[]                  $post_data_keys The post data keys to update.
 	 *
 	 * @return void|WP_Error The error if the payload is invalid.
 	 */
