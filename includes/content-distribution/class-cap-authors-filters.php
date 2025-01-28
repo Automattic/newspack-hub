@@ -8,8 +8,7 @@
 namespace Newspack_Network\Content_Distribution;
 
 /**
- * Class to handle authorship filters
- * TODO
+ * Class to support distributed Guest Authors.
  */
 class Cap_Authors_Filters {
 
@@ -22,6 +21,7 @@ class Cap_Authors_Filters {
 		if ( ! Cap_Authors::is_co_authors_plus_active() ) {
 			return;
 		}
+
 		if ( ! is_admin() ) {
 			add_filter( 'get_coauthors', [ __CLASS__, 'filter_get_coauthors' ], 10, 2 );
 			add_filter( 'newspack_author_bio_name', [ __CLASS__, 'filter_newspack_author_bio_name' ], 10, 3 );
@@ -30,7 +30,7 @@ class Cap_Authors_Filters {
 	}
 
 	/**
-	 * Filters the coauthors of a post to include the distributed authors and CAP's guest authors
+	 * Filters the coauthors of a post to include CAP's guest authors
 	 *
 	 * @param array $coauthors Array of coauthors.
 	 * @param int   $post_id Post ID.

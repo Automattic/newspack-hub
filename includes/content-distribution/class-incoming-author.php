@@ -19,33 +19,34 @@ class Incoming_Author {
 	/**
 	 * Ingest authors for a post distributed to this site
 	 *
-	 * @param int   $post_id The post ID.
-	 * @param array $author The distributed authors array.
+	 * @param int    $post_id The post ID.
+	 * @param string $remote_url The remote URL.
+	 * @param array  $author The distributed authors array.
 	 *
 	 * @return void
 	 */
-	public static function ingest_author_for_post( int $post_id, array $author ): void {
+	public static function ingest_author_for_post( int $post_id, string $remote_url, array $author ): void {
 		if ( empty( $author ) ) {
 			return;
 		}
-		$author = self::get_wp_user_author( $post_id, $author );
+		$author = self::get_wp_user_author( $remote_url, $author );
 		wp_update_post(
 			[
 				'ID'          => $post_id,
 				'post_author' => $author->ID,
-			] 
+			]
 		);
 	}
 
 	/**
 	 * Ingest authors for a post distributed to this site
 	 *
-	 * @param int   $post_id The post ID.
-	 * @param array $author The distributed authors array.
+	 * @param string $remote_url The remote site URL.
+	 * @param array  $author The distributed authors array.
 	 *
 	 * @return \WP_User|\WP_Error The user object or false on failure.
 	 */
-	public static function get_wp_user_author( int $post_id, array $author ) {
+	public static function get_wp_user_author( string $remote_url, array $author ) {
 
 		User_Update_Watcher::$enabled = false;
 
@@ -61,7 +62,7 @@ class Incoming_Author {
 
 		$user = User_Utils::get_or_create_user_by_email(
 			$author['user_email'],
-			get_post_meta( $post_id, 'dt_original_site_url', true ), // TODO.
+			$remote_url,
 			$author['ID'],
 			$insert_array
 		);

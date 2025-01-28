@@ -7,6 +7,7 @@
 
 namespace Newspack_Network\Distributor_Customizations;
 
+use Newspack\Data_Events;
 use Newspack_Network\Debugger;
 use Newspack_Network\User_Update_Watcher;
 use WP_Error;
@@ -91,10 +92,10 @@ class Author_Distribution {
 	/**
 	 * Get the authors of a post to be added to the distribution payload.
 	 *
-	 * @param \WP_Post $post The post object.
+	 * @param WP_Post $post The post object.
 	 * @return array An array of authors.
 	 */
-	public static function get_authors_for_distribution( $post ) {
+	private static function get_authors_for_distribution( $post ) {
 		$author = self::get_wp_user_for_distribution( $post->post_author );
 
 		if ( ! function_exists( 'get_coauthors' ) ) {

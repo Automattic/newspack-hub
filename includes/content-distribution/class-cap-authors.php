@@ -18,7 +18,9 @@ use WP_Post;
 class Cap_Authors {
 
 	/**
-	 * TODO
+	 * Meta key for the author list we transfer.
+	 *
+	 * Note that it can have both Guest Contributors (that are WP_User objects) and Guest Authors (that are Guest Author objects).
 	 */
 	const AUTHOR_LIST_META_KEY = 'newspack_network_author_list';
 
@@ -125,12 +127,12 @@ class Cap_Authors {
 	 * Ingest authors for a post distributed to this site
 	 *
 	 * @param int    $post_id The post ID.
-	 * @param string $site_url The site URL.
+	 * @param string $remote_url The remote URL.
 	 * @param array  $cap_authors Array of distributed authors.
 	 *
 	 * @return void
 	 */
-	public static function ingest_cap_authors_for_post( int $post_id, string $site_url, array $cap_authors ): void {
+	public static function ingest_cap_authors_for_post( int $post_id, string $remote_url, array $cap_authors ): void {
 		if ( ! self::is_co_authors_plus_active() ) {
 			return;
 		}
@@ -140,14 +142,13 @@ class Cap_Authors {
 		Debugger::log( 'Ingesting authors from networked post.' );
 		User_Update_Watcher::$enabled = false;
 
-		$coauthors     = [];
-		$guest_authors = [];
+		$coauthors = [];
 
 		foreach ( $cap_authors as $author ) {
 			$author_type = $author['type'] ?? '';
 			switch ( $author_type ) {
 				case 'wp_user':
-					$user = Incoming_Author::get_wp_user_author( $post_id, $author );
+					$user = Incoming_Author::get_wp_user_author( $remote_url, $author );
 					if ( is_wp_error( $user ) ) {
 						Debugger::log( 'Error ingesting author: ' . $user->get_error_message() );
 					}

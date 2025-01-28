@@ -391,15 +391,4 @@ class Content_Distribution {
 		}
 	}
 
-	/**
-	 * Helper to check if Co-Authors Plus is active.
-	 *
-	 * @return bool Whether Co-Authors Plus is active.
-	 */
-	public static function is_co_authors_plus_active(): bool {
-		global $coauthors_plus;
-
-		return $coauthors_plus instanceof \CoAuthors_Plus;
-	}
-
 }

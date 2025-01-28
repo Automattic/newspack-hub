@@ -86,7 +86,6 @@ class Users {
 	 */
 	public static function generate_user_nicename( $name ) {
 		$name = self::strip_email_domain( $name ); // If an email address, strip the domain.
-		// TODO. Could really benefit from the unique thing from NMT.
 		return substr( \sanitize_title( \sanitize_user( $name, true ) ), 0, 50 );
 	}
 

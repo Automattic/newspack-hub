@@ -95,8 +95,8 @@ class Incoming_Post {
 		}
 
 		if ( $post ) {
-			$this->ID      = $post->ID;
-			$this->post    = $post;
+			$this->ID   = $post->ID;
+			$this->post = $post;
 		}
 	}
 
@@ -107,7 +107,7 @@ class Incoming_Post {
 	 * the Network's debugger.
 	 *
 	 * @param string $message The message to log.
-	 * @param string $type    The log type. Either 'error' or 'debug'.
+	 * @param string $type The log type. Either 'error' or 'debug'.
 	 *                        Default is 'error'.
 	 *
 	 * @return void
@@ -170,6 +170,7 @@ class Incoming_Post {
 		if ( ! $this->ID ) {
 			return [];
 		}
+
 		return get_post_meta( $this->ID, self::PAYLOAD_META, true );
 	}
 
@@ -200,7 +201,16 @@ class Incoming_Post {
 		$posts = get_posts(
 			[
 				'post_type'      => Content_Distribution_Class::get_distributed_post_types(),
-				'post_status'    => [ 'publish', 'pending', 'draft', 'auto-draft', 'future', 'private', 'inherit', 'trash' ],
+				'post_status'    => [
+					'publish',
+					'pending',
+					'draft',
+					'auto-draft',
+					'future',
+					'private',
+					'inherit',
+					'trash',
+				],
 				'posts_per_page' => 1,
 				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					[
@@ -213,6 +223,7 @@ class Incoming_Post {
 		if ( empty( $posts ) ) {
 			return null;
 		}
+
 		return $posts[0];
 	}
 
@@ -341,6 +352,7 @@ class Incoming_Post {
 		$attachment_id = media_sideload_image( $thumbnail_url, $this->ID, '', 'id' );
 		if ( is_wp_error( $attachment_id ) ) {
 			self::log( 'Failed to upload featured image for post ' . $this->ID . ' with message: ' . $attachment_id->get_error_message() );
+
 			return;
 		}
 
@@ -440,6 +452,7 @@ class Incoming_Post {
 			$error = $this->update_payload( $payload );
 			if ( is_wp_error( $error ) ) {
 				self::log( 'Failed to update payload: ' . $error->get_error_message() );
+
 				return $error;
 			}
 		}
@@ -461,6 +474,7 @@ class Incoming_Post {
 			$current_payload['post_data']['modified_gmt'] > $post_data['modified_gmt']
 		) {
 			self::log( 'Linked post content is newer than the post payload.' );
+
 			return new WP_Error( 'old_modified_date', __( 'Linked post content is newer than the post payload.', 'newspack-network' ) );
 		}
 
@@ -504,12 +518,14 @@ class Incoming_Post {
 
 			if ( is_wp_error( $post_id ) ) {
 				self::log( 'Failed to insert post with message: ' . $post_id->get_error_message() );
+
 				return $post_id;
 			}
 
 			// The wp_insert_post() function might return `0` on failure.
 			if ( ! $post_id ) {
 				self::log( 'Failed to insert post.' );
+
 				return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
 			}
 
@@ -517,7 +533,7 @@ class Incoming_Post {
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
 
-			Incoming_Author::ingest_author_for_post( $this->ID, $post_data['author'] );
+			Incoming_Author::ingest_author_for_post( $this->ID, $this->get_original_site_url(), $post_data['author'] );
 			Cap_Authors::ingest_cap_authors_for_post(
 				$this->ID,
 				$this->get_original_site_url(),
@@ -549,9 +565,9 @@ class Incoming_Post {
 		/**
 		 * Fires after an incoming post is inserted.
 		 *
-		 * @param int   $post_id   The post ID.
-		 * @param bool  $is_linked Whether the post is linked.
-		 * @param array $payload   The post payload.
+		 * @param int $post_id The post ID.
+		 * @param bool $is_linked Whether the post is linked.
+		 * @param array $payload The post payload.
 		 */
 		do_action( 'newspack_network_incoming_post_inserted', $this->ID, $this->is_linked(), $this->payload );
 
