@@ -163,10 +163,10 @@ class Content_Distribution {
 		if ( ! self::is_post_distributed( $post ) ) {
 			return;
 		}
-		// Ignore reserved keys but run if the meta is setting the distribution.
+		// Skip ignored keys but run if the meta is setting the distribution.
 		if (
 			Outgoing_Post::DISTRIBUTED_POST_META !== $meta_key &&
-			in_array( $meta_key, self::get_reserved_post_meta_keys(), true )
+			in_array( $meta_key, self::get_ignored_post_meta_keys(), true )
 		) {
 			return;
 		}
@@ -257,10 +257,16 @@ class Content_Distribution {
 	/**
 	 * Get post meta keys that should be ignored on content distribution.
 	 *
-	 * @return string[] The reserved post meta keys.
+	 * When generating the payload for content distribution, post meta with these
+	 * keys will not be included.
+	 *
+	 * Upon sync, these keys will also be ignored when updating the post meta,
+	 * so they'll never be deleted or updated.
+	 *
+	 * @return string[] The ignored post meta keys.
 	 */
-	public static function get_reserved_post_meta_keys() {
-		$reserved_keys = [
+	public static function get_ignored_post_meta_keys() {
+		$ignored_keys = [
 			'_edit_lock',
 			'_edit_last',
 			'_thumbnail_id',
@@ -268,16 +274,16 @@ class Content_Distribution {
 		];
 
 		/**
-		 * Filters the reserved post meta keys that should not be distributed.
+		 * Filters the ignored post meta keys that should not be distributed.
 		 *
-		 * @param string[] $reserved_keys The reserved post meta keys.
-		 * @param WP_Post  $post          The post object.
+		 * @param string[] $ignored_keys The ignored post meta keys.
+		 * @param WP_Post  $post         The post object.
 		 */
-		$reserved_keys = apply_filters( 'newspack_network_content_distribution_reserved_post_meta_keys', $reserved_keys );
+		$ignored_keys = apply_filters( 'newspack_network_content_distribution_ignored_post_meta_keys', $ignored_keys );
 
-		// Always preserve content distribution post meta.
+		// Always ignore content distribution post meta.
 		return array_merge(
-			$reserved_keys,
+			$ignored_keys,
 			[
 				self::PAYLOAD_HASH_META,
 				Outgoing_Post::DISTRIBUTED_POST_META,
@@ -292,19 +298,19 @@ class Content_Distribution {
 	/**
 	 * Get taxonomies that should not be distributed.
 	 *
-	 * @return string[] The reserved taxonomies.
+	 * @return string[] The ignored taxonomies.
 	 */
-	public static function get_reserved_taxonomies() {
-		$reserved_taxonomies = [
+	public static function get_ignored_taxonomies() {
+		$ignored_taxonomies = [
 			'author', // Co-Authors Plus 'author' taxonomy should be ignored as it requires custom handling.
 		];
 
 		/**
-		 * Filters the reserved taxonomies that should not be distributed.
+		 * Filters the ignored taxonomies that should not be distributed.
 		 *
-		 * @param string[] $reserved_taxonomies The reserved taxonomies.
+		 * @param string[] $ignored_taxonomies The ignored taxonomies.
 		 */
-		return apply_filters( 'newspack_network_content_distribution_reserved_taxonomies', $reserved_taxonomies );
+		return apply_filters( 'newspack_network_content_distribution_ignored_taxonomies', $ignored_taxonomies );
 	}
 
 	/**

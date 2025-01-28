@@ -270,18 +270,24 @@ class Incoming_Post {
 	/**
 	 * Update the post meta for a linked post.
 	 *
+	 * This will delete existing post meta that are not in the payload and update
+	 * the existing post meta.
+	 *
+	 * Ignored keys will not be managed, meaning they will not be deleted or
+	 * updated.
+	 *
 	 * @return void
 	 */
 	protected function update_meta() {
 		$data = $this->payload['post_data']['post_meta'];
 
-		$reserved_keys = Content_Distribution_Class::get_reserved_post_meta_keys();
+		$ignored_keys = Content_Distribution_Class::get_ignored_post_meta_keys();
 
-		// Clear existing post meta that are not in the payload.
+		// Delete existing post meta that are not in the payload.
 		$post_meta = get_post_meta( $this->ID );
 		foreach ( $post_meta as $meta_key => $meta_value ) {
 			if (
-				! in_array( $meta_key, $reserved_keys, true ) &&
+				! in_array( $meta_key, $ignored_keys, true ) &&
 				! array_key_exists( $meta_key, $data )
 			) {
 				delete_post_meta( $this->ID, $meta_key );
@@ -293,7 +299,7 @@ class Incoming_Post {
 		}
 
 		foreach ( $data as $meta_key => $meta_value ) {
-			if ( ! in_array( $meta_key, $reserved_keys, true ) ) {
+			if ( ! in_array( $meta_key, $ignored_keys, true ) ) {
 				if ( 1 === count( $meta_value ) ) {
 					update_post_meta( $this->ID, $meta_key, $meta_value[0] );
 				} else {
@@ -349,10 +355,10 @@ class Incoming_Post {
 	 * @return void
 	 */
 	protected function update_taxonomy_terms() {
-		$reserved_taxonomies = Content_Distribution_Class::get_reserved_taxonomies();
-		$data                = $this->payload['post_data']['taxonomy'];
+		$ignored_taxonomies = Content_Distribution_Class::get_ignored_taxonomies();
+		$data               = $this->payload['post_data']['taxonomy'];
 		foreach ( $data as $taxonomy => $terms ) {
-			if ( in_array( $taxonomy, $reserved_taxonomies, true ) ) {
+			if ( in_array( $taxonomy, $ignored_taxonomies, true ) ) {
 				continue;
 			}
 			if ( ! taxonomy_exists( $taxonomy ) ) {
