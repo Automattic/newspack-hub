@@ -197,4 +197,16 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 		$payload = $this->outgoing_post->get_payload();
 		$this->assertTrue( empty( $payload['post_data']['taxonomy'][ $taxonomy ] ) );
 	}
+
+	/**
+	 * Test get partial payload.
+	 */
+	public function test_get_partial_payload() {
+		$partial_payload = $this->outgoing_post->get_partial_payload( 'post_meta' );
+
+		$this->assertArrayHasKey( 'post_meta', $partial_payload['post_data'] );
+		$this->assertArrayHasKey( 'date_gmt', $partial_payload['post_data'] );
+		$this->assertArrayHasKey( 'modified_gmt', $partial_payload['post_data'] );
+		$this->assertArrayNotHasKey( 'title', $partial_payload['post_data'] );
+	}
 }

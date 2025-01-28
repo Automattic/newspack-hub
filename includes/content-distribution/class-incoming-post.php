@@ -87,9 +87,6 @@ class Incoming_Post {
 			throw new \InvalidArgumentException( esc_html( $error->get_error_message() ) );
 		}
 
-		$this->payload         = $payload;
-		$this->network_post_id = $payload['network_post_id'];
-
 		if ( ! $post ) {
 			$post = $this->query_post();
 		}
@@ -98,6 +95,21 @@ class Incoming_Post {
 			$this->ID      = $post->ID;
 			$this->post    = $post;
 		}
+
+		// Handle partial payload.
+		if ( ! empty( $payload['partial'] ) ) {
+			if ( ! $this->ID ) {
+				throw new \InvalidArgumentException( esc_html( __( 'Partial payload requires an existing post.', 'newspack-network' ) ) );
+			}
+
+			$current_post_data    = $this->get_post_payload()['post_data'];
+			$payload['post_data'] = array_merge( $current_post_data, $payload['post_data'] );
+
+			unset( $payload['partial'] );
+		}
+
+		$this->payload         = $payload;
+		$this->network_post_id = $payload['network_post_id'];
 	}
 
 	/**
@@ -392,6 +404,19 @@ class Incoming_Post {
 		$error = self::get_payload_error( $payload );
 		if ( is_wp_error( $error ) ) {
 			return $error;
+		}
+
+		/**
+		 * Handle partial payload
+		 */
+		if ( ! empty( $payload['partial'] ) ) {
+			$current_payload = $this->get_post_payload();
+			if ( ! $this->ID ) {
+				self::log( 'Partial payload requires an existing post.' );
+				return new WP_Error( 'partial_payload', __( 'Partial payload requires an existing post.', 'newspack-network' ) );
+			}
+			$payload['post_data'] = array_merge( $current_payload['post_data'], $payload['post_data'] );
+			unset( $payload['partial'] );
 		}
 
 		// Do not update if network post ID mismatches.

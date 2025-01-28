@@ -481,4 +481,51 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		$this->incoming_post->insert( $payload );
 		$this->assertSame( 'draft', get_post_status( $post_id ) );
 	}
+
+	/**
+	 * Test partial post payload update.
+	 */
+	public function test_partial_payload_insert() {
+		$payload = $this->get_sample_payload();
+
+		$post_id = $this->incoming_post->insert( $payload );
+
+		// Update the post payload with a partial update.
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		$this->incoming_post->insert( $payload );
+
+		// Assert that the post title was updated and the content was not.
+		$this->assertSame( 'Updated Title', get_the_title( $post_id ) );
+		$this->assertSame( 'Content', get_post_field( 'post_content', $post_id ) );
+	}
+
+	/**
+	 * Test partial post pyload update on instantiating.
+	 */
+	public function test_partial_payload_instantiating() {
+		$payload = $this->get_sample_payload();
+
+		$this->incoming_post->insert( $payload );
+
+		// Make the payload a partial.
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		$incoming_post = new Incoming_Post( $payload );
+		$incoming_post->insert();
+
+		// Assert that the post title was updated and the content was not.
+		$this->assertSame( 'Updated Title', get_the_title( $post_id ) );
+		$this->assertSame( 'Content', get_post_field( 'post_content', $post_id ) );
+	}
 }
