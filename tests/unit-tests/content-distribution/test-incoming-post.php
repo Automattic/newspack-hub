@@ -407,13 +407,13 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Test reserved taxonomies.
+	 * Test ignored taxonomies.
 	 */
-	public function test_reserved_taxonomies() {
+	public function test_ignored_taxonomies() {
 		$payload = $this->get_sample_payload();
 		$taxonomy = 'author';
 
-		// Register a reserved taxonomy.
+		// Register an ignored taxonomy.
 		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
 
 		$payload['post_data']['taxonomy']['author'] = [
@@ -426,7 +426,7 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		// Insert the linked post.
 		$post_id = $this->incoming_post->insert( $payload );
 
-		// Assert that the post does not have the reserved taxonomy term.
+		// Assert that the post does not have the ignored taxonomy term.
 		$terms = wp_get_post_terms( $post_id, $taxonomy );
 		$this->assertEmpty( $terms );
 	}

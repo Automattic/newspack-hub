@@ -184,9 +184,9 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Test reserved taxonomies.
+	 * Test ignored taxonomies.
 	 */
-	public function test_reserved_taxonomies() {
+	public function test_ignored_taxonomies() {
 		$post = $this->outgoing_post->get_post();
 		$taxonomy = 'author';
 		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
