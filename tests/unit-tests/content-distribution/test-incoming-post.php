@@ -526,4 +526,24 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		$this->assertSame( 'Updated Title', get_the_title( $post_id ) );
 		$this->assertSame( 'Content', get_post_field( 'post_content', $post_id ) );
 	}
+
+	/**
+	 * Test partial payload on missing post.
+	 */
+	public function test_partial_payload_missing_post() {
+		$payload = $this->get_sample_payload();
+
+		// Make the payload a partial.
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		// Assert that instantiating a partial payload will throw an exception.
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Partial payload requires an existing post.' );
+		new Incoming_Post( $payload );
+	}
 }
