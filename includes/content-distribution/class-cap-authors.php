@@ -52,12 +52,12 @@ class Cap_Authors {
 	 *
 	 * Add a postmeta entry with the Co-Authors Plus authors for outgoing posts.
 	 *
-	 * @param int $object_id The object ID.
-	 * @param array $terms The terms.
-	 * @param array $tt_ids The term taxonomy IDs.
+	 * @param int    $object_id The object ID.
+	 * @param array  $terms The terms.
+	 * @param array  $tt_ids The term taxonomy IDs.
 	 * @param string $taxonomy The taxonomy.
-	 * @param bool $append Whether to append.
-	 * @param array $old_tt_ids The old term taxonomy IDs.
+	 * @param bool   $append Whether to append.
+	 * @param array  $old_tt_ids The old term taxonomy IDs.
 	 *
 	 * @return void
 	 */
@@ -124,9 +124,9 @@ class Cap_Authors {
 	/**
 	 * Ingest authors for a post distributed to this site
 	 *
-	 * @param int $post_id The post ID.
+	 * @param int    $post_id The post ID.
 	 * @param string $site_url The site URL.
-	 * @param array $cap_authors Array of distributed authors.
+	 * @param array  $cap_authors Array of distributed authors.
 	 *
 	 * @return void
 	 */
@@ -193,5 +193,4 @@ class Cap_Authors {
 
 		return $author;
 	}
-
 }

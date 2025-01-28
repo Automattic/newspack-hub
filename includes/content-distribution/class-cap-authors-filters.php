@@ -33,7 +33,7 @@ class Cap_Authors_Filters {
 	 * Filters the coauthors of a post to include the distributed authors and CAP's guest authors
 	 *
 	 * @param array $coauthors Array of coauthors.
-	 * @param int $post_id Post ID.
+	 * @param int   $post_id Post ID.
 	 *
 	 * @return array
 	 */
@@ -69,7 +69,7 @@ class Cap_Authors_Filters {
 	 * Add job title for guest authors in the author bio.
 	 *
 	 * @param string $author_name The author name.
-	 * @param int $author_id The author ID.
+	 * @param int    $author_id The author ID.
 	 * @param object $author The author object.
 	 */
 	public static function filter_newspack_author_bio_name( $author_name, $author_id, $author = null ) {
@@ -88,7 +88,7 @@ class Cap_Authors_Filters {
 	 * Filter the author link for guest authors.
 	 *
 	 * @param string $link The author link.
-	 * @param int $author_id The author ID.
+	 * @param int    $author_id The author ID.
 	 * @param string $author_nicename The author nicename.
 	 *
 	 * @return string
