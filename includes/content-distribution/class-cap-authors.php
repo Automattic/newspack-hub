@@ -20,7 +20,10 @@ class Cap_Authors {
 	/**
 	 * Meta key for Co-Authors Plus authors for networked posts.
 	 */
-	const CAP_AUTHORS_META_KEY = 'newspack_network_cap_authors';
+	const CAP_AUTHORS_TRANSFER_META_KEY = 'newspack_network_cap_authors_transfer';
+
+	// TODO. Explain the difference here
+	const CAP_GUEST_AUTHORS_META_KEY = 'newspack_network_cap_guest_authors';
 
 	/**
 	 * Get things going.
@@ -33,6 +36,14 @@ class Cap_Authors {
 		}
 
 		add_action( 'set_object_terms', [ __CLASS__, 'handle_cap_author_change' ], 10, 6 );
+		add_filter('newspack_network_content_distribution_reserved_post_meta_keys', [ __CLASS__, 'add_ignored_postmeta_keys' ], 10, 2 );
+	}
+
+	public static function add_ignored_postmeta_keys( $keys ) {
+		if (! in_array(self::CAP_GUEST_AUTHORS_META_KEY, $keys)) {
+			$keys[] = self::CAP_GUEST_AUTHORS_META_KEY;
+		}
+		return $keys;
 	}
 
 	/**
@@ -51,12 +62,12 @@ class Cap_Authors {
 	 *
 	 * Add a postmeta entry with the Co-Authors Plus authors for outgoing posts.
 	 *
-	 * @param int    $object_id The object ID.
-	 * @param array  $terms The terms.
-	 * @param array  $tt_ids The term taxonomy IDs.
+	 * @param int $object_id The object ID.
+	 * @param array $terms The terms.
+	 * @param array $tt_ids The term taxonomy IDs.
 	 * @param string $taxonomy The taxonomy.
-	 * @param bool   $append Whether to append.
-	 * @param array  $old_tt_ids The old term taxonomy IDs.
+	 * @param bool $append Whether to append.
+	 * @param array $old_tt_ids The old term taxonomy IDs.
 	 *
 	 * @return void
 	 */
@@ -77,7 +88,7 @@ class Cap_Authors {
 			}
 
 			$cap_authors = self::get_cap_authors_for_distribution( $outgoing_post->get_post() );
-			update_post_meta( $object_id, self::CAP_AUTHORS_META_KEY, $cap_authors );
+			update_post_meta( $object_id, self::CAP_AUTHORS_TRANSFER_META_KEY, $cap_authors );
 
 		} catch ( \InvalidArgumentException ) {
 			return;
@@ -122,9 +133,9 @@ class Cap_Authors {
 	/**
 	 * Ingest authors for a post distributed to this site
 	 *
-	 * @param int    $post_id The post ID.
+	 * @param int $post_id The post ID.
 	 * @param string $site_url The site URL.
-	 * @param array  $cap_authors Array of distributed authors.
+	 * @param array $cap_authors Array of distributed authors.
 	 *
 	 * @return void
 	 */
@@ -138,19 +149,30 @@ class Cap_Authors {
 		Debugger::log( 'Ingesting authors from networked post.' );
 		User_Update_Watcher::$enabled = false;
 
-		$coauthors = [];
+		$coauthors     = [];
+		$guest_authors = [];
 
 		foreach ( $cap_authors as $author ) {
-			if ( 'wp_user' === ( $author['type'] ?? '' ) ) {
-				$user = Incoming_Author::get_wp_user_author( $post_id, $author );
-				if ( is_wp_error( $user ) ) {
-					Debugger::log( 'Error ingesting author: ' . $user->get_error_message() );
-					continue;
-				}
-				$coauthors[] = $user->user_nicename;
-			} elseif ( 'guest-author' === ( $author['type'] ?? '' ) ) {
-				// TODO. How do I get actual guest users enabled?
+			$author_type = $author['type'] ?? '';
+			switch ( $author_type ) {
+				case 'wp_user':
+					$user = Incoming_Author::get_wp_user_author( $post_id, $author );
+					if ( is_wp_error( $user ) ) {
+						Debugger::log( 'Error ingesting author: ' . $user->get_error_message() );
+					}
+					$coauthors[] = $user->user_nicename;
+					break;
+				case 'guest_author':
+					break;
+				default:
+					Debugger::log( sprintf( 'Error ingesting author: Invalid author type "%s"', $author_type ) );
 			}
+		}
+
+		if ( ! empty( $guest_authors ) ) {
+			update_post_meta( $post_id, self::CAP_GUEST_AUTHORS_META_KEY, $guest_authors );
+		} else {
+			delete_post_meta( $post_id, self::CAP_GUEST_AUTHORS_META_KEY );
 		}
 
 		global $coauthors_plus;
@@ -166,7 +188,6 @@ class Cap_Authors {
 	 * @return WP_Error|array
 	 */
 	private static function get_guest_author_for_distribution( $guest_author ): array|WP_Error {
-
 		global $coauthors_plus;
 
 		if ( ! is_object( $guest_author ) || ! isset( $guest_author->type ) || 'guest-author' !== $guest_author->type ) {
@@ -184,6 +205,7 @@ class Cap_Authors {
 			$author['avatar_img_tag'] = $author_avatar;
 		}
 
-		return $author;
+		return array_filter( $author );
 	}
+
 }

@@ -41,18 +41,21 @@ class Outgoing_Author {
 		];
 
 		foreach ( User_Update_Watcher::$user_props as $prop ) {
-			if ( isset( $user->$prop ) ) {
+			if ( ! empty( $user->$prop ) ) {
 				$author[ $prop ] = $user->$prop;
 			}
 		}
 
 		// CoAuthors' guest authors have a 'website' property.
-		if ( isset( $user->website ) ) {
+		if ( ! empty( $user->website ) ) {
 			$author['website'] = $user->website;
 		}
 
 		foreach ( User_Update_Watcher::$watched_meta as $meta_key ) {
-			$author[ $meta_key ] = get_user_meta( $user->ID, $meta_key, true );
+			$value = get_user_meta( $user->ID, $meta_key, true );
+			if ( ! empty( $value ) ) {
+				$author[ $meta_key ] = $value;
+			}
 		}
 
 		return $author;
