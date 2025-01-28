@@ -201,7 +201,7 @@ class Content_Distribution {
 		) {
 			return;
 		}
-		self::queue_post_distribution( $object_id, 'post_meta' );
+		self::queue_post_distribution( $post->ID, 'post_meta' );
 	}
 
 	/**
