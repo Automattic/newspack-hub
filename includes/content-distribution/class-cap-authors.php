@@ -138,6 +138,9 @@ class Cap_Authors {
 		}
 
 		$cap_authors = reset( $cap_authors );
+		if (! is_array( $cap_authors ) || empty( $cap_authors ) ) {
+			return;
+		}
 
 		Debugger::log( 'Ingesting authors from networked post.' );
 		User_Update_Watcher::$enabled = false;
