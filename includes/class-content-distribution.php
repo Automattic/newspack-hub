@@ -106,6 +106,13 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Get queued post distributions.
+	 */
+	public static function get_queued_distributions() {
+		return self::$queued_distributions;
+	}
+
+	/**
 	 * Distribute queued posts.
 	 */
 	public static function distribute_queued_posts() {

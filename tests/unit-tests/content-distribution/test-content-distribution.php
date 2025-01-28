@@ -7,6 +7,7 @@
 
 namespace Test\Content_Distribution;
 
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack_Network\Hub\Node as Hub_Node;
 
@@ -63,5 +64,30 @@ class TestContentDistribution extends \WP_UnitTestCase {
 		// Assert that you can add a site to distribution.
 		$result = update_post_meta( $post_id, Outgoing_Post::DISTRIBUTED_POST_META, [ 'https://node.test', 'https://other-node.test' ] );
 		$this->assertNotFalse( $result );
+	}
+
+	/**
+	 * Test queue post distribution.
+	 */
+	public function test_queue_post_distribution() {
+		$post_id = $this->factory->post->create();
+
+		// Queue post meta for distribution.
+		Content_Distribution_Class::queue_post_distribution( $post_id, 'post_meta' );
+		$queue = Content_Distribution_Class::get_queued_distributions();
+		$this->assertArrayHasKey( $post_id, $queue );
+		$this->assertSame( [ 'post_meta' ], $queue[ $post_id ] );
+
+		// Queue full post for distribution.
+		Content_Distribution_Class::queue_post_distribution( $post_id );
+		$queue = Content_Distribution_Class::get_queued_distributions();
+		$this->assertArrayHasKey( $post_id, $queue );
+		$this->assertTrue( $queue[ $post_id ] );
+
+		// Queue another attribute for distribution.
+		$queue = Content_Distribution_Class::get_queued_distributions( $post_id, 'taxonomy' );
+		$this->assertArrayHasKey( $post_id, $queue );
+		// Assert that the post is still queued for full distribution.
+		$this->assertTrue( $queue[ $post_id ] );
 	}
 }
