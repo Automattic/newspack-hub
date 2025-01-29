@@ -197,4 +197,38 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 		$payload = $this->outgoing_post->get_payload();
 		$this->assertTrue( empty( $payload['post_data']['taxonomy'][ $taxonomy ] ) );
 	}
+
+	/**
+	 * Test get partial payload.
+	 */
+	public function test_get_partial_payload() {
+		$partial_payload = $this->outgoing_post->get_partial_payload( 'post_meta' );
+
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertTrue( $partial_payload['partial'] );
+		$this->assertSame( $payload['network_post_id'], $partial_payload['network_post_id'] );
+		$this->assertSame( $payload['post_data']['post_meta'], $partial_payload['post_data']['post_meta'] );
+		$this->assertSame( $payload['post_data']['date_gmt'], $partial_payload['post_data']['date_gmt'] );
+		$this->assertSame( $payload['post_data']['modified_gmt'], $partial_payload['post_data']['modified_gmt'] );
+		$this->assertArrayNotHasKey( 'title', $partial_payload['post_data'] );
+		$this->assertArrayNotHasKey( 'content', $partial_payload['post_data'] );
+		$this->assertArrayNotHasKey( 'taxonomy', $partial_payload['post_data'] );
+	}
+
+	/**
+	 * Test get partial payload multiple keys.
+	 */
+	public function test_get_partial_payload_multiple_keys() {
+		$partial_payload = $this->outgoing_post->get_partial_payload( [ 'post_meta', 'taxonomy' ] );
+
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertTrue( $partial_payload['partial'] );
+		$this->assertSame( $payload['network_post_id'], $partial_payload['network_post_id'] );
+		$this->assertSame( $payload['post_data']['post_meta'], $partial_payload['post_data']['post_meta'] );
+		$this->assertSame( $payload['post_data']['taxonomy'], $partial_payload['post_data']['taxonomy'] );
+		$this->assertSame( $payload['post_data']['date_gmt'], $partial_payload['post_data']['date_gmt'] );
+		$this->assertSame( $payload['post_data']['modified_gmt'], $partial_payload['post_data']['modified_gmt'] );
+		$this->assertArrayNotHasKey( 'title', $partial_payload['post_data'] );
+		$this->assertArrayNotHasKey( 'content', $partial_payload['post_data'] );
+	}
 }

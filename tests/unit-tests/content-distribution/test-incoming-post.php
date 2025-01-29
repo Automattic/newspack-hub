@@ -481,4 +481,69 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		$this->incoming_post->insert( $payload );
 		$this->assertSame( 'draft', get_post_status( $post_id ) );
 	}
+
+	/**
+	 * Test partial post payload on insert.
+	 */
+	public function test_partial_payload_insert() {
+		$post_id = $this->incoming_post->insert();
+
+		// Make the payload a partial.
+		$payload              = $this->get_sample_payload();
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		$this->incoming_post->insert( $payload );
+
+		// Assert that the post title was updated and the content was not.
+		$this->assertSame( 'Updated Title', get_the_title( $post_id ) );
+		$this->assertSame( 'Content', get_post_field( 'post_content', $post_id ) );
+	}
+
+	/**
+	 * Test partial post payload on instantiation.
+	 */
+	public function test_partial_payload_instantiation() {
+		$post_id = $this->incoming_post->insert();
+
+		// Make the payload a partial.
+		$payload              = $this->get_sample_payload();
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		$incoming_post = new Incoming_Post( $payload );
+		$incoming_post->insert();
+
+		// Assert that the post title was updated and the content was not.
+		$this->assertSame( 'Updated Title', get_the_title( $post_id ) );
+		$this->assertSame( 'Content', get_post_field( 'post_content', $post_id ) );
+	}
+
+	/**
+	 * Test partial payload on missing post.
+	 */
+	public function test_partial_payload_missing_post() {
+		$payload = $this->get_sample_payload();
+
+		// Make the payload a partial.
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		// Assert that instantiating a partial payload will throw an exception.
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Partial payload requires an existing post.' );
+		new Incoming_Post( $payload );
+	}
 }
