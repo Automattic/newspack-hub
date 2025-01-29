@@ -30,6 +30,7 @@ class TestIncomingPost extends \WP_UnitTestCase {
 
 	/**
 	 * A user with the editor role.
+	 *
 	 * @var \WP_User
 	 */
 	protected $some_editor;
