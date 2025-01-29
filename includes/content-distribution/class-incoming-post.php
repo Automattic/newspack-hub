@@ -576,7 +576,7 @@ class Incoming_Post {
 			$this->post = get_post( $this->ID );
 
 			Incoming_Author::ingest_author_for_post( $this->ID, $this->get_original_site_url(), $post_data['author'] );
-			Cap_Authors::ingest_cap_authors_for_post(
+			Cap_Authors::ingest_incoming_for_post(
 				$this->post,
 				$this->get_original_site_url(),
 				$this->payload['multiple_authors'] ?? []

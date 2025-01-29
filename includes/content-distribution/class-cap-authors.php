@@ -1,6 +1,6 @@
 <?php
 /**
- * Newspack Network author ingestion for content distribution.
+ * Newspack Network Co-Authors Plus authors.
  *
  * @package Newspack
  */
@@ -10,20 +10,14 @@ namespace Newspack_Network\Content_Distribution;
 use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Debugger;
 use Newspack_Network\User_Update_Watcher;
-use WP_Error;
 use WP_Post;
 
 /**
- * Class to handle author ingestion for content distribution.
+ * This class handles the Guest Contributors Newspack offers for CAP.
+ *
+ * For Co-Author Plus Guest Authors, see Cap_Guest_Authors.
  */
 class Cap_Authors {
-
-	/**
-	 * Meta key for the author list we transfer.
-	 *
-	 * Note that it can have both Guest Contributors (that are WP_User objects) and Guest Authors (that are Guest Author objects).
-	 */
-	const AUTHOR_LIST_META_KEY = 'newspack_network_author_list';
 
 	/**
 	 * Get things going.
@@ -31,13 +25,17 @@ class Cap_Authors {
 	 * @return void
 	 */
 	public static function init(): void {
-		if ( self::is_co_authors_plus_active() ) {
+		if ( ! self::is_co_authors_plus_active() ) {
 			return;
 		}
-		Cap_Authors_Filters::init();
 
-		add_action( 'set_object_terms', [ __CLASS__, 'handle_cap_author_change' ], 10, 6 );
-		add_filter('newspack_network_multiple_authors_for_post', [ __CLASS__, 'get_cap_authors_for_distribution' ], 10, 2);
+		add_action( 'set_object_terms', [ __CLASS__, 'on_cap_authors_change' ], 20, 6 );
+		add_filter( 'newspack_network_multiple_authors_for_post', [ __CLASS__, 'get_outgoing_for_post' ], 10, 2 );
+
+		if ( defined( 'NEWSPACK_ENABLE_CAP_GUEST_AUTHORS' ) && NEWSPACK_ENABLE_CAP_GUEST_AUTHORS ) {
+			// Support CAP Guest Authors.
+			Cap_Guest_Authors::init();
+		}
 	}
 
 	/**
@@ -65,7 +63,7 @@ class Cap_Authors {
 	 *
 	 * @return void
 	 */
-	public static function handle_cap_author_change( $object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ): void {
+	public static function on_cap_authors_change( $object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ): void {
 		if ( 'author' !== $taxonomy ) { // Co-Authors Plus author taxonomy.
 			return;
 		}
@@ -81,7 +79,7 @@ class Cap_Authors {
 				return;
 			}
 
-			Content_Distribution_Class::distribute_post($outgoing_post->get_post() );
+			Content_Distribution_Class::distribute_post_partial( $outgoing_post->get_post(), [ 'multiple_authors' ] );
 
 		} catch ( \InvalidArgumentException ) {
 			return;
@@ -91,13 +89,14 @@ class Cap_Authors {
 	/**
 	 * Get the Co-Authors Plus authors for distribution.
 	 *
+	 * @param array   $authors Array of authors.
 	 * @param WP_Post $post Post to get authors for.
 	 *
 	 * @return array Array of authors in distributable format.
 	 */
-	public static function get_cap_authors_for_distribution( $authors, WP_Post $post ): array {
+	public static function get_outgoing_for_post( $authors, $post ): array {
 
-		if (! self::is_co_authors_plus_active() ) {
+		if ( ! self::is_co_authors_plus_active() ) {
 			return [];
 		}
 
@@ -108,18 +107,14 @@ class Cap_Authors {
 
 		foreach ( $co_authors as $co_author ) {
 			if ( is_a( $co_author, 'WP_User' ) ) {
-				// This will never return an error because we are checking for is_a() first.
 				$authors[] = Outgoing_Author::get_wp_user_for_distribution( $co_author );
 				continue;
 			}
 
-			$guest_author = self::get_guest_author_for_distribution( $co_author );
-			if ( is_wp_error( $guest_author ) ) {
-				Debugger::log( 'Error getting guest author for distribution on post ' . $post->ID . ': ' . $guest_author->get_error_message() );
-				Debugger::log( $co_author );
-				continue;
-			}
-			$authors[] = $guest_author;
+			$other_kind_of_author = apply_filters( 'newspack_network_outgoing_non_wp_user_author', false, $co_author );
+			if ( ! empty( $other_kind_of_author ) ) {
+				$authors[] = $other_kind_of_author;
+			}       
 		}
 
 		return $authors;
@@ -128,13 +123,13 @@ class Cap_Authors {
 	/**
 	 * Ingest authors for a post distributed to this site
 	 *
-	 * @param WP_post    $post The post.
-	 * @param string $remote_url The remote URL.
-	 * @param array  $cap_authors Array of distributed authors.
+	 * @param WP_post $post The post.
+	 * @param string  $remote_url The remote URL.
+	 * @param array   $cap_authors Array of distributed authors.
 	 *
 	 * @return void
 	 */
-	public static function ingest_cap_authors_for_post( $post, string $remote_url, array $cap_authors ): void {
+	public static function ingest_incoming_for_post( $post, string $remote_url, array $cap_authors ): void {
 		if ( ! self::is_co_authors_plus_active() ) {
 			return;
 		}
@@ -142,7 +137,8 @@ class Cap_Authors {
 		Debugger::log( 'Ingesting authors from networked post.' );
 		User_Update_Watcher::$enabled = false;
 
-		$coauthors = [];
+		$guest_contributors = [];
+		$guest_authors = [];
 
 		foreach ( $cap_authors as $author ) {
 			$author_type = $author['type'] ?? '';
@@ -150,47 +146,21 @@ class Cap_Authors {
 				case 'wp_user':
 					$user = Incoming_Author::get_wp_user_author( $remote_url, $author );
 					if ( is_wp_error( $user ) ) {
-						Debugger::log( 'Error ingesting author: ' . $user->get_error_message() );
+						Debugger::log( 'Error ingesting guest contributor: ' . $user->get_error_message() );
 					}
-					$coauthors[] = $user->user_nicename;
+					$guest_contributors[] = $user->user_nicename;
 					break;
 				case 'guest_author':
-					// Do nothing here. We get the guest authors from the meta data on post views. See Cap_Authors_Filters.
+					$guest_authors[] = $author;
 					break;
 				default:
 					Debugger::log( sprintf( 'Error ingesting author: Invalid author type "%s"', $author_type ) );
 			}
 		}
 
+		do_action( 'newspack_network_incoming_guest_authors', $post->ID, $guest_authors );
+
 		global $coauthors_plus;
-		$coauthors_plus->add_coauthors( $post->ID, $coauthors );
-	}
-
-	/**
-	 * Get the guest author data to be distributed along with the post.
-	 *
-	 * @param object $guest_author The Guest Author object.
-	 *
-	 * @return WP_Error|array
-	 */
-	private static function get_guest_author_for_distribution( $guest_author ): array|WP_Error {
-		global $coauthors_plus;
-
-		if ( ! is_object( $guest_author ) || ! isset( $guest_author->type ) || 'guest-author' !== $guest_author->type ) {
-			return new WP_Error( 'Error getting guest author details for distribution. Invalid Guest Author' );
-		}
-
-		$author         = (array) $guest_author;
-		$author['type'] = 'guest_author';
-
-		// Gets the guest author avatar.
-		// We only want to send an actual uploaded avatar, we don't want to send the fallback avatar, like gravatar.
-		// If no avatar was set, let it default to the fallback set in the target site.
-		$author_avatar = $coauthors_plus->guest_authors->get_guest_author_thumbnail( $guest_author, 80 );
-		if ( $author_avatar ) {
-			$author['avatar_img_tag'] = $author_avatar;
-		}
-
-		return $author;
+		$coauthors_plus->add_coauthors( $post->ID, $guest_contributors );
 	}
 }
