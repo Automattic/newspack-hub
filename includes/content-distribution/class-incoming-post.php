@@ -535,9 +535,9 @@ class Incoming_Post {
 
 			Incoming_Author::ingest_author_for_post( $this->ID, $this->get_original_site_url(), $post_data['author'] );
 			Cap_Authors::ingest_cap_authors_for_post(
-				$this->ID,
+				$this->post,
 				$this->get_original_site_url(),
-				$this->payload['post_data']['post_meta'][ Cap_Authors::AUTHOR_LIST_META_KEY ] ?? []
+				$this->payload['multiple_authors'] ?? []
 			);
 
 			// Handle post meta.

@@ -7,6 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Debugger;
 use Newspack_Network\User_Update_Watcher;
 use WP_Error;
@@ -30,12 +31,13 @@ class Cap_Authors {
 	 * @return void
 	 */
 	public static function init(): void {
-		if ( ! self::is_co_authors_plus_active() ) {
+		if ( self::is_co_authors_plus_active() ) {
 			return;
 		}
 		Cap_Authors_Filters::init();
 
 		add_action( 'set_object_terms', [ __CLASS__, 'handle_cap_author_change' ], 10, 6 );
+		add_filter('newspack_network_multiple_authors_for_post', [ __CLASS__, 'get_cap_authors_for_distribution' ], 10, 2);
 	}
 
 	/**
@@ -76,12 +78,10 @@ class Cap_Authors {
 		try {
 			$outgoing_post = new Outgoing_Post( $object_id );
 			if ( ! $outgoing_post->is_distributed() ) {
-				// TODO. This is problematic I think.
 				return;
 			}
 
-			$cap_authors = self::get_cap_authors_for_distribution( $outgoing_post->get_post() );
-			update_post_meta( $object_id, self::AUTHOR_LIST_META_KEY, $cap_authors );
+			Content_Distribution_Class::distribute_post($outgoing_post->get_post() );
 
 		} catch ( \InvalidArgumentException ) {
 			return;
@@ -95,14 +95,16 @@ class Cap_Authors {
 	 *
 	 * @return array Array of authors in distributable format.
 	 */
-	private static function get_cap_authors_for_distribution( WP_Post $post ): array {
+	public static function get_cap_authors_for_distribution( $authors, WP_Post $post ): array {
+
+		if (! self::is_co_authors_plus_active() ) {
+			return [];
+		}
 
 		$co_authors = get_coauthors( $post->ID );
 		if ( empty( $co_authors ) ) {
 			return [];
 		}
-
-		$authors = [];
 
 		foreach ( $co_authors as $co_author ) {
 			if ( is_a( $co_author, 'WP_User' ) ) {
@@ -126,19 +128,14 @@ class Cap_Authors {
 	/**
 	 * Ingest authors for a post distributed to this site
 	 *
-	 * @param int    $post_id The post ID.
+	 * @param WP_post    $post The post.
 	 * @param string $remote_url The remote URL.
 	 * @param array  $cap_authors Array of distributed authors.
 	 *
 	 * @return void
 	 */
-	public static function ingest_cap_authors_for_post( int $post_id, string $remote_url, array $cap_authors ): void {
+	public static function ingest_cap_authors_for_post( $post, string $remote_url, array $cap_authors ): void {
 		if ( ! self::is_co_authors_plus_active() ) {
-			return;
-		}
-
-		$cap_authors = reset( $cap_authors );
-		if (! is_array( $cap_authors ) || empty( $cap_authors ) ) {
 			return;
 		}
 
@@ -166,8 +163,7 @@ class Cap_Authors {
 		}
 
 		global $coauthors_plus;
-		// Do this even if the array is empty, to clear out any existing authors.
-		$coauthors_plus->add_coauthors( $post_id, $coauthors );
+		$coauthors_plus->add_coauthors( $post->ID, $coauthors );
 	}
 
 	/**
