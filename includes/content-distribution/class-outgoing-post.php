@@ -234,6 +234,43 @@ class Outgoing_Post {
 	}
 
 	/**
+	 * Get a partial payload for distribution.
+	 *
+	 * @param string[] $post_data_keys Keys in the post_data array to include in
+	 *                                 the partial payload.
+	 *
+	 * @return array|WP_Error The partial payload or WP_Error if any of the keys were not found.
+	 */
+	public function get_partial_payload( $post_data_keys ) {
+		if ( is_string( $post_data_keys ) ) {
+			$post_data_keys = [ $post_data_keys ];
+		}
+
+		$payload = $this->get_payload();
+		foreach ( $post_data_keys as $post_data_key ) {
+			if ( ! isset( $payload['post_data'][ $post_data_key ] ) ) {
+				return new WP_Error( 'key_not_found', __( 'Key not found in payload.', 'newspack-network' ) );
+			}
+		}
+
+		// Mark the payload as partial.
+		$payload['partial'] = true;
+
+		$post_data = [];
+		foreach ( $post_data_keys as $post_data_key ) {
+			$post_data[ $post_data_key ] = $payload['post_data'][ $post_data_key ];
+		}
+
+		// Always add the date and modified date to the partial payload.
+		$post_data['date_gmt']     = $payload['post_data']['date_gmt'];
+		$post_data['modified_gmt'] = $payload['post_data']['modified_gmt'];
+
+		$payload['post_data'] = $post_data;
+
+		return $payload;
+	}
+
+	/**
 	 * Get the processed post content for distribution.
 	 *
 	 * @return string The post content.

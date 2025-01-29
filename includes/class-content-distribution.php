@@ -31,7 +31,7 @@ class Content_Distribution {
 	 *
 	 * @var array Post IDs to update.
 	 */
-	private static $queued_post_updates = [];
+	private static $queued_distributions = [];
 
 	/**
 	 * Initialize this class and register hooks
@@ -52,7 +52,9 @@ class Content_Distribution {
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
 		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_short_circuit_distributed_meta' ], 10, 4 );
 		add_action( 'wp_after_insert_post', [ __CLASS__, 'handle_post_updated' ] );
-		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'updated_post_meta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'added_post_meta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'deleted_post_meta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
 		add_action( 'before_delete_post', [ __CLASS__, 'handle_post_deleted' ] );
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
@@ -80,21 +82,59 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Queue post distribution to run on PHP shutdown.
+	 *
+	 * @param int         $post_id       The post ID.
+	 * @param null|string $post_data_key The post data key to update.
+	 *                                   Default is null (entire post payload).
+	 *
+	 * @return void
+	 */
+	public static function queue_post_distribution( $post_id, $post_data_key = null ) {
+		// Bail if the post is already queued for a full update.
+		if ( isset( self::$queued_distributions[ $post_id ] ) && self::$queued_distributions[ $post_id ] === true ) {
+			return;
+		}
+
+		// Queue for a full post update.
+		if ( empty( $post_data_key ) ) {
+			self::$queued_distributions[ $post_id ] = true;
+			return;
+		}
+
+		// Queue for a partial update.
+		if ( ! isset( self::$queued_distributions[ $post_id ] ) ) {
+			self::$queued_distributions[ $post_id ] = [];
+		}
+		self::$queued_distributions[ $post_id ][] = $post_data_key;
+	}
+
+	/**
+	 * Get queued post distributions.
+	 */
+	public static function get_queued_distributions() {
+		return self::$queued_distributions;
+	}
+
+	/**
 	 * Distribute queued posts.
 	 */
 	public static function distribute_queued_posts() {
-		if ( empty( self::$queued_post_updates ) ) {
+		if ( empty( self::$queued_distributions ) ) {
 			return;
 		}
-		$post_ids = array_unique( self::$queued_post_updates );
-		foreach ( $post_ids as $post_id ) {
+		foreach ( self::$queued_distributions as $post_id => $post_data_keys ) {
 			$post = get_post( $post_id );
 			if ( ! $post ) {
 				continue;
 			}
-			self::distribute_post( $post );
+			if ( is_array( $post_data_keys ) ) {
+				self::distribute_post_partial( $post, array_unique( $post_data_keys ) );
+			} else {
+				self::distribute_post( $post );
+			}
 		}
-		self::$queued_post_updates = [];
+		self::$queued_distributions = [];
 	}
 
 	/**
@@ -172,7 +212,7 @@ class Content_Distribution {
 		) {
 			return;
 		}
-		self::$queued_post_updates[] = $object_id;
+		self::queue_post_distribution( $post->ID, 'post_meta' );
 	}
 
 	/**
@@ -193,7 +233,7 @@ class Content_Distribution {
 		if ( ! self::is_post_distributed( $post ) ) {
 			return;
 		}
-		self::$queued_post_updates[] = $post->ID;
+		self::queue_post_distribution( $post->ID );
 	}
 
 	/**
@@ -388,6 +428,35 @@ class Content_Distribution {
 			}
 			Data_Events::dispatch( 'network_post_updated', $payload );
 			update_post_meta( $post->ID, self::PAYLOAD_HASH_META, $payload_hash );
+		}
+	}
+
+	/**
+	 * Trigger a partial post distribution.
+	 *
+	 * @param WP_Post|Outgoing_Post|int $post           The post object or ID.
+	 * @param string[]                  $post_data_keys The post data keys to update.
+	 *
+	 * @return void|WP_Error The error if the payload is invalid.
+	 */
+	public static function distribute_post_partial( $post, $post_data_keys ) {
+		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
+			return;
+		}
+		if ( is_string( $post_data_keys ) ) {
+			$post_data_keys = [ $post_data_keys ];
+		}
+		if ( $post instanceof Outgoing_Post ) {
+			$distributed_post = $post;
+		} else {
+			$distributed_post = self::get_distributed_post( $post );
+		}
+		if ( $distributed_post ) {
+			$payload = $distributed_post->get_partial_payload( $post_data_keys );
+			if ( is_wp_error( $payload ) ) {
+				return $payload;
+			}
+			Data_Events::dispatch( 'network_post_updated', $payload );
 		}
 	}
 

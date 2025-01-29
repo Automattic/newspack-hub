@@ -98,6 +98,15 @@ class Incoming_Post {
 			$this->ID   = $post->ID;
 			$this->post = $post;
 		}
+
+		// Handle partial payload.
+		if ( ! empty( $payload['partial'] ) ) {
+			$payload = $this->get_payload_from_partial( $payload );
+			if ( is_wp_error( $payload ) ) {
+				throw new \InvalidArgumentException( esc_html( $payload->get_error_message() ) );
+			}
+			$this->payload = $payload;
+		}
 	}
 
 	/**
@@ -172,6 +181,31 @@ class Incoming_Post {
 		}
 
 		return get_post_meta( $this->ID, self::PAYLOAD_META, true );
+	}
+
+	/**
+	 * Get payload from partial.
+	 *
+	 * @param array $payload The partial payload.
+	 *
+	 * @return array|WP_Error The full payload or WP_Error on failure.
+	 */
+	protected function get_payload_from_partial( $payload ) {
+		if ( ! $this->ID ) {
+			return new WP_Error( 'missing_post', __( 'Partial payload requires an existing post.', 'newspack-network' ) );
+		}
+
+		$current_payload       = $this->get_post_payload();
+		$current_payload_error = self::get_payload_error( $current_payload );
+		if ( is_wp_error( $current_payload_error ) ) {
+			return $current_payload_error;
+		}
+
+		$payload['post_data'] = array_merge( $current_payload['post_data'], $payload['post_data'] );
+
+		unset( $payload['partial'] );
+
+		return $payload;
 	}
 
 	/**
@@ -409,6 +443,14 @@ class Incoming_Post {
 		// Do not update if network post ID mismatches.
 		if ( $this->network_post_id !== $payload['network_post_id'] ) {
 			return new WP_Error( 'mismatched_post_id', __( 'Mismatched post ID.', 'newspack-network' ) );
+		}
+
+		// Handle partial payload.
+		if ( ! empty( $payload['partial'] ) ) {
+			$payload = $this->get_payload_from_partial( $payload );
+			if ( is_wp_error( $payload ) ) {
+				return $payload;
+			}
 		}
 
 		$this->payload = $payload;
