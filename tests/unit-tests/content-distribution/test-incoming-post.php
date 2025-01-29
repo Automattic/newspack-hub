@@ -28,6 +28,10 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	 */
 	protected $node_2 = 'https://node2.test';
 
+	/**
+	 * A user with the editor role.
+	 * @var \WP_User
+	 */
 	protected $some_editor;
 
 	/**

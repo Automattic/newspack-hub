@@ -7,7 +7,6 @@
 
 namespace Test\Content_Distribution;
 
-
 /**
  * Get a sample distributed post payload for testing.
  *

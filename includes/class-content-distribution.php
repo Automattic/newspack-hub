@@ -460,5 +460,4 @@ class Content_Distribution {
 			Data_Events::dispatch( 'network_post_updated', $payload );
 		}
 	}
-
 }
