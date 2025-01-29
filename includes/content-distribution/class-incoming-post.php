@@ -197,7 +197,7 @@ class Incoming_Post {
 		$current_payload       = $this->get_post_payload();
 		$current_payload_error = self::get_payload_error( $current_payload );
 		if ( is_wp_error( $current_payload_error ) ) {
-			return $current_payload_error->get_error_message();
+			return $current_payload_error;
 		}
 
 		$payload['post_data'] = array_merge( $current_payload['post_data'], $payload['post_data'] );
