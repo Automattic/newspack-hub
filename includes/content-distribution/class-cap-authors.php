@@ -79,7 +79,7 @@ class Cap_Authors {
 				return;
 			}
 
-			Content_Distribution_Class::distribute_post_partial( $outgoing_post->get_post(), [ 'multiple_authors' ] );
+			Content_Distribution_Class::queue_post_distribution( $object_id, 'multiple_authors' );
 
 		} catch ( \InvalidArgumentException ) {
 			return;
