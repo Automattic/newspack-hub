@@ -103,7 +103,7 @@ class Cap_Authors {
 
 		foreach ( $co_authors as $co_author ) {
 			if ( is_a( $co_author, 'WP_User' ) ) {
-				$authors[] = Outgoing_Author::get_wp_user_for_distribution( $co_author );
+				$authors[] = Outgoing_Post::get_outgoing_wp_user_author( $co_author );
 				continue;
 			}
 

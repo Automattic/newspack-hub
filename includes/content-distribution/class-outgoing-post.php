@@ -8,6 +8,7 @@
 namespace Newspack_Network\Content_Distribution;
 
 use Newspack_Network\Content_Distribution as Content_Distribution_Class;
+use Newspack_Network\User_Update_Watcher;
 use Newspack_Network\Utils\Network;
 use WP_Error;
 use WP_Post;
@@ -51,6 +52,48 @@ class Outgoing_Post {
 		}
 
 		$this->post = $post;
+	}
+
+	/**
+	 * Gets the user data of a WP user to be distributed along with the post.
+	 *
+	 * @param int|WP_Post $user The user ID or object.
+	 *
+	 * @return WP_Error|array
+	 */
+	public static function get_outgoing_wp_user_author( $user ) {
+		if ( ! is_a( $user, 'WP_User' ) ) {
+			$user = get_user_by( 'ID', $user );
+		}
+
+		if ( ! $user ) {
+			return new WP_Error( 'Error getting WP User details for distribution. Invalid User' );
+		}
+
+		$author = [
+			'type' => 'wp_user',
+			'ID'   => $user->ID,
+		];
+
+		foreach ( User_Update_Watcher::$user_props as $prop ) {
+			if ( ! empty( $user->$prop ) ) {
+				$author[ $prop ] = $user->$prop;
+			}
+		}
+
+		// CoAuthors' guest authors have a 'website' property.
+		if ( ! empty( $user->website ) ) {
+			$author['website'] = $user->website;
+		}
+
+		foreach ( User_Update_Watcher::$watched_meta as $meta_key ) {
+			$value = get_user_meta( $user->ID, $meta_key, true );
+			if ( ! empty( $value ) ) {
+				$author[ $meta_key ] = $value;
+			}
+		}
+
+		return $author;
 	}
 
 	/**
@@ -202,7 +245,7 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload( $status_on_create = 'draft' ) {
-		$post_author = $this->post->post_author ? Outgoing_Author::get_wp_user_for_distribution( $this->post->post_author ) : [];
+		$post_author = $this->post->post_author ? self::get_outgoing_wp_user_author( $this->post->post_author ) : [];
 
 		/**
 		 * Filters the multiple authors part of the outgoing post payload.
