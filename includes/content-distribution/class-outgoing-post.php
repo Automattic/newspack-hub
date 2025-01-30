@@ -202,7 +202,7 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload( $status_on_create = 'draft' ) {
-		$post_author = $this->post->post_author ? Outgoing_Author::get_wp_user_for_distribution( $this->post->post_author ) : [];
+		$post_author      = $this->post->post_author ? Outgoing_Author::get_wp_user_for_distribution( $this->post->post_author ) : [];
 		$multiple_authors = apply_filters( 'newspack_network_multiple_authors_for_post', [], $this->post );
 
 		return [
@@ -212,23 +212,23 @@ class Outgoing_Post {
 			'network_post_id'  => $this->get_network_post_id(),
 			'sites'            => $this->get_distribution(),
 			'status_on_create' => $status_on_create,
-			'multiple_authors' => is_wp_error( $multiple_authors ) ? [] : $multiple_authors,
 			'post_data'        => [
-				'title'          => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'author'         => is_wp_error( $post_author ) ? [] : $post_author,
-				'post_status'    => $this->post->post_status,
-				'date_gmt'       => $this->post->post_date_gmt,
-				'modified_gmt'   => $this->post->post_modified_gmt,
-				'slug'           => $this->post->post_name,
-				'post_type'      => $this->post->post_type,
-				'raw_content'    => $this->post->post_content,
-				'content'        => $this->get_processed_post_content(),
-				'excerpt'        => $this->post->post_excerpt,
-				'comment_status' => $this->post->comment_status,
-				'ping_status'    => $this->post->ping_status,
-				'taxonomy'       => $this->get_post_taxonomy_terms(),
-				'thumbnail_url'  => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
-				'post_meta'      => $this->get_post_meta(),
+				'title'            => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'multiple_authors' => is_wp_error( $multiple_authors ) ? [] : $multiple_authors,
+				'author'           => is_wp_error( $post_author ) ? [] : $post_author,
+				'post_status'      => $this->post->post_status,
+				'date_gmt'         => $this->post->post_date_gmt,
+				'modified_gmt'     => $this->post->post_modified_gmt,
+				'slug'             => $this->post->post_name,
+				'post_type'        => $this->post->post_type,
+				'raw_content'      => $this->post->post_content,
+				'content'          => $this->get_processed_post_content(),
+				'excerpt'          => $this->post->post_excerpt,
+				'comment_status'   => $this->post->comment_status,
+				'ping_status'      => $this->post->ping_status,
+				'taxonomy'         => $this->get_post_taxonomy_terms(),
+				'thumbnail_url'    => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
+				'post_meta'        => $this->get_post_meta(),
 			],
 		];
 	}

@@ -579,7 +579,7 @@ class Incoming_Post {
 			Cap_Authors::ingest_incoming_for_post(
 				$this->post,
 				$this->get_original_site_url(),
-				$this->payload['multiple_authors'] ?? []
+				$this->payload['post_data']['multiple_authors'] ?? []
 			);
 
 			// Handle post meta.
