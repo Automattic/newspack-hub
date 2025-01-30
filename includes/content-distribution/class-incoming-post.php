@@ -549,6 +549,8 @@ class Incoming_Post {
 				$postarr['post_status'] = $post_data['post_status'];
 			}
 
+			$postarr['post_author'] = Incoming_Author::get_incoming_post_author( $this->ID, $this->get_original_site_url(), $post_data['author'] );
+
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
@@ -574,8 +576,6 @@ class Incoming_Post {
 			// Update the object.
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
-
-			Incoming_Author::ingest_author_for_post( $this->ID, $this->get_original_site_url(), $post_data['author'] );
 
 			/**
 			 * Fires on incoming posts handing it the multiple authors part of the payload - even if it's empty.

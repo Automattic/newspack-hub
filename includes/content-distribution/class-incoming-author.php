@@ -17,32 +17,31 @@ use Newspack_Network\Utils\Users as User_Utils;
 class Incoming_Author {
 
 	/**
-	 * Ingest authors for a post distributed to this site
+	 * Get the post author for an incoming post.
 	 *
-	 * @param int    $post_id The post ID.
+	 * @param int    $post_id    The post ID.
 	 * @param string $remote_url The remote URL.
-	 * @param array  $author The distributed authors array.
+	 * @param array  $author     The distributed authors array.
 	 *
-	 * @return void
+	 * @return int The author ID - or zero if none was found.
 	 */
-	public static function ingest_author_for_post( int $post_id, string $remote_url, array $author ): void {
+	public static function get_incoming_post_author( int $post_id, string $remote_url, array $author ): int {
 		if ( empty( $author ) ) {
-			return;
+			return 0;
 		}
 		$author = self::get_wp_user_author( $remote_url, $author );
-		wp_update_post(
-			[
-				'ID'          => $post_id,
-				'post_author' => $author->ID,
-			]
-		);
+		if ( is_wp_error( $author ) ) {
+			return 0;
+		}
+
+		return $author->ID;
 	}
 
 	/**
 	 * Ingest authors for a post distributed to this site
 	 *
 	 * @param string $remote_url The remote site URL.
-	 * @param array  $author The distributed authors array.
+	 * @param array  $author     The distributed authors array.
 	 *
 	 * @return \WP_User|\WP_Error The user object or false on failure.
 	 */
