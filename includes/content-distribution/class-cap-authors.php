@@ -54,7 +54,7 @@ class Cap_Authors {
 	/**
 	 * Action callback.
 	 *
-	 * Add a postmeta entry with the Co-Authors Plus authors for outgoing posts.
+	 * Add CAP authors to the distribution queue when they change.
 	 *
 	 * @param int    $object_id The object ID.
 	 * @param array  $terms The terms.
