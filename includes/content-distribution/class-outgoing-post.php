@@ -202,8 +202,15 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload( $status_on_create = 'draft' ) {
-		$post_author      = $this->post->post_author ? Outgoing_Author::get_wp_user_for_distribution( $this->post->post_author ) : [];
-		$multiple_authors = apply_filters( 'newspack_network_multiple_authors_for_post', [], $this->post );
+		$post_author = $this->post->post_author ? Outgoing_Author::get_wp_user_for_distribution( $this->post->post_author ) : [];
+
+		/**
+		 * Filters the multiple authors part of the outgoing post payload.
+		 *
+		 * @param array $multiple_authors The multiple authors data (empty by default).
+		 * @param WP_Post $post The post object for the outgoing post.
+		 */
+		$multiple_authors = apply_filters( 'newspack_network_outgoing_multiple_authors', [], $this->post );
 
 		return [
 			'site_url'         => get_bloginfo( 'url' ),

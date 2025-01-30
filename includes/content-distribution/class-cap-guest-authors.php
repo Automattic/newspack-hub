@@ -35,7 +35,7 @@ class Cap_Guest_Authors {
 
 		add_filter( 'newspack_network_content_distribution_ignored_post_meta_keys', [ __CLASS__, 'filter_ignored_post_meta_keys' ], 10, 2 );
 		add_filter( 'newspack_network_outgoing_non_wp_user_author', [ __CLASS__, 'filter_outgoing_non_wp_user_author' ], 10, 2 );
-		add_action( 'newspack_network_incoming_guest_authors', [ __CLASS__, 'on_guest_authors_incoming' ], 10, 2 );
+		add_action( 'newspack_network_incoming_cap_guest_authors', [ __CLASS__, 'on_guest_authors_incoming' ], 10, 2 );
 
 
 		if ( ! is_admin() ) {

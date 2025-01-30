@@ -30,7 +30,9 @@ class Cap_Authors {
 		}
 
 		add_action( 'set_object_terms', [ __CLASS__, 'on_cap_authors_change' ], 20, 6 );
-		add_filter( 'newspack_network_multiple_authors_for_post', [ __CLASS__, 'get_outgoing_for_post' ], 10, 2 );
+		add_action( 'newspack_network_incoming_multiple_authors', [ __CLASS__, 'ingest_incoming_for_post' ], 10, 3 );
+
+		add_filter( 'newspack_network_outgoing_multiple_authors', [ __CLASS__, 'get_outgoing_for_post' ], 10, 2 );
 
 		if ( defined( 'NEWSPACK_ENABLE_CAP_GUEST_AUTHORS' ) && NEWSPACK_ENABLE_CAP_GUEST_AUTHORS ) {
 			// Support CAP Guest Authors.
@@ -115,7 +117,7 @@ class Cap_Authors {
 	}
 
 	/**
-	 * Ingest authors for a post distributed to this site
+	 * Action callback: Ingest authors for a post distributed to this site
 	 *
 	 * @param WP_post $post The post.
 	 * @param string  $remote_url The remote URL.
@@ -147,12 +149,10 @@ class Cap_Authors {
 				case 'guest_author':
 					$guest_authors[] = $author;
 					break;
-				default:
-					Debugger::log( sprintf( 'Error ingesting author: Invalid author type "%s"', $author_type ) );
 			}
 		}
 
-		do_action( 'newspack_network_incoming_guest_authors', $post->ID, $guest_authors );
+		do_action( 'newspack_network_incoming_cap_guest_authors', $post->ID, $guest_authors );
 
 		global $coauthors_plus;
 		$coauthors_plus->add_coauthors( $post->ID, $guest_contributors );

@@ -116,7 +116,7 @@ class Incoming_Post {
 	 * the Network's debugger.
 	 *
 	 * @param string $message The message to log.
-	 * @param string $type The log type. Either 'error' or 'debug'.
+	 * @param string $type    The log type. Either 'error' or 'debug'.
 	 *                        Default is 'error'.
 	 *
 	 * @return void
@@ -576,11 +576,15 @@ class Incoming_Post {
 			$this->post = get_post( $this->ID );
 
 			Incoming_Author::ingest_author_for_post( $this->ID, $this->get_original_site_url(), $post_data['author'] );
-			Cap_Authors::ingest_incoming_for_post(
-				$this->post,
-				$this->get_original_site_url(),
-				$this->payload['post_data']['multiple_authors'] ?? []
-			);
+
+			/**
+			 * Fires on incoming posts handing it the multiple authors part of the payload - even if it's empty.
+			 *
+			 * @param WP_Post $post              The post object.
+			 * @param string  $original_site_url The original site URL.
+			 * @param array   $multiple_authors  The multiple authors part of the payload.
+			 */
+			do_action( 'newspack_network_incoming_multiple_authors', $this->post, $this->get_original_site_url(), $this->payload['post_data']['multiple_authors'] ?? [] );
 
 			// Handle post meta.
 			$this->update_meta();
@@ -607,9 +611,9 @@ class Incoming_Post {
 		/**
 		 * Fires after an incoming post is inserted.
 		 *
-		 * @param int $post_id The post ID.
-		 * @param bool $is_linked Whether the post is linked.
-		 * @param array $payload The post payload.
+		 * @param int   $post_id   The post ID.
+		 * @param bool  $is_linked Whether the post is linked.
+		 * @param array $payload   The post payload.
 		 */
 		do_action( 'newspack_network_incoming_post_inserted', $this->ID, $this->is_linked(), $this->payload );
 

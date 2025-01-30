@@ -166,6 +166,7 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 			'taxonomy',
 			'post_meta',
 			'author',
+			'multiple_authors',
 		];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $payload['post_data'] ), $post_data_keys ) );
