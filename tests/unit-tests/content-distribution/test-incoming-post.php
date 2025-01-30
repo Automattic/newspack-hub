@@ -8,7 +8,6 @@
 namespace Test\Content_Distribution;
 
 use Newspack_Network\Content_Distribution\Incoming_Post;
-use Newspack_Network\Content_Distribution\Outgoing_Author;
 
 /**
  * Test the Incoming_Post class.

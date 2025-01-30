@@ -9,6 +9,8 @@ namespace Newspack_Network\Content_Distribution;
 
 use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Debugger;
+use Newspack_Network\User_Update_Watcher;
+use Newspack_Network\Utils\Users as User_Utils;
 use WP_Error;
 use WP_Post;
 
@@ -107,6 +109,56 @@ class Incoming_Post {
 			}
 			$this->payload = $payload;
 		}
+	}
+
+	/**
+	 * Transform a distributed author into a WP_User object.
+	 *
+	 * @param string $remote_url The remote site URL.
+	 * @param array  $author     The distributed authors array.
+	 *
+	 * @return \WP_User|\WP_Error The user object or false on failure.
+	 */
+	public static function get_incoming_wp_user_author( string $remote_url, array $author ) {
+
+		if ( empty( $author['user_email'] ) ) {
+			return new WP_Error( 'missing_email', __( 'Missing email on incoming author creation', 'newspack-network' ) );
+		}
+
+		User_Update_Watcher::$enabled = false;
+
+		$insert_array = [
+			'role' => 'author',
+		];
+
+		foreach ( User_Update_Watcher::$user_props as $prop ) {
+			if ( isset( $author[ $prop ] ) ) {
+				$insert_array[ $prop ] = $author[ $prop ];
+			}
+		}
+
+		$user = User_Utils::get_or_create_user_by_email(
+			$author['user_email'],
+			$remote_url,
+			$author['ID'],
+			$insert_array
+		);
+
+		if ( is_wp_error( $user ) ) {
+			Debugger::log( 'Error creating user: ' . $user->get_error_message() );
+
+			return $user;
+		}
+
+		foreach ( User_Update_Watcher::get_writable_meta() as $meta_key ) {
+			if ( isset( $author[ $meta_key ] ) ) {
+				update_user_meta( $user->ID, $meta_key, $author[ $meta_key ] );
+			}
+		}
+
+		User_Utils::maybe_sideload_avatar( $user->ID, $author, false );
+
+		return $user;
 	}
 
 	/**
@@ -549,7 +601,15 @@ class Incoming_Post {
 				$postarr['post_status'] = $post_data['post_status'];
 			}
 
-			$postarr['post_author'] = Incoming_Author::get_incoming_post_author( $this->ID, $this->get_original_site_url(), $post_data['author'] );
+			$postarr['post_author'] = 0;
+			if ( ! empty( $post_data['author'] ) ) {
+				$post_author = self::get_incoming_wp_user_author( $this->get_original_site_url(), $post_data['author'] );
+				if ( is_wp_error( $post_author ) ) {
+					self::log( 'Failed to get post author with message: ' . $post_author->get_error_message() );
+				} else {
+					$postarr['post_author'] = $post_author->ID;
+				}
+			}
 
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );

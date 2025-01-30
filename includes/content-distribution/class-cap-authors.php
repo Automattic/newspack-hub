@@ -140,7 +140,7 @@ class Cap_Authors {
 			$author_type = $author['type'] ?? '';
 			switch ( $author_type ) {
 				case 'wp_user':
-					$user = Incoming_Author::get_wp_user_author( $remote_url, $author );
+					$user = Incoming_Post::get_incoming_wp_user_author( $remote_url, $author );
 					if ( is_wp_error( $user ) ) {
 						Debugger::log( 'Error ingesting guest contributor: ' . $user->get_error_message() );
 					}
