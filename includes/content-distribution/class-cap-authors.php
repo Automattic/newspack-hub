@@ -73,17 +73,11 @@ class Cap_Authors {
 			return;
 		}
 
-		try {
-			$outgoing_post = new Outgoing_Post( $object_id );
-			if ( ! $outgoing_post->is_distributed() ) {
-				return;
-			}
-
-			Content_Distribution_Class::queue_post_distribution( $object_id, 'multiple_authors' );
-
-		} catch ( \InvalidArgumentException ) {
+		if ( ! Content_Distribution_Class::is_post_distributed( $object_id ) ) {
 			return;
 		}
+
+		Content_Distribution_Class::queue_post_distribution( $object_id, 'multiple_authors' );
 	}
 
 	/**

@@ -49,7 +49,7 @@ class Content_Distribution {
 		}
 
 		add_action( 'init', [ __CLASS__, 'register_data_event_actions' ] );
-		add_action( 'shutdown', [ __CLASS__, 'distribute_queued_posts' ], 20 );
+		add_action( 'shutdown', [ __CLASS__, 'distribute_queued_posts' ] );
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
 		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_short_circuit_distributed_meta' ], 10, 4 );
 		add_action( 'wp_after_insert_post', [ __CLASS__, 'handle_post_updated' ] );
