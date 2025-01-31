@@ -125,40 +125,6 @@ class Cap_Authors {
 	}
 
 	/**
-	 * Get the Co-Authors Plus authors for distribution.
-	 *
-	 * @param array   $authors Array of authors.
-	 * @param WP_Post $post    Post to get authors for.
-	 *
-	 * @return array Array of authors in distributable format.
-	 */
-	public static function get_outgoing_for_post( $authors, $post ): array {
-
-		if ( ! self::is_co_authors_plus_active() ) {
-			return [];
-		}
-
-		$co_authors = get_coauthors( $post->ID );
-		if ( empty( $co_authors ) ) {
-			return [];
-		}
-
-		foreach ( $co_authors as $co_author ) {
-			if ( is_a( $co_author, 'WP_User' ) ) {
-				$authors[] = Outgoing_Post::get_outgoing_wp_user_author( $co_author );
-				continue;
-			}
-
-			$other_kind_of_author = apply_filters( 'newspack_network_outgoing_non_wp_user_author', false, $co_author );
-			if ( ! empty( $other_kind_of_author ) ) {
-				$authors[] = $other_kind_of_author;
-			}
-		}
-
-		return $authors;
-	}
-
-	/**
 	 * Action callback: Ingest authors for a post distributed to this site
 	 *
 	 * @param array   $post_data  The post_data part of the payload.
