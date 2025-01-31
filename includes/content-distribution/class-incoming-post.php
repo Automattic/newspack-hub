@@ -7,10 +7,12 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Debugger;
 use Newspack_Network\Content_Distribution as Content_Distribution_Class;
-use WP_Post;
+use Newspack_Network\Debugger;
+use Newspack_Network\User_Update_Watcher;
+use Newspack_Network\Utils\Users as User_Utils;
 use WP_Error;
+use WP_Post;
 
 /**
  * Incoming Post Class.
@@ -110,6 +112,56 @@ class Incoming_Post {
 	}
 
 	/**
+	 * Transform a distributed author into a WP_User object.
+	 *
+	 * @param string $remote_url The remote site URL.
+	 * @param array  $author     The distributed authors array.
+	 *
+	 * @return \WP_User|\WP_Error The user object or false on failure.
+	 */
+	public static function get_incoming_wp_user_author( string $remote_url, array $author ) {
+
+		if ( empty( $author['user_email'] ) ) {
+			return new WP_Error( 'missing_email', __( 'Missing email on incoming author creation', 'newspack-network' ) );
+		}
+
+		User_Update_Watcher::$enabled = false;
+
+		$insert_array = [
+			'role' => 'author',
+		];
+
+		foreach ( User_Update_Watcher::$user_props as $prop ) {
+			if ( isset( $author[ $prop ] ) ) {
+				$insert_array[ $prop ] = $author[ $prop ];
+			}
+		}
+
+		$user = User_Utils::get_or_create_user_by_email(
+			$author['user_email'],
+			$remote_url,
+			$author['ID'],
+			$insert_array
+		);
+
+		if ( is_wp_error( $user ) ) {
+			Debugger::log( 'Error creating user: ' . $user->get_error_message() );
+
+			return $user;
+		}
+
+		foreach ( User_Update_Watcher::get_writable_meta() as $meta_key ) {
+			if ( isset( $author[ $meta_key ] ) ) {
+				update_user_meta( $user->ID, $meta_key, $author[ $meta_key ] );
+			}
+		}
+
+		User_Utils::maybe_sideload_avatar( $user->ID, $author, false );
+
+		return $user;
+	}
+
+	/**
 	 * Log a message.
 	 *
 	 * If "newspack_log" is available, we'll use it. Otherwise, we'll fallback to
@@ -179,6 +231,7 @@ class Incoming_Post {
 		if ( ! $this->ID ) {
 			return [];
 		}
+
 		return get_post_meta( $this->ID, self::PAYLOAD_META, true );
 	}
 
@@ -234,7 +287,16 @@ class Incoming_Post {
 		$posts = get_posts(
 			[
 				'post_type'      => Content_Distribution_Class::get_distributed_post_types(),
-				'post_status'    => [ 'publish', 'pending', 'draft', 'auto-draft', 'future', 'private', 'inherit', 'trash' ],
+				'post_status'    => [
+					'publish',
+					'pending',
+					'draft',
+					'auto-draft',
+					'future',
+					'private',
+					'inherit',
+					'trash',
+				],
 				'posts_per_page' => 1,
 				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					[
@@ -247,6 +309,7 @@ class Incoming_Post {
 		if ( empty( $posts ) ) {
 			return null;
 		}
+
 		return $posts[0];
 	}
 
@@ -375,6 +438,7 @@ class Incoming_Post {
 		$attachment_id = media_sideload_image( $thumbnail_url, $this->ID, '', 'id' );
 		if ( is_wp_error( $attachment_id ) ) {
 			self::log( 'Failed to upload featured image for post ' . $this->ID . ' with message: ' . $attachment_id->get_error_message() );
+
 			return;
 		}
 
@@ -482,6 +546,7 @@ class Incoming_Post {
 			$error = $this->update_payload( $payload );
 			if ( is_wp_error( $error ) ) {
 				self::log( 'Failed to update payload: ' . $error->get_error_message() );
+
 				return $error;
 			}
 		}
@@ -503,6 +568,7 @@ class Incoming_Post {
 			$current_payload['post_data']['modified_gmt'] > $post_data['modified_gmt']
 		) {
 			self::log( 'Linked post content is newer than the post payload.' );
+
 			return new WP_Error( 'old_modified_date', __( 'Linked post content is newer than the post payload.', 'newspack-network' ) );
 		}
 
@@ -535,6 +601,25 @@ class Incoming_Post {
 				$postarr['post_status'] = $post_data['post_status'];
 			}
 
+			$postarr['post_author'] = 0;
+			if ( ! empty( $post_data['author'] ) ) {
+				$post_author = self::get_incoming_wp_user_author( $this->get_original_site_url(), $post_data['author'] );
+				if ( is_wp_error( $post_author ) ) {
+					self::log( 'Failed to get post author with message: ' . $post_author->get_error_message() );
+				} else {
+					$postarr['post_author'] = $post_author->ID;
+				}
+			}
+
+			/**
+			 * Fires right before an incoming post is saved.
+			 *
+			 * @param array        $post_data         The post_data part of the payload.
+			 * @param WP_Post|null $post              The post object or null if it has not been created yet.
+			 * @param string       $original_site_url The original site URL.
+			 */
+			do_action( 'newspack_network_incoming_post_before_save', $post_data, $this->post, $this->get_original_site_url() );
+
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
@@ -546,18 +631,29 @@ class Incoming_Post {
 
 			if ( is_wp_error( $post_id ) ) {
 				self::log( 'Failed to insert post with message: ' . $post_id->get_error_message() );
+
 				return $post_id;
 			}
 
 			// The wp_insert_post() function might return `0` on failure.
 			if ( ! $post_id ) {
 				self::log( 'Failed to insert post.' );
+
 				return new WP_Error( 'insert_error', __( 'Error inserting post.', 'newspack-network' ) );
 			}
 
 			// Update the object.
 			$this->ID   = $post_id;
 			$this->post = get_post( $this->ID );
+
+			/**
+			 * Fires right after an incoming post is saved.
+			 *
+			 * @param array   $post_data         The post_data part of the payload.
+			 * @param WP_Post $post              The post object.
+			 * @param string  $original_site_url The original site URL.
+			 */
+			do_action( 'newspack_network_incoming_post_after_save', $post_data, $this->post, $this->get_original_site_url() );
 
 			// Handle post meta.
 			$this->update_meta();

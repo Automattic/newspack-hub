@@ -8,14 +8,15 @@
 namespace Newspack_Network;
 
 use Newspack\Data_Events;
-use Newspack_Network\Content_Distribution\CLI;
 use Newspack_Network\Content_Distribution\Admin;
 use Newspack_Network\Content_Distribution\API;
-use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Canonical_Url;
+use Newspack_Network\Content_Distribution\Cap_Authors;
+use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\Distributor_Migrator;
+use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
-use Newspack_Network\Content_Distribution\Distributor_Migrator;
 use WP_Post;
 
 /**
@@ -63,6 +64,7 @@ class Content_Distribution {
 		Editor::init();
 		Canonical_Url::init();
 		Distributor_Migrator::init();
+		Cap_Authors::init();
 	}
 
 	/**
@@ -239,7 +241,7 @@ class Content_Distribution {
 	 *
 	 * @param int $post_id The post ID.
 	 *
-	 * @return @void
+	 * @return void
 	 */
 	public static function handle_post_deleted( $post_id ) {
 		if ( ! class_exists( 'Newspack\Data_Events' ) ) {

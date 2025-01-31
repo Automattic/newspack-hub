@@ -28,6 +28,13 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	protected $node_2 = 'https://node2.test';
 
 	/**
+	 * A user with the editor role.
+	 *
+	 * @var \WP_User
+	 */
+	protected $some_editor;
+
+	/**
 	 * A linked post.
 	 *
 	 * @var Incoming_Post
@@ -50,6 +57,8 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		// Set the site URL for the node that receives posts.
 		update_option( 'siteurl', $this->node_2 );
 		update_option( 'home', $this->node_2 );
+
+		$this->some_editor = $this->factory->user->create_and_get( [ 'role' => 'editor' ] );
 
 		$this->incoming_post = new Incoming_Post( $this->get_sample_payload() );
 	}
