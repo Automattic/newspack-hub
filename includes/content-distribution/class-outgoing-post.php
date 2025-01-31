@@ -245,17 +245,9 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload( $status_on_create = 'draft' ) {
-		$post_author = $this->post->post_author ? self::get_outgoing_wp_user_author( $this->post->post_author ) : [];
+		$post_author = self::get_outgoing_wp_user_author( $this->post->post_author );
 
-		/**
-		 * Filters the multiple authors part of the outgoing post payload.
-		 *
-		 * @param array $multiple_authors The multiple authors data (empty by default).
-		 * @param WP_Post $post The post object for the outgoing post.
-		 */
-		$multiple_authors = apply_filters( 'newspack_network_outgoing_multiple_authors', [], $this->post );
-
-		return [
+		$payload = [
 			'site_url'         => get_bloginfo( 'url' ),
 			'post_id'          => $this->post->ID,
 			'post_url'         => get_permalink( $this->post->ID ),
@@ -263,24 +255,33 @@ class Outgoing_Post {
 			'sites'            => $this->get_distribution(),
 			'status_on_create' => $status_on_create,
 			'post_data'        => [
-				'title'            => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'multiple_authors' => is_wp_error( $multiple_authors ) ? [] : $multiple_authors,
-				'author'           => is_wp_error( $post_author ) ? [] : $post_author,
-				'post_status'      => $this->post->post_status,
-				'date_gmt'         => $this->post->post_date_gmt,
-				'modified_gmt'     => $this->post->post_modified_gmt,
-				'slug'             => $this->post->post_name,
-				'post_type'        => $this->post->post_type,
-				'raw_content'      => $this->post->post_content,
-				'content'          => $this->get_processed_post_content(),
-				'excerpt'          => $this->post->post_excerpt,
-				'comment_status'   => $this->post->comment_status,
-				'ping_status'      => $this->post->ping_status,
-				'taxonomy'         => $this->get_post_taxonomy_terms(),
-				'thumbnail_url'    => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
-				'post_meta'        => $this->get_post_meta(),
+				'title'          => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'author'         => is_wp_error( $post_author ) ? [] : $post_author,
+				'post_status'    => $this->post->post_status,
+				'date_gmt'       => $this->post->post_date_gmt,
+				'modified_gmt'   => $this->post->post_modified_gmt,
+				'slug'           => $this->post->post_name,
+				'post_type'      => $this->post->post_type,
+				'raw_content'    => $this->post->post_content,
+				'content'        => $this->get_processed_post_content(),
+				'excerpt'        => $this->post->post_excerpt,
+				'comment_status' => $this->post->comment_status,
+				'ping_status'    => $this->post->ping_status,
+				'taxonomy'       => $this->get_post_taxonomy_terms(),
+				'thumbnail_url'  => get_the_post_thumbnail_url( $this->post->ID, 'full' ),
+				'post_meta'      => $this->get_post_meta(),
 			],
 		];
+
+		/**
+		 * Filter the payload's post_data to let others add to it.
+		 *
+		 * @param array   $post_data The post_data to filter
+		 * @param WP_Post $post      The post object for the outgoing post.
+		 */
+		$payload['post_data'] = apply_filters( 'newspack_network_outgoing_payload_post_data', $payload['post_data'], $this->post );
+
+		return $payload;
 	}
 
 	/**

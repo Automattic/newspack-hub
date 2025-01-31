@@ -611,6 +611,15 @@ class Incoming_Post {
 				}
 			}
 
+			/**
+			 * Fires right before an incoming post is saved.
+			 *
+			 * @param array        $post_data         The post_data part of the payload.
+			 * @param WP_Post|null $post              The post object or null if it has not been created yet.
+			 * @param string       $original_site_url The original site URL.
+			 */
+			do_action( 'newspack_network_incoming_post_before_save', $post_data, $this->post, $this->get_original_site_url() );
+
 			// Remove filters that may alter content updates.
 			remove_all_filters( 'content_save_pre' );
 
@@ -638,13 +647,13 @@ class Incoming_Post {
 			$this->post = get_post( $this->ID );
 
 			/**
-			 * Fires on incoming posts handing it the multiple authors part of the payload - even if it's empty.
+			 * Fires right after an incoming post is saved.
 			 *
+			 * @param array   $post_data         The post_data part of the payload.
 			 * @param WP_Post $post              The post object.
 			 * @param string  $original_site_url The original site URL.
-			 * @param array   $multiple_authors  The multiple authors part of the payload.
 			 */
-			do_action( 'newspack_network_incoming_multiple_authors', $this->post, $this->get_original_site_url(), $this->payload['post_data']['multiple_authors'] ?? [] );
+			do_action( 'newspack_network_incoming_post_after_save', $post_data, $this->post, $this->get_original_site_url() );
 
 			// Handle post meta.
 			$this->update_meta();

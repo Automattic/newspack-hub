@@ -12,7 +12,6 @@ use Newspack_Network\Content_Distribution\Admin;
 use Newspack_Network\Content_Distribution\API;
 use Newspack_Network\Content_Distribution\Canonical_Url;
 use Newspack_Network\Content_Distribution\Cap_Authors;
-use Newspack_Network\Content_Distribution\Cap_Guest_Authors;
 use Newspack_Network\Content_Distribution\CLI;
 use Newspack_Network\Content_Distribution\Distributor_Migrator;
 use Newspack_Network\Content_Distribution\Editor;

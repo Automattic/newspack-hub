@@ -20,6 +20,13 @@ use WP_Post;
 class Cap_Authors {
 
 	/**
+	 * The key for the cap authors in the payload post data.
+	 *
+	 * @var string
+	 */
+	const PAYLOAD_POST_DATA_AUTHORS_KEY = 'cap_authors';
+
+	/**
 	 * Get things going.
 	 *
 	 * @return void
@@ -30,9 +37,9 @@ class Cap_Authors {
 		}
 
 		add_action( 'set_object_terms', [ __CLASS__, 'on_cap_authors_change' ], 20, 6 );
-		add_action( 'newspack_network_incoming_multiple_authors', [ __CLASS__, 'ingest_incoming_for_post' ], 10, 3 );
+		add_action( 'newspack_network_incoming_post_after_save', [ __CLASS__, 'ingest_incoming_for_post' ], 10, 3 );
 
-		add_filter( 'newspack_network_outgoing_multiple_authors', [ __CLASS__, 'get_outgoing_for_post' ], 10, 2 );
+		add_filter( 'newspack_network_outgoing_payload_post_data', [ __CLASS__, 'add_co_authors_to_payload_post_data' ], 10, 2 );
 
 		if ( defined( 'NEWSPACK_ENABLE_CAP_GUEST_AUTHORS' ) && NEWSPACK_ENABLE_CAP_GUEST_AUTHORS ) {
 			// Support CAP Guest Authors.
@@ -56,11 +63,11 @@ class Cap_Authors {
 	 *
 	 * Add CAP authors to the distribution queue when they change.
 	 *
-	 * @param int    $object_id The object ID.
-	 * @param array  $terms The terms.
-	 * @param array  $tt_ids The term taxonomy IDs.
-	 * @param string $taxonomy The taxonomy.
-	 * @param bool   $append Whether to append.
+	 * @param int    $object_id  The object ID.
+	 * @param array  $terms      The terms.
+	 * @param array  $tt_ids     The term taxonomy IDs.
+	 * @param string $taxonomy   The taxonomy.
+	 * @param bool   $append     Whether to append.
 	 * @param array  $old_tt_ids The old term taxonomy IDs.
 	 *
 	 * @return void
@@ -79,14 +86,49 @@ class Cap_Authors {
 			return;
 		}
 
-		Content_Distribution_Class::queue_post_distribution( $object_id, 'multiple_authors' );
+		Content_Distribution_Class::queue_post_distribution( $object_id, self::PAYLOAD_POST_DATA_AUTHORS_KEY );
+	}
+
+	/**
+	 * Filter callback: Add the Co-Authors Plus authors to the payload post data.
+	 *
+	 * @param array   $payload_post_data The post data for the payload.
+	 * @param WP_Post $post              Post to get authors for.
+	 *
+	 * @return array The post data for the payload.
+	 */
+	public static function add_co_authors_to_payload_post_data( $payload_post_data, $post ) {
+		if ( ! self::is_co_authors_plus_active() ) {
+			return $payload_post_data;
+		}
+
+		$co_authors = get_coauthors( $post->ID );
+		if ( empty( $co_authors ) ) {
+			return $payload_post_data;
+		}
+
+		$payload_post_data[ self::PAYLOAD_POST_DATA_AUTHORS_KEY ] = [];
+
+		foreach ( $co_authors as $co_author ) {
+			if ( is_a( $co_author, 'WP_User' ) ) {
+				$payload_post_data[ self::PAYLOAD_POST_DATA_AUTHORS_KEY ][] = Outgoing_Post::get_outgoing_wp_user_author( $co_author );
+				continue;
+			}
+
+			$other_kind_of_author = apply_filters( 'newspack_network_outgoing_non_wp_user_author', false, $co_author );
+			if ( ! empty( $other_kind_of_author ) ) {
+				$payload_post_data[ self::PAYLOAD_POST_DATA_AUTHORS_KEY ][] = $other_kind_of_author;
+			}
+		}
+
+		return $payload_post_data;
 	}
 
 	/**
 	 * Get the Co-Authors Plus authors for distribution.
 	 *
 	 * @param array   $authors Array of authors.
-	 * @param WP_Post $post Post to get authors for.
+	 * @param WP_Post $post    Post to get authors for.
 	 *
 	 * @return array Array of authors in distributable format.
 	 */
@@ -110,7 +152,7 @@ class Cap_Authors {
 			$other_kind_of_author = apply_filters( 'newspack_network_outgoing_non_wp_user_author', false, $co_author );
 			if ( ! empty( $other_kind_of_author ) ) {
 				$authors[] = $other_kind_of_author;
-			}       
+			}
 		}
 
 		return $authors;
@@ -119,24 +161,26 @@ class Cap_Authors {
 	/**
 	 * Action callback: Ingest authors for a post distributed to this site
 	 *
-	 * @param WP_post $post The post.
+	 * @param array   $post_data  The post_data part of the payload.
+	 * @param WP_post $post       The post.
 	 * @param string  $remote_url The remote URL.
-	 * @param array   $cap_authors Array of distributed authors.
 	 *
 	 * @return void
 	 */
-	public static function ingest_incoming_for_post( $post, string $remote_url, array $cap_authors ): void {
+	public static function ingest_incoming_for_post( $post_data, $post, $remote_url ): void {
 		if ( ! self::is_co_authors_plus_active() ) {
 			return;
 		}
+
+		$cap_authors_from_payload = $post_data[ self::PAYLOAD_POST_DATA_AUTHORS_KEY ] ?? [];
 
 		Debugger::log( 'Ingesting authors from networked post.' );
 		User_Update_Watcher::$enabled = false;
 
 		$guest_contributors = [];
-		$guest_authors = [];
+		$guest_authors      = [];
 
-		foreach ( $cap_authors as $author ) {
+		foreach ( $cap_authors_from_payload as $author ) {
 			$author_type = $author['type'] ?? '';
 			switch ( $author_type ) {
 				case 'wp_user':
