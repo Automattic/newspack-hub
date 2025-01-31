@@ -30,7 +30,6 @@ function get_sample_payload( $origin = '', $destination = '' ) {
 		'network_post_id'  => '1234567890abcdef1234567890abcdef',
 		'sites'            => [ $destination ],
 		'status_on_create' => 'draft',
-		'multiple_authors' => [],
 		'post_data'        => [
 			'title'          => 'Title',
 			'author'         => [],
