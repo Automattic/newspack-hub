@@ -311,6 +311,23 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Test adding and deleting post meta.
+	 */
+	public function test_add_and_delete_multiple_post_meta() {
+		$post_id = $this->incoming_post->insert();
+
+		$payload = $this->get_sample_payload();
+
+		$payload['post_data']['post_meta']['multiple'] = [ 'value 2', 'value 3' ];
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( [ 'value 2', 'value 3' ], get_post_meta( $post_id, 'multiple' ) );
+
+		$payload['post_data']['post_meta']['multiple'] = [ 'value 3', 'value 3' ];
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( [ 'value 3', 'value 3' ], get_post_meta( $post_id, 'multiple' ) );
+	}
+
+	/**
 	 * Test status changes.
 	 */
 	public function test_status_changes() {
@@ -437,5 +454,31 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		// Assert that the post has the updated comment and ping statuses.
 		$this->assertSame( 'closed', get_post_field( 'comment_status', $post_id ) );
 		$this->assertSame( 'closed', get_post_field( 'ping_status', $post_id ) );
+	}
+
+	/**
+	 * Test status on create.
+	 */
+	public function test_status_on_create() {
+		$payload = $this->get_sample_payload();
+
+		$payload['status_on_create'] = 'publish';
+
+		$post_id = $this->incoming_post->insert( $payload );
+
+		// Assert that the post is published.
+		$this->assertSame( 'publish', get_post_status( $post_id ) );
+
+		// Place the post back to draft.
+		wp_update_post(
+			[
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			]
+		);
+
+		// Assert that distributing again will not publish it.
+		$this->incoming_post->insert( $payload );
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
 	}
 }

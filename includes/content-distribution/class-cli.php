@@ -11,6 +11,7 @@ use Newspack_Network\Content_Distribution;
 use Newspack_Network\Utils\Network;
 use WP_CLI;
 use WP_CLI\ExitException;
+use WP_Error;
 
 /**
  * Class Distribution.
@@ -38,13 +39,14 @@ class CLI {
 			'newspack network distribute post',
 			[ __CLASS__, 'cmd_distribute_post' ],
 			[
-				'shortdesc' => __( 'Distribute a post to all the network or the specified sites' ),
+				'shortdesc' => __( 'Distribute a post to all the network or the specified sites', 'newspack-network' ),
 				'synopsis'  => [
 					[
 						'type'        => 'positional',
 						'name'        => 'post-id',
 						'description' => sprintf(
-							'The ID of the post to distribute. Supported post types are: %s',
+							// translators: %s: list of supported post types.
+							__( 'The ID of the post to distribute. Supported post types are: %s', 'newspack-network' ),
 							implode(
 								', ',
 								Content_Distribution::get_distributed_post_types()
@@ -56,8 +58,55 @@ class CLI {
 					[
 						'type'        => 'assoc',
 						'name'        => 'sites',
-						'description' => __( "Networked site url(s) comma separated to distribute the post to – or 'all' to distribute to all sites in the network." ),
+						'description' => __( "Networked site url(s) comma separated to distribute the post to – or 'all' to distribute to all sites in the network.", 'newspack-network' ),
 						'optional'    => false,
+					],
+					[
+						'type'        => 'assoc',
+						'name'        => 'status_on_create',
+						'description' => __( 'The post status when creating the post. Default is to distribute as draft.' ),
+						'optional'    => true,
+					],
+				],
+			]
+		);
+		WP_CLI::add_command(
+			'newspack network distributor migrate',
+			[ __CLASS__, 'cmd_distributor_migrate' ],
+			[
+				'shortdesc' => __( 'Migrate posts from Distributor to Newspack Network\'s content distribution', 'newspack-network' ),
+				'synopsis'  => [
+					[
+						'type'        => 'positional',
+						'name'        => 'post-id',
+						'description' => __( 'The ID of the post to migrate.', 'newspack-network' ),
+						'repeating'   => false,
+						'optional'    => true,
+					],
+					[
+						'type'        => 'flag',
+						'name'        => 'all',
+						'description' => __( 'Migrate all posts.', 'newspack-network' ),
+						'optional'    => true,
+					],
+					[
+						'type'        => 'assoc',
+						'name'        => 'batch-size',
+						'description' => __( 'Number of posts to migrate in each batch.', 'newspack-network' ),
+						'optional'    => true,
+						'default'     => 50,
+					],
+					[
+						'type'        => 'flag',
+						'name'        => 'strict',
+						'description' => __( 'Whether to only migrate if all distributed posts can be migrated.', 'newspack-network' ),
+						'optional'    => true,
+					],
+					[
+						'type'        => 'flag',
+						'name'        => 'delete',
+						'description' => __( 'Whether to deactivate and delete the Distributor plugin after migrating all posts. This will only take effect if all posts were able to migrate.', 'newspack-network' ),
+						'optional'    => true,
 					],
 				],
 			]
@@ -94,11 +143,98 @@ class CLI {
 				WP_CLI::error( $sites->get_error_message() );
 			}
 
-			Content_Distribution::distribute_post( $outgoing_post );
+			Content_Distribution::distribute_post( $outgoing_post, $assoc_args['status_on_create'] ?? 'draft' );
 			WP_CLI::success( sprintf( 'Post with ID %d is distributed to %d sites: %s', $post_id, count( $sites ), implode( ', ', $sites ) ) );
 
 		} catch ( \Exception $e ) {
 			WP_CLI::error( $e->getMessage() );
 		}
+	}
+
+	/**
+	 * Callback for the `newspack-network distributor migrate` command.
+	 *
+	 * @param array $pos_args   Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 *
+	 * @throws ExitException If something goes wrong.
+	 */
+	public function cmd_distributor_migrate( array $pos_args, array $assoc_args ): void {
+		$post_id = $pos_args[0] ?? null;
+		if ( ! is_numeric( $post_id ) && ! isset( $assoc_args['all'] ) ) {
+			WP_CLI::error( 'Post ID must be a number.' );
+		}
+
+		if ( is_numeric( $post_id ) && isset( $assoc_args['all'] ) ) {
+			WP_CLI::error( 'The --all flag cannot be used with a post ID.' );
+		}
+
+		if ( ! isset( $assoc_args['all'] ) && isset( $assoc_args['delete'] ) ) {
+			WP_CLI::error( 'The --delete flag can only be used with the --all flag.' );
+		}
+
+		if ( isset( $assoc_args['batch-size'] ) && ! is_numeric( $assoc_args['batch-size'] ) ) {
+			WP_CLI::error( 'Batch size must be a number.' );
+		}
+
+		if ( isset( $assoc_args['all'] ) ) {
+			$strict = isset( $assoc_args['strict'] );
+
+			$post_ids = Distributor_Migrator::get_posts_with_distributor_subscriptions();
+
+			if ( empty( $post_ids ) ) {
+				WP_CLI::success( 'No distributed posts found.' );
+				return;
+			}
+
+			WP_CLI::line( sprintf( 'Found %d posts.', count( $post_ids ) ) );
+
+			// In strict mode, only continue if all posts can be migrated.
+			if ( $strict ) {
+				$errors = [];
+				foreach ( $post_ids as $post_id ) {
+					$can_migrate = Distributor_Migrator::can_migrate_outgoing_post( $post_id );
+					if ( is_wp_error( $can_migrate ) ) {
+						$errors[] = sprintf( 'Unable to migrate post %d: %s', $post_id, $can_migrate->get_error_message() );
+					}
+				}
+				if ( ! empty( $errors ) ) {
+					WP_CLI::error( 'Strict mode is enabled: ' . PHP_EOL . implode( PHP_EOL, $errors ) );
+				}
+			}
+
+			// Migrate posts.
+			$errors     = new WP_Error();
+			$batch_size = $assoc_args['batch-size'] ?? 50;
+			$batches    = array_chunk( $post_ids, $batch_size );
+
+			foreach ( $batches as $i => $batch ) {
+				$result = Distributor_Migrator::migrate_outgoing_posts( $batch );
+				if ( is_wp_error( $result ) ) {
+					$message = sprintf( '(%d/%d) Error migrating batch: %s', $i + 1, count( $batches ), $result->get_error_message() );
+					if ( $strict ) {
+						WP_CLI::error( $message );
+					} else {
+						$errors->add( $result->get_error_code(), $result->get_error_message() );
+						WP_CLI::line( $message );
+					}
+				} else {
+					WP_CLI::line( sprintf( '(%d/%d) Batch migrated.', $i + 1, count( $batches ) ) );
+				}
+			}
+
+			if ( isset( $assoc_args['delete'] ) && ! $errors->has_errors() ) {
+				deactivate_plugins( [ 'distributor/distributor.php' ] );
+				delete_plugins( [ 'distributor/distributor.php' ] );
+				WP_CLI::line( 'Distributor plugin is deactivated and deleted.' );
+			}
+		} else {
+			$result = Distributor_Migrator::migrate_outgoing_post( $post_id );
+			if ( is_wp_error( $result ) ) {
+				WP_CLI::error( $result->get_error_message() );
+			}
+		}
+
+		WP_CLI::success( 'Migration completed.' );
 	}
 }
