@@ -1,3 +1,25 @@
+# [2.5.0](https://github.com/Automattic/newspack-network/compare/v2.4.0...v2.5.0) (2025-02-03)
+
+
+### Bug Fixes
+
+* **content-distribution:** block additional UI components ([#197](https://github.com/Automattic/newspack-network/issues/197)) ([3f30cdb](https://github.com/Automattic/newspack-network/commit/3f30cdbc2c49e1dfe57d5a03e9dc7477d38f249f))
+* **content-distribution:** handling multiple post meta ([#199](https://github.com/Automattic/newspack-network/issues/199)) ([c93084d](https://github.com/Automattic/newspack-network/commit/c93084d3cf3c08b12e63e82fbd4120e50f1e03fd))
+* **content-distribution:** Improve CSS for blocked editor ([#193](https://github.com/Automattic/newspack-network/issues/193)) ([295bdad](https://github.com/Automattic/newspack-network/commit/295bdad4b418ad4162a41c502bb58c0258793125)), closes [#181](https://github.com/Automattic/newspack-network/issues/181)
+* **content-distribution:** persist site hash ([#186](https://github.com/Automattic/newspack-network/issues/186)) ([120b759](https://github.com/Automattic/newspack-network/commit/120b759553b8bd25371e2a928de8eb8acd47ddc9))
+* **content-distribution:** prevent consecutive dispatches ([#198](https://github.com/Automattic/newspack-network/issues/198)) ([2149a62](https://github.com/Automattic/newspack-network/commit/2149a62e5cdc9cf5e7d05993306221c9bf8d9661))
+* **content-distribution:** refactor outgoing post js ([#188](https://github.com/Automattic/newspack-network/issues/188)) ([cc08edc](https://github.com/Automattic/newspack-network/commit/cc08edccbda3a84a24586e3fd76a0d2409947e01))
+* **memberships:** remove managed fields on cancel or expire ([#192](https://github.com/Automattic/newspack-network/issues/192)) ([67a5cf0](https://github.com/Automattic/newspack-network/commit/67a5cf0274802525bbb4a9e494ccc4fe3244f7ec))
+
+
+### Features
+
+* **content-distribution:** Block the editor for incoming posts ([#181](https://github.com/Automattic/newspack-network/issues/181)) ([48b4cae](https://github.com/Automattic/newspack-network/commit/48b4cae890dfbcb5bf3d90dd08b00f1cbec2b426))
+* **content-distribution:** confirm dialog for unlinking and relinking posts ([#190](https://github.com/Automattic/newspack-network/issues/190)) ([f36bb28](https://github.com/Automattic/newspack-network/commit/f36bb284efba690261dbb985961bbc3839b96cc0))
+* **content-distribution:** migrator ([#185](https://github.com/Automattic/newspack-network/issues/185)) ([06ec18a](https://github.com/Automattic/newspack-network/commit/06ec18a0259ce19b5aae050ea0f7a950683de353))
+* **content-distribution:** post status on create ([#189](https://github.com/Automattic/newspack-network/issues/189)) ([1ad3e0c](https://github.com/Automattic/newspack-network/commit/1ad3e0ceaf7dc6599d5a0300e1330341da03ea60))
+* sync multiple user roles ([#187](https://github.com/Automattic/newspack-network/issues/187)) ([9fa833c](https://github.com/Automattic/newspack-network/commit/9fa833c157fc795fda466c3bfcd00594b98f1543))
+
 # [2.4.0](https://github.com/Automattic/newspack-network/compare/v2.3.4...v2.4.0) (2025-01-20)
 
 
