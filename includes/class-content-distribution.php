@@ -313,6 +313,8 @@ class Content_Distribution {
 			'_edit_last',
 			'_thumbnail_id',
 			'_yoast_wpseo_primary_category',
+			'_pingme',
+			'_encloseme',
 		];
 
 		/**
@@ -423,10 +425,12 @@ class Content_Distribution {
 			$payload      = $distributed_post->get_payload( $status_on_create );
 			$payload_hash = $distributed_post->get_payload_hash( $payload );
 			$post         = $distributed_post->get_post();
+			// Skip if the payload hash is the same.
 			if ( get_post_meta( $post->ID, self::PAYLOAD_HASH_META, true ) === $payload_hash ) {
 				return;
 			}
 			Data_Events::dispatch( 'network_post_updated', $payload );
+			// Store payload hash to prevent unnecessary updates.
 			update_post_meta( $post->ID, self::PAYLOAD_HASH_META, $payload_hash );
 		}
 	}
@@ -452,11 +456,19 @@ class Content_Distribution {
 			$distributed_post = self::get_distributed_post( $post );
 		}
 		if ( $distributed_post ) {
+			$payload_hash = $distributed_post->get_payload_hash();
+			$post         = $distributed_post->get_post();
+			// Skip if the payload hash is the same.
+			if ( get_post_meta( $post->ID, self::PAYLOAD_HASH_META, true ) === $payload_hash ) {
+				return;
+			}
 			$payload = $distributed_post->get_partial_payload( $post_data_keys );
 			if ( is_wp_error( $payload ) ) {
 				return $payload;
 			}
 			Data_Events::dispatch( 'network_post_updated', $payload );
+			// Store payload hash to prevent unnecessary updates.
+			update_post_meta( $post->ID, self::PAYLOAD_HASH_META, $payload_hash );
 		}
 	}
 }
