@@ -57,10 +57,15 @@ class Network_Post_Updated extends Abstract_Incoming_Event {
 			);
 			Debugger::log( $message );
 			if ( method_exists( 'Newspack\Logger', 'newspack_log' ) ) {
+				$payload_info = $payload;
+				unset( $payload_info['post_data'] );
 				\Newspack\Logger::newspack_log(
 					'newspack_network_post_updated',
 					$message,
-					$payload,
+					[
+						'payload_info' => $payload_info,
+						'elapsed_time' => $elapsed_time,
+					],
 					'debug'
 				);
 			}
