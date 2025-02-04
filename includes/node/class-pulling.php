@@ -21,7 +21,7 @@ class Pulling {
 	 *
 	 * @var int
 	 */
-	const PULL_INTERVAL = 60 * 5; // 5 minutes
+	const PULL_INTERVAL = 60 * 2; // 2 minutes
 
 	/**
 	 * The option name that stores the ID of the last processed event.
