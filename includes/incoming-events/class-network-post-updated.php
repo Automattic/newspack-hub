@@ -46,6 +46,24 @@ class Network_Post_Updated extends Abstract_Incoming_Event {
 			return;
 		}
 		$incoming_post = new Incoming_Post( $payload );
-		$incoming_post->insert();
+		$post_id = $incoming_post->insert();
+
+		if ( ! is_wp_error( $post_id ) ) {
+			$elapsed_time = time() - $this->get_timestamp();
+			$message      = sprintf(
+				'Post %d updated %d seconds after distribution',
+				$post_id,
+				$elapsed_time
+			);
+			Debugger::log( $message );
+			if ( method_exists( 'Newspack\Logger', 'newspack_log' ) ) {
+				\Newspack\Logger::newspack_log(
+					'newspack_network_post_updated',
+					$message,
+					$payload,
+					'debug'
+				);
+			}
+		}
 	}
 }
