@@ -10,7 +10,7 @@ namespace Test\Content_Distribution;
 /**
  * Get a sample distributed post payload for testing.
  *
- * @param string $origin      Origin site URL.
+ * @param string $origin Origin site URL.
  * @param string $destination Destination site URL.
  *
  * @return array
@@ -22,6 +22,7 @@ function get_sample_payload( $origin = '', $destination = '' ) {
 	if ( empty( $destination ) ) {
 		$destination = 'https://destination.test';
 	}
+
 	return [
 		'site_url'         => $origin,
 		'post_id'          => 1,
@@ -31,6 +32,7 @@ function get_sample_payload( $origin = '', $destination = '' ) {
 		'status_on_create' => 'draft',
 		'post_data'        => [
 			'title'          => 'Title',
+			'author'         => [],
 			'post_status'    => 'publish',
 			'date_gmt'       => '2021-01-01 00:00:00',
 			'modified_gmt'   => '2021-01-01 00:00:00',

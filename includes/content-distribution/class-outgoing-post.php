@@ -7,7 +7,8 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
+use Newspack_Network\User_Update_Watcher;
 use Newspack_Network\Utils\Network;
 use WP_Error;
 use WP_Post;
@@ -45,12 +46,54 @@ class Outgoing_Post {
 			throw new \InvalidArgumentException( esc_html( __( 'Only published post are allowed to be distributed.', 'newspack-network' ) ) );
 		}
 
-		if ( ! in_array( $post->post_type, Content_Distribution::get_distributed_post_types() ) ) {
+		if ( ! in_array( $post->post_type, Content_Distribution_Class::get_distributed_post_types() ) ) {
 			/* translators: unsupported post type for content distribution */
 			throw new \InvalidArgumentException( esc_html( sprintf( __( 'Post type %s is not supported as a distributed outgoing post.', 'newspack-network' ), $post->post_type ) ) );
 		}
 
 		$this->post = $post;
+	}
+
+	/**
+	 * Gets the user data of a WP user to be distributed along with the post.
+	 *
+	 * @param int|WP_Post $user The user ID or object.
+	 *
+	 * @return WP_Error|array
+	 */
+	public static function get_outgoing_wp_user_author( $user ) {
+		if ( ! is_a( $user, 'WP_User' ) ) {
+			$user = get_user_by( 'ID', $user );
+		}
+
+		if ( ! $user ) {
+			return new WP_Error( 'Error getting WP User details for distribution. Invalid User' );
+		}
+
+		$author = [
+			'type' => 'wp_user',
+			'ID'   => $user->ID,
+		];
+
+		foreach ( User_Update_Watcher::$user_props as $prop ) {
+			if ( ! empty( $user->$prop ) ) {
+				$author[ $prop ] = $user->$prop;
+			}
+		}
+
+		// CoAuthors' guest authors have a 'website' property.
+		if ( ! empty( $user->website ) ) {
+			$author['website'] = $user->website;
+		}
+
+		foreach ( User_Update_Watcher::$watched_meta as $meta_key ) {
+			$value = get_user_meta( $user->ID, $meta_key, true );
+			if ( ! empty( $value ) ) {
+				$author[ $meta_key ] = $value;
+			}
+		}
+
+		return $author;
 	}
 
 	/**
@@ -147,7 +190,7 @@ class Outgoing_Post {
 	 * @return bool
 	 */
 	public function is_distributed( $site_url = null ) {
-		$distributed_post_types = Content_Distribution::get_distributed_post_types();
+		$distributed_post_types = Content_Distribution_Class::get_distributed_post_types();
 		if ( ! in_array( $this->post->post_type, $distributed_post_types, true ) ) {
 			return false;
 		}
@@ -202,7 +245,9 @@ class Outgoing_Post {
 	 * @return array|WP_Error The post payload or WP_Error if the post is invalid.
 	 */
 	public function get_payload( $status_on_create = 'draft' ) {
-		return [
+		$post_author = self::get_outgoing_wp_user_author( $this->post->post_author );
+
+		$payload = [
 			'site_url'         => get_bloginfo( 'url' ),
 			'post_id'          => $this->post->ID,
 			'post_url'         => get_permalink( $this->post->ID ),
@@ -211,6 +256,7 @@ class Outgoing_Post {
 			'status_on_create' => $status_on_create,
 			'post_data'        => [
 				'title'          => html_entity_decode( get_the_title( $this->post->ID ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'author'         => is_wp_error( $post_author ) ? [] : $post_author,
 				'post_status'    => $this->post->post_status,
 				'date_gmt'       => $this->post->post_date_gmt,
 				'modified_gmt'   => $this->post->post_modified_gmt,
@@ -226,6 +272,53 @@ class Outgoing_Post {
 				'post_meta'      => $this->get_post_meta(),
 			],
 		];
+
+		/**
+		 * Filter the payload's post_data to let others add to it.
+		 *
+		 * @param array   $post_data The post_data to filter
+		 * @param WP_Post $post      The post object for the outgoing post.
+		 */
+		$payload['post_data'] = apply_filters( 'newspack_network_outgoing_payload_post_data', $payload['post_data'], $this->post );
+
+		return $payload;
+	}
+
+	/**
+	 * Get a partial payload for distribution.
+	 *
+	 * @param string[] $post_data_keys Keys in the post_data array to include in
+	 *                                 the partial payload.
+	 *
+	 * @return array|WP_Error The partial payload or WP_Error if any of the keys were not found.
+	 */
+	public function get_partial_payload( $post_data_keys ) {
+		if ( is_string( $post_data_keys ) ) {
+			$post_data_keys = [ $post_data_keys ];
+		}
+
+		$payload = $this->get_payload();
+		foreach ( $post_data_keys as $post_data_key ) {
+			if ( ! isset( $payload['post_data'][ $post_data_key ] ) ) {
+				return new WP_Error( 'key_not_found', __( 'Key not found in payload.', 'newspack-network' ) );
+			}
+		}
+
+		// Mark the payload as partial.
+		$payload['partial'] = true;
+
+		$post_data = [];
+		foreach ( $post_data_keys as $post_data_key ) {
+			$post_data[ $post_data_key ] = $payload['post_data'][ $post_data_key ];
+		}
+
+		// Always add the date and modified date to the partial payload.
+		$post_data['date_gmt']     = $payload['post_data']['date_gmt'];
+		$post_data['modified_gmt'] = $payload['post_data']['modified_gmt'];
+
+		$payload['post_data'] = $post_data;
+
+		return $payload;
 	}
 
 	/**
@@ -251,11 +344,11 @@ class Outgoing_Post {
 	 * @return array The taxonomy term data.
 	 */
 	protected function get_post_taxonomy_terms() {
-		$reserved_taxonomies = Content_Distribution::get_reserved_taxonomies();
-		$taxonomies          = get_object_taxonomies( $this->post->post_type, 'objects' );
+		$ignored_taxonomies = Content_Distribution_Class::get_ignored_taxonomies();
+		$taxonomies         = get_object_taxonomies( $this->post->post_type, 'objects' );
 		$data                = [];
 		foreach ( $taxonomies as $taxonomy ) {
-			if ( in_array( $taxonomy->name, $reserved_taxonomies, true ) ) {
+			if ( in_array( $taxonomy->name, $ignored_taxonomies, true ) ) {
 				continue;
 			}
 			if ( ! $taxonomy->public ) {
@@ -284,7 +377,7 @@ class Outgoing_Post {
 	 * @return array The post meta data.
 	 */
 	protected function get_post_meta() {
-		$reserved_keys = Content_Distribution::get_reserved_post_meta_keys();
+		$ignored_keys = Content_Distribution_Class::get_ignored_post_meta_keys();
 
 		$meta = get_post_meta( $this->post->ID );
 
@@ -294,9 +387,9 @@ class Outgoing_Post {
 
 		$meta = array_filter(
 			$meta,
-			function( $value, $key ) use ( $reserved_keys ) {
-				// Filter out reserved keys.
-				return ! in_array( $key, $reserved_keys, true );
+			function( $value, $key ) use ( $ignored_keys ) {
+				// Filter out ignored keys.
+				return ! in_array( $key, $ignored_keys, true );
 			},
 			ARRAY_FILTER_USE_BOTH
 		);

@@ -8,7 +8,7 @@
 namespace Newspack_Network\Content_Distribution;
 
 use InvalidArgumentException;
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use WP_Error;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -124,7 +124,7 @@ class API {
 			return new WP_Error( 'newspack_network_content_distribution_error', $distribution->get_error_message(), [ 'status' => 400 ] );
 		}
 
-		Content_Distribution::distribute_post( $outgoing_post, $status_on_create );
+		Content_Distribution_Class::distribute_post( $outgoing_post, $status_on_create );
 
 		return rest_ensure_response( $distribution );
 	}

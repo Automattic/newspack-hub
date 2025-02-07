@@ -9,6 +9,7 @@ namespace Test\Content_Distribution;
 
 use Newspack_Network\Content_Distribution\Outgoing_Post;
 use Newspack_Network\Hub\Node as Hub_Node;
+use WP_User;
 
 /**
  * Test the Outgoing_Post class.
@@ -40,14 +41,28 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 	protected $outgoing_post;
 
 	/**
+	 * An editor user.
+	 *
+	 * @var WP_User
+	 */
+	private WP_User $some_editor;
+
+	/**
 	 * Set up.
 	 */
 	public function set_up() {
 		parent::set_up();
 
+		$this->some_editor = $this->factory->user->create_and_get( [ 'role' => 'editor' ] );
+
 		// "Mock" the network node(s).
 		update_option( Hub_Node::HUB_NODES_SYNCED_OPTION, $this->network );
-		$post                = $this->factory->post->create_and_get( [ 'post_type' => 'post' ] );
+		$post                = $this->factory->post->create_and_get(
+			[
+				'post_type'   => 'post',
+				'post_author' => $this->some_editor->ID,
+			]
+		);
 		$this->outgoing_post = new Outgoing_Post( $post );
 		$this->outgoing_post->set_distribution( [ $this->network[0]['url'] ] );
 	}
@@ -148,9 +163,19 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 			'thumbnail_url',
 			'taxonomy',
 			'post_meta',
+			'author',
 		];
 		$this->assertEmpty( array_diff( $post_data_keys, array_keys( $payload['post_data'] ) ) );
 		$this->assertEmpty( array_diff( array_keys( $payload['post_data'] ), $post_data_keys ) );
+	}
+
+	/**
+	 * Test that the author(s) are included in the payload.
+	 */
+	public function test_authors_data(): void {
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertNotEmpty( $payload['post_data']['author'] );
+		$this->assertEquals( $this->some_editor->user_email, $payload['post_data']['author']['user_email'] );
 	}
 
 	/**
@@ -184,9 +209,9 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Test reserved taxonomies.
+	 * Test ignored taxonomies.
 	 */
-	public function test_reserved_taxonomies() {
+	public function test_ignored_taxonomies() {
 		$post = $this->outgoing_post->get_post();
 		$taxonomy = 'author';
 		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
@@ -196,5 +221,39 @@ class TestOutgoingPost extends \WP_UnitTestCase {
 
 		$payload = $this->outgoing_post->get_payload();
 		$this->assertTrue( empty( $payload['post_data']['taxonomy'][ $taxonomy ] ) );
+	}
+
+	/**
+	 * Test get partial payload.
+	 */
+	public function test_get_partial_payload() {
+		$partial_payload = $this->outgoing_post->get_partial_payload( 'post_meta' );
+
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertTrue( $partial_payload['partial'] );
+		$this->assertSame( $payload['network_post_id'], $partial_payload['network_post_id'] );
+		$this->assertSame( $payload['post_data']['post_meta'], $partial_payload['post_data']['post_meta'] );
+		$this->assertSame( $payload['post_data']['date_gmt'], $partial_payload['post_data']['date_gmt'] );
+		$this->assertSame( $payload['post_data']['modified_gmt'], $partial_payload['post_data']['modified_gmt'] );
+		$this->assertArrayNotHasKey( 'title', $partial_payload['post_data'] );
+		$this->assertArrayNotHasKey( 'content', $partial_payload['post_data'] );
+		$this->assertArrayNotHasKey( 'taxonomy', $partial_payload['post_data'] );
+	}
+
+	/**
+	 * Test get partial payload multiple keys.
+	 */
+	public function test_get_partial_payload_multiple_keys() {
+		$partial_payload = $this->outgoing_post->get_partial_payload( [ 'post_meta', 'taxonomy' ] );
+
+		$payload = $this->outgoing_post->get_payload();
+		$this->assertTrue( $partial_payload['partial'] );
+		$this->assertSame( $payload['network_post_id'], $partial_payload['network_post_id'] );
+		$this->assertSame( $payload['post_data']['post_meta'], $partial_payload['post_data']['post_meta'] );
+		$this->assertSame( $payload['post_data']['taxonomy'], $partial_payload['post_data']['taxonomy'] );
+		$this->assertSame( $payload['post_data']['date_gmt'], $partial_payload['post_data']['date_gmt'] );
+		$this->assertSame( $payload['post_data']['modified_gmt'], $partial_payload['post_data']['modified_gmt'] );
+		$this->assertArrayNotHasKey( 'title', $partial_payload['post_data'] );
+		$this->assertArrayNotHasKey( 'content', $partial_payload['post_data'] );
 	}
 }

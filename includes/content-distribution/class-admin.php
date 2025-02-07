@@ -7,11 +7,12 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Site_Role;
-use Newspack_Network\Hub\Nodes;
-use Newspack_Network\Hub\Node;
 use Newspack\Data_Events;
 use Newspack_Network\Admin as Network_Admin;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
+use Newspack_Network\Hub\Node;
+use Newspack_Network\Hub\Nodes;
+use Newspack_Network\Site_Role;
 
 /**
  * Content Distribution Admin Page Class.
@@ -54,6 +55,7 @@ class Admin {
 		add_action( 'admin_menu', [ __CLASS__, 'add_menu' ] );
 		add_filter( 'allowed_options', [ __CLASS__, 'allowed_options' ] );
 		add_action( 'update_option_' . self::CAPABILITY_ROLES_OPTION_NAME, [ __CLASS__, 'update_capability_roles' ], 10, 2 );
+		add_filter( 'post_row_actions', [ __CLASS__, 'filter_row_actions' ], 15, 2 );
 	}
 
 	/**
@@ -317,5 +319,27 @@ class Admin {
 		return [
 			'url' => $node_url,
 		];
+	}
+
+	/**
+	 * Filter callback.
+	 *
+	 * Remove "quick actions" for linked posts.
+	 *
+	 * @param array    $actions An array of row action links.
+	 * @param \WP_Post $post The post object.
+	 *
+	 * @return array
+	 */
+	public static function filter_row_actions( $actions, $post ) {
+		if ( Site_Role::is_hub() || empty( $actions['inline hide-if-no-js'] ) ) {
+			return $actions;
+		}
+
+		if ( Content_Distribution_Class::is_post_incoming( $post ) && ( new Incoming_Post( $post->ID ) )->is_linked() ) {
+			unset( $actions['inline hide-if-no-js'] );
+		}
+
+		return $actions;
 	}
 }

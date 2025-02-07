@@ -8,14 +8,15 @@
 namespace Newspack_Network;
 
 use Newspack\Data_Events;
-use Newspack_Network\Content_Distribution\CLI;
 use Newspack_Network\Content_Distribution\Admin;
 use Newspack_Network\Content_Distribution\API;
-use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Canonical_Url;
+use Newspack_Network\Content_Distribution\Cap_Authors;
+use Newspack_Network\Content_Distribution\CLI;
+use Newspack_Network\Content_Distribution\Distributor_Migrator;
+use Newspack_Network\Content_Distribution\Editor;
 use Newspack_Network\Content_Distribution\Incoming_Post;
 use Newspack_Network\Content_Distribution\Outgoing_Post;
-use Newspack_Network\Content_Distribution\Distributor_Migrator;
 use WP_Post;
 
 /**
@@ -30,7 +31,7 @@ class Content_Distribution {
 	 *
 	 * @var array Post IDs to update.
 	 */
-	private static $queued_post_updates = [];
+	private static $queued_distributions = [];
 
 	/**
 	 * Initialize this class and register hooks
@@ -51,7 +52,9 @@ class Content_Distribution {
 		add_filter( 'newspack_webhooks_request_priority', [ __CLASS__, 'webhooks_request_priority' ], 10, 2 );
 		add_filter( 'update_post_metadata', [ __CLASS__, 'maybe_short_circuit_distributed_meta' ], 10, 4 );
 		add_action( 'wp_after_insert_post', [ __CLASS__, 'handle_post_updated' ] );
-		add_action( 'updated_postmeta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'updated_post_meta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'added_post_meta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
+		add_action( 'deleted_post_meta', [ __CLASS__, 'handle_postmeta_update' ], 10, 3 );
 		add_action( 'before_delete_post', [ __CLASS__, 'handle_post_deleted' ] );
 		add_action( 'newspack_network_incoming_post_inserted', [ __CLASS__, 'handle_incoming_post_inserted' ], 10, 3 );
 
@@ -61,6 +64,7 @@ class Content_Distribution {
 		Editor::init();
 		Canonical_Url::init();
 		Distributor_Migrator::init();
+		Cap_Authors::init();
 	}
 
 	/**
@@ -78,21 +82,59 @@ class Content_Distribution {
 	}
 
 	/**
+	 * Queue post distribution to run on PHP shutdown.
+	 *
+	 * @param int         $post_id       The post ID.
+	 * @param null|string $post_data_key The post data key to update.
+	 *                                   Default is null (entire post payload).
+	 *
+	 * @return void
+	 */
+	public static function queue_post_distribution( $post_id, $post_data_key = null ) {
+		// Bail if the post is already queued for a full update.
+		if ( isset( self::$queued_distributions[ $post_id ] ) && self::$queued_distributions[ $post_id ] === true ) {
+			return;
+		}
+
+		// Queue for a full post update.
+		if ( empty( $post_data_key ) ) {
+			self::$queued_distributions[ $post_id ] = true;
+			return;
+		}
+
+		// Queue for a partial update.
+		if ( ! isset( self::$queued_distributions[ $post_id ] ) ) {
+			self::$queued_distributions[ $post_id ] = [];
+		}
+		self::$queued_distributions[ $post_id ][] = $post_data_key;
+	}
+
+	/**
+	 * Get queued post distributions.
+	 */
+	public static function get_queued_distributions() {
+		return self::$queued_distributions;
+	}
+
+	/**
 	 * Distribute queued posts.
 	 */
 	public static function distribute_queued_posts() {
-		if ( empty( self::$queued_post_updates ) ) {
+		if ( empty( self::$queued_distributions ) ) {
 			return;
 		}
-		$post_ids = array_unique( self::$queued_post_updates );
-		foreach ( $post_ids as $post_id ) {
+		foreach ( self::$queued_distributions as $post_id => $post_data_keys ) {
 			$post = get_post( $post_id );
 			if ( ! $post ) {
 				continue;
 			}
-			self::distribute_post( $post );
+			if ( is_array( $post_data_keys ) ) {
+				self::distribute_post_partial( $post, array_unique( $post_data_keys ) );
+			} else {
+				self::distribute_post( $post );
+			}
 		}
-		self::$queued_post_updates = [];
+		self::$queued_distributions = [];
 	}
 
 	/**
@@ -163,14 +205,14 @@ class Content_Distribution {
 		if ( ! self::is_post_distributed( $post ) ) {
 			return;
 		}
-		// Ignore reserved keys but run if the meta is setting the distribution.
+		// Skip ignored keys but run if the meta is setting the distribution.
 		if (
 			Outgoing_Post::DISTRIBUTED_POST_META !== $meta_key &&
-			in_array( $meta_key, self::get_reserved_post_meta_keys(), true )
+			in_array( $meta_key, self::get_ignored_post_meta_keys(), true )
 		) {
 			return;
 		}
-		self::$queued_post_updates[] = $object_id;
+		self::queue_post_distribution( $post->ID, 'post_meta' );
 	}
 
 	/**
@@ -191,7 +233,7 @@ class Content_Distribution {
 		if ( ! self::is_post_distributed( $post ) ) {
 			return;
 		}
-		self::$queued_post_updates[] = $post->ID;
+		self::queue_post_distribution( $post->ID );
 	}
 
 	/**
@@ -199,7 +241,7 @@ class Content_Distribution {
 	 *
 	 * @param int $post_id The post ID.
 	 *
-	 * @return @void
+	 * @return void
 	 */
 	public static function handle_post_deleted( $post_id ) {
 		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
@@ -257,27 +299,35 @@ class Content_Distribution {
 	/**
 	 * Get post meta keys that should be ignored on content distribution.
 	 *
-	 * @return string[] The reserved post meta keys.
+	 * When generating the payload for content distribution, post meta with these
+	 * keys will not be included.
+	 *
+	 * Upon sync, these keys will also be ignored when updating the post meta,
+	 * so they'll never be deleted or updated.
+	 *
+	 * @return string[] The ignored post meta keys.
 	 */
-	public static function get_reserved_post_meta_keys() {
-		$reserved_keys = [
+	public static function get_ignored_post_meta_keys() {
+		$ignored_keys = [
 			'_edit_lock',
 			'_edit_last',
 			'_thumbnail_id',
 			'_yoast_wpseo_primary_category',
+			'_pingme',
+			'_encloseme',
 		];
 
 		/**
-		 * Filters the reserved post meta keys that should not be distributed.
+		 * Filters the ignored post meta keys that should not be distributed.
 		 *
-		 * @param string[] $reserved_keys The reserved post meta keys.
-		 * @param WP_Post  $post          The post object.
+		 * @param string[] $ignored_keys The ignored post meta keys.
+		 * @param WP_Post  $post         The post object.
 		 */
-		$reserved_keys = apply_filters( 'newspack_network_content_distribution_reserved_post_meta_keys', $reserved_keys );
+		$ignored_keys = apply_filters( 'newspack_network_content_distribution_ignored_post_meta_keys', $ignored_keys );
 
-		// Always preserve content distribution post meta.
+		// Always ignore content distribution post meta.
 		return array_merge(
-			$reserved_keys,
+			$ignored_keys,
 			[
 				self::PAYLOAD_HASH_META,
 				Outgoing_Post::DISTRIBUTED_POST_META,
@@ -292,19 +342,19 @@ class Content_Distribution {
 	/**
 	 * Get taxonomies that should not be distributed.
 	 *
-	 * @return string[] The reserved taxonomies.
+	 * @return string[] The ignored taxonomies.
 	 */
-	public static function get_reserved_taxonomies() {
-		$reserved_taxonomies = [
+	public static function get_ignored_taxonomies() {
+		$ignored_taxonomies = [
 			'author', // Co-Authors Plus 'author' taxonomy should be ignored as it requires custom handling.
 		];
 
 		/**
-		 * Filters the reserved taxonomies that should not be distributed.
+		 * Filters the ignored taxonomies that should not be distributed.
 		 *
-		 * @param string[] $reserved_taxonomies The reserved taxonomies.
+		 * @param string[] $ignored_taxonomies The ignored taxonomies.
 		 */
-		return apply_filters( 'newspack_network_content_distribution_reserved_taxonomies', $reserved_taxonomies );
+		return apply_filters( 'newspack_network_content_distribution_ignored_taxonomies', $ignored_taxonomies );
 	}
 
 	/**
@@ -375,10 +425,49 @@ class Content_Distribution {
 			$payload      = $distributed_post->get_payload( $status_on_create );
 			$payload_hash = $distributed_post->get_payload_hash( $payload );
 			$post         = $distributed_post->get_post();
+			// Skip if the payload hash is the same.
 			if ( get_post_meta( $post->ID, self::PAYLOAD_HASH_META, true ) === $payload_hash ) {
 				return;
 			}
 			Data_Events::dispatch( 'network_post_updated', $payload );
+			// Store payload hash to prevent unnecessary updates.
+			update_post_meta( $post->ID, self::PAYLOAD_HASH_META, $payload_hash );
+		}
+	}
+
+	/**
+	 * Trigger a partial post distribution.
+	 *
+	 * @param WP_Post|Outgoing_Post|int $post           The post object or ID.
+	 * @param string[]                  $post_data_keys The post data keys to update.
+	 *
+	 * @return void|WP_Error The error if the payload is invalid.
+	 */
+	public static function distribute_post_partial( $post, $post_data_keys ) {
+		if ( ! class_exists( 'Newspack\Data_Events' ) ) {
+			return;
+		}
+		if ( is_string( $post_data_keys ) ) {
+			$post_data_keys = [ $post_data_keys ];
+		}
+		if ( $post instanceof Outgoing_Post ) {
+			$distributed_post = $post;
+		} else {
+			$distributed_post = self::get_distributed_post( $post );
+		}
+		if ( $distributed_post ) {
+			$payload_hash = $distributed_post->get_payload_hash();
+			$post         = $distributed_post->get_post();
+			// Skip if the payload hash is the same.
+			if ( get_post_meta( $post->ID, self::PAYLOAD_HASH_META, true ) === $payload_hash ) {
+				return;
+			}
+			$payload = $distributed_post->get_partial_payload( $post_data_keys );
+			if ( is_wp_error( $payload ) ) {
+				return $payload;
+			}
+			Data_Events::dispatch( 'network_post_updated', $payload );
+			// Store payload hash to prevent unnecessary updates.
 			update_post_meta( $post->ID, self::PAYLOAD_HASH_META, $payload_hash );
 		}
 	}
