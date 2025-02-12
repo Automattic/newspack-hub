@@ -109,8 +109,9 @@ class Editor {
 			'newspack-network-incoming-post',
 			'newspack_network_incoming_post',
 			[
-				'originalUrl' => $incoming->get_original_site_url(),
-				'unlinked'    => ! $incoming->is_linked(),
+				'originalSiteUrl' => $incoming->get_original_site_url(),
+				'originalPostUrl' => $incoming->get_original_post_url(),
+				'unlinked'        => ! $incoming->is_linked(),
 			]
 		);
 	}
