@@ -111,7 +111,7 @@ class Editor {
 			[
 				'originalSiteUrl' => $incoming->get_original_site_url(),
 				'originalPostUrl' => $incoming->get_original_post_url(),
-				'unlinked'    => ! $incoming->is_linked(),
+				'unlinked'        => ! $incoming->is_linked(),
 			]
 		);
 	}
