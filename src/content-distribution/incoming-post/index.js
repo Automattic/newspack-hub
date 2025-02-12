@@ -17,7 +17,8 @@ import { registerPlugin } from '@wordpress/plugins';
 import './style.scss';
 import ContentDistributionPanel from "../content-distribution-panel";
 
-const originalUrl = newspack_network_incoming_post.originalUrl;
+const originalSiteUrl = newspack_network_incoming_post.originalSiteUrl;
+const originalPostUrl = newspack_network_incoming_post.originalPostUrl;
 const unlinked = newspack_network_incoming_post.unlinked;
 
 function IncomingPost() {
@@ -60,8 +61,8 @@ function IncomingPost() {
 		createNotice(
 			'warning',
 			isUnLinked
-				? sprintf( __( 'Originally distributed from %s.', 'newspack-network' ), originalUrl )
-				: sprintf( __( 'Distributed from %s.', 'newspack-network' ), originalUrl ),
+				? sprintf( __( 'Originally distributed from %s.', 'newspack-network' ), originalSiteUrl )
+				: sprintf( __( 'Distributed from %s.', 'newspack-network' ), originalSiteUrl ),
 
 			{
 				id: 'newspack-network-incoming-post-notice',
@@ -140,7 +141,7 @@ function IncomingPost() {
 						<Button
 							variant="secondary"
 							target="_blank"
-							href={ originalUrl }
+							href={ originalPostUrl }
 						>
 							{ __( 'View origin post', 'newspack-network' ) }
 						</Button>
