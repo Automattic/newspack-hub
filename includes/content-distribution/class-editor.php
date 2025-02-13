@@ -144,6 +144,7 @@ class Editor {
 			'newspack-network-outgoing-post',
 			'newspack_network_outgoing_post',
 			[
+				'default_status'   => Admin::get_default_distribution_status(),
 				'network_sites'    => Network::get_networked_urls(),
 				'distributed_meta' => Outgoing_Post::DISTRIBUTED_POST_META,
 				'post_type_label'  => get_post_type_labels( get_post_type_object( $post->post_type ) )->singular_name,
