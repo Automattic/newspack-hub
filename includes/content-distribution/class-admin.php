@@ -103,6 +103,7 @@ class Admin {
 		$allowed_options[ self::SETTINGS_SECTION ] = [
 			self::CANONICAL_NODE_OPTION_NAME,
 			self::CAPABILITY_ROLES_OPTION_NAME,
+			self::DEFAULT_DISTRIBUTION_STATUS_OPTION_NAME,
 		];
 		return $allowed_options;
 	}
@@ -139,7 +140,7 @@ class Admin {
 
 		$settings[] = [
 			'key'      => self::DEFAULT_DISTRIBUTION_STATUS_OPTION_NAME,
-			'label'    => esc_html__( 'Default Distribution Post Status', 'newspack-network' ),
+			'label'    => esc_html__( 'Default Post Status for Distribution', 'newspack-network' ),
 			'callback' => [ __CLASS__, 'default_distribution_status_callback' ],
 		];
 
@@ -233,9 +234,9 @@ class Admin {
 		$current = self::get_default_distribution_status();
 
 		$statuses = [
-			'publish' => __( 'Publish', 'newspack-network' ),
-			'pending' => __( 'Pending Review', 'newspack-network' ),
 			'draft'   => __( 'Draft', 'newspack-network' ),
+			'pending' => __( 'Pending', 'newspack-network' ),
+			'publish' => __( 'Publish', 'newspack-network' ),
 		];
 
 		foreach ( $statuses as $status => $label ) {
