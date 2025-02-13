@@ -8,7 +8,7 @@ import { sprintf, __, _n } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { CheckboxControl, TextControl, Button } from '@wordpress/components';
-import { globe } from '@wordpress/icons';
+import { broadcast } from '../../icons';
 import { registerPlugin } from '@wordpress/plugins';
 
 /**
@@ -245,5 +245,5 @@ function OutgoingPost() {
 
 registerPlugin( 'newspack-network-outgoing-post', {
 		render: OutgoingPost,
-		icon: globe,
+		icon: broadcast,
 } );

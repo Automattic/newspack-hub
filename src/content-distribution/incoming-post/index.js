@@ -8,7 +8,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import { useEffect, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { Button, __experimentalConfirmDialog as ConfirmDialog } from '@wordpress/components';
-import { globe } from '@wordpress/icons';
+import { broadcast } from '../../icons';
 import { registerPlugin } from '@wordpress/plugins';
 
 /**
@@ -179,5 +179,5 @@ function IncomingPost() {
 
 registerPlugin( 'newspack-network-incoming-post', {
 	render: IncomingPost,
-	icon: globe,
+	icon: broadcast,
 } );
