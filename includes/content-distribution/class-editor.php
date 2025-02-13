@@ -256,6 +256,9 @@ class Editor {
 		}
 		?>
 		<style>
+			.wp-list-table th#content_distribution svg path {
+				fill: #406ebc;
+			}
 			.wp-list-table th#content_distribution,
 			.wp-list-table .column-content_distribution {
 				width: 32px;
