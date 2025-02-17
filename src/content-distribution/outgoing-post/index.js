@@ -17,6 +17,7 @@ import { registerPlugin } from '@wordpress/plugins';
 import ContentDistributionPanel from '../content-distribution-panel';
 import PostStatus from '../../components/post-status';
 
+const defaultStatus = newspack_network_outgoing_post.default_status;
 const networkSites = newspack_network_outgoing_post.network_sites;
 const distributedMetaKey = newspack_network_outgoing_post.distributed_meta;
 const postTypeLabel = newspack_network_outgoing_post.post_type_label;
@@ -26,7 +27,7 @@ function OutgoingPost() {
 	const [ isDistributing, setIsDistributing ] = useState( false );
 	const [ distribution, setDistribution ] = useState( [] );
 	const [ siteSelection, setSiteSelection ] = useState( [] );
-	const [ statusOnCreate, setStatusOnCreate ] = useState( 'draft' );
+	const [ statusOnCreate, setStatusOnCreate ] = useState( defaultStatus );
 
 	const { postId, postStatus, savedUrls, hasChangedContent, isSavingPost, isCleanNewPost } = useSelect( select => {
 		const {
