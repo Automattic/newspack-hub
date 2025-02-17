@@ -1,3 +1,20 @@
+# [2.6.0](https://github.com/Automattic/newspack-network/compare/v2.5.0...v2.6.0) (2025-02-17)
+
+
+### Bug Fixes
+
+* **content-distribution:** use payload hash on partial updates ([#207](https://github.com/Automattic/newspack-network/issues/207)) ([31b342d](https://github.com/Automattic/newspack-network/commit/31b342d71b54676c488eb6823baca0f9c392ce96))
+* **event-log:** data css overflow ([#206](https://github.com/Automattic/newspack-network/issues/206)) ([f81adfe](https://github.com/Automattic/newspack-network/commit/f81adfed5a76047f9db3156a743411f4e1f11c67))
+
+
+### Features
+
+* **content-distribution:** migration tweaks ([#201](https://github.com/Automattic/newspack-network/issues/201)) ([9c61fa8](https://github.com/Automattic/newspack-network/commit/9c61fa8e059108ef1693a159bf356bd989b7d0df))
+* **content-distribution:** partial payload ([#205](https://github.com/Automattic/newspack-network/issues/205)) ([b844d06](https://github.com/Automattic/newspack-network/commit/b844d06037bd49b5f0eb552d737d437d8a2fc40d))
+* **content-distribution:** remove "Quick Edit" from linked posts ([#200](https://github.com/Automattic/newspack-network/issues/200)) ([6ad3a4a](https://github.com/Automattic/newspack-network/commit/6ad3a4a06a07b2bed506ce1f5cb183430e10354c))
+* **content-distribution:** Sync authors ([#194](https://github.com/Automattic/newspack-network/issues/194)) ([3156d35](https://github.com/Automattic/newspack-network/commit/3156d358816114c9cd911f2a6f01a627e3fcf7e4))
+* increase pull frequency and amount ([#209](https://github.com/Automattic/newspack-network/issues/209)) ([6791da1](https://github.com/Automattic/newspack-network/commit/6791da125999cf7e046aebb3a8b1e32194c89c80))
+
 # [2.5.0](https://github.com/Automattic/newspack-network/compare/v2.4.0...v2.5.0) (2025-02-03)
 
 
