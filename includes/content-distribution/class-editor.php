@@ -7,7 +7,7 @@
 
 namespace Newspack_Network\Content_Distribution;
 
-use Newspack_Network\Content_Distribution;
+use Newspack_Network\Content_Distribution as Content_Distribution_Class;
 use Newspack_Network\Utils\Network;
 use WP_Post;
 
@@ -30,7 +30,7 @@ class Editor {
 	 * Register the meta available in the editor.
 	 */
 	public static function register_meta() {
-		$post_types = Content_Distribution::get_distributed_post_types();
+		$post_types = Content_Distribution_Class::get_distributed_post_types();
 		foreach ( $post_types as $post_type ) {
 			register_post_meta(
 				$post_type,
@@ -65,14 +65,14 @@ class Editor {
 		$screen = get_current_screen();
 		if (
 			! current_user_can( Admin::CAPABILITY )
-			|| ! in_array( $screen->post_type, Content_Distribution::get_distributed_post_types(), true )
+			|| ! in_array( $screen->post_type, Content_Distribution_Class::get_distributed_post_types(), true )
 		) {
 			return;
 		}
 
 		$post = get_post();
 
-		if ( Content_Distribution::is_post_incoming( $post ) ) {
+		if ( Content_Distribution_Class::is_post_incoming( $post ) ) {
 			self::enqueue_block_editor_assets_for_incoming_post( $post );
 		} else {
 			self::enqueue_block_editor_assets_for_outgoing_post( $post );
@@ -159,7 +159,7 @@ class Editor {
 	 * @return array
 	 */
 	public static function add_distribution_column( $columns, $post_type ) {
-		if ( ! in_array( $post_type, Content_Distribution::get_distributed_post_types(), true ) ) {
+		if ( ! in_array( $post_type, Content_Distribution_Class::get_distributed_post_types(), true ) ) {
 			return $columns;
 		}
 		$columns['content_distribution'] = sprintf(
@@ -183,8 +183,8 @@ class Editor {
 			return;
 		}
 
-		$is_incoming = Content_Distribution::is_post_incoming( $post_id );
-		$is_outgoing = Content_Distribution::is_post_distributed( $post_id );
+		$is_incoming = Content_Distribution_Class::is_post_incoming( $post_id );
+		$is_outgoing = Content_Distribution_Class::is_post_distributed( $post_id );
 
 		if ( ! $is_incoming && ! $is_outgoing ) {
 			return;
@@ -250,7 +250,7 @@ class Editor {
 	 */
 	public static function add_posts_column_styles() {
 		$screen = get_current_screen();
-		if ( ! in_array( $screen->post_type, Content_Distribution::get_distributed_post_types(), true ) ) {
+		if ( ! in_array( $screen->post_type, Content_Distribution_Class::get_distributed_post_types(), true ) ) {
 			return;
 		}
 		?>

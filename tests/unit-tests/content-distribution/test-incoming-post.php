@@ -28,6 +28,13 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	protected $node_2 = 'https://node2.test';
 
 	/**
+	 * A user with the editor role.
+	 *
+	 * @var \WP_User
+	 */
+	protected $some_editor;
+
+	/**
 	 * A linked post.
 	 *
 	 * @var Incoming_Post
@@ -50,6 +57,8 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		// Set the site URL for the node that receives posts.
 		update_option( 'siteurl', $this->node_2 );
 		update_option( 'home', $this->node_2 );
+
+		$this->some_editor = $this->factory->user->create_and_get( [ 'role' => 'editor' ] );
 
 		$this->incoming_post = new Incoming_Post( $this->get_sample_payload() );
 	}
@@ -407,13 +416,13 @@ class TestIncomingPost extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Test reserved taxonomies.
+	 * Test ignored taxonomies.
 	 */
-	public function test_reserved_taxonomies() {
+	public function test_ignored_taxonomies() {
 		$payload = $this->get_sample_payload();
 		$taxonomy = 'author';
 
-		// Register a reserved taxonomy.
+		// Register an ignored taxonomy.
 		register_taxonomy( $taxonomy, 'post', [ 'public' => true ] );
 
 		$payload['post_data']['taxonomy']['author'] = [
@@ -426,7 +435,7 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		// Insert the linked post.
 		$post_id = $this->incoming_post->insert( $payload );
 
-		// Assert that the post does not have the reserved taxonomy term.
+		// Assert that the post does not have the ignored taxonomy term.
 		$terms = wp_get_post_terms( $post_id, $taxonomy );
 		$this->assertEmpty( $terms );
 	}
@@ -480,5 +489,70 @@ class TestIncomingPost extends \WP_UnitTestCase {
 		// Assert that distributing again will not publish it.
 		$this->incoming_post->insert( $payload );
 		$this->assertSame( 'draft', get_post_status( $post_id ) );
+	}
+
+	/**
+	 * Test partial post payload on insert.
+	 */
+	public function test_partial_payload_insert() {
+		$post_id = $this->incoming_post->insert();
+
+		// Make the payload a partial.
+		$payload              = $this->get_sample_payload();
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		$this->incoming_post->insert( $payload );
+
+		// Assert that the post title was updated and the content was not.
+		$this->assertSame( 'Updated Title', get_the_title( $post_id ) );
+		$this->assertSame( 'Content', get_post_field( 'post_content', $post_id ) );
+	}
+
+	/**
+	 * Test partial post payload on instantiation.
+	 */
+	public function test_partial_payload_instantiation() {
+		$post_id = $this->incoming_post->insert();
+
+		// Make the payload a partial.
+		$payload              = $this->get_sample_payload();
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		$incoming_post = new Incoming_Post( $payload );
+		$incoming_post->insert();
+
+		// Assert that the post title was updated and the content was not.
+		$this->assertSame( 'Updated Title', get_the_title( $post_id ) );
+		$this->assertSame( 'Content', get_post_field( 'post_content', $post_id ) );
+	}
+
+	/**
+	 * Test partial payload on missing post.
+	 */
+	public function test_partial_payload_missing_post() {
+		$payload = $this->get_sample_payload();
+
+		// Make the payload a partial.
+		$payload['partial']   = true;
+		$payload['post_data'] = [
+			'title'        => 'Updated Title',
+			'date_gmt'     => $payload['post_data']['date_gmt'],
+			'modified_gmt' => $payload['post_data']['modified_gmt'],
+		];
+
+		// Assert that instantiating a partial payload will throw an exception.
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Partial payload requires an existing post.' );
+		new Incoming_Post( $payload );
 	}
 }
