@@ -18,7 +18,7 @@ import './style.scss';
 import ContentDistributionPanel from "../content-distribution-panel";
 
 const originalSiteUrl = newspack_network_incoming_post.originalSiteUrl;
-const originalPostUrl = newspack_network_incoming_post.originalPostUrl;
+const originalPostEditUrl = newspack_network_incoming_post.originalPostEditUrl;
 const unlinked = newspack_network_incoming_post.unlinked;
 
 function IncomingPost() {
@@ -141,9 +141,9 @@ function IncomingPost() {
 						<Button
 							variant="secondary"
 							target="_blank"
-							href={ originalPostUrl }
+							href={ originalPostEditUrl }
 						>
-							{ __( 'View origin post', 'newspack-network' ) }
+							{ __( 'Edit origin post', 'newspack-network' ) }
 						</Button>
 						<Button
 							variant={ isUnLinked ? 'primary' : 'secondary' }
